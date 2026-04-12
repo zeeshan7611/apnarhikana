@@ -1,58 +1,61 @@
-import { Request, Response } from 'express';
-import PropertyService from '../services/PropertyService';
+import { Request, Response, NextFunction } from "express";
+import PropertyService from "../services/PropertyService";
 
-class PropertyController {
-  async getAllProperties(req: Request, res: Response) {
+export default class PropertyController {
+  static async createProperty(req: Request, res: Response, next: NextFunction) {
     try {
-      const properties = await PropertyService.getAllProperties();
-      res.json(properties);
+      const property = await PropertyService.createProperty(req.body);
+      res.status(201).json({ success: true, data: property });
     } catch (error) {
-      res.status(500).json({ message: 'Server error' });
+      next(error);
     }
   }
 
-  async getPropertyById(req: Request, res: Response) {
+  static async getAllProperties(req: Request, res: Response, next: NextFunction) {
+    try {
+      const properties = await PropertyService.getAllProperties();
+      res.json({ success: true, data: properties });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getPropertyById(req: Request, res: Response, next: NextFunction) {
     try {
       const property = await PropertyService.getPropertyById(req.params.id);
       if (!property) {
-        return res.status(404).json({ message: 'Property not found' });
+        return res.status(404).json({ message: "Property not found" });
       }
-      res.json(property);
+      res.json({ success: true, data: property });
     } catch (error) {
-      res.status(500).json({ message: 'Server error' });
+      next(error);
     }
   }
 
-  async createProperty(req: Request, res: Response) {
+  static async updateProperty(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = { ...req.body, ownerId: req.user.sub };
-      const property = await PropertyService.createProperty(data);
-      res.status(201).json(property);
-    } catch (error) {
-      res.status(500).json({ message: 'Server error' });
-    }
-  }
-
-  async updateProperty(req: Request, res: Response) {
-    try {
-      const property = await PropertyService.updateProperty(req.params.id, req.body);
+      const property = await PropertyService.updateProperty(
+        req.params.id,
+        req.body
+      );
       if (!property) {
-        return res.status(404).json({ message: 'Property not found' });
+        return res.status(404).json({ message: "Property not found" });
       }
-      res.json(property);
+      res.json({ success: true, data: property });
     } catch (error) {
-      res.status(500).json({ message: 'Server error' });
+      next(error);
     }
   }
 
-  async deleteProperty(req: Request, res: Response) {
+  static async deleteProperty(req: Request, res: Response, next: NextFunction) {
     try {
-      await PropertyService.deleteProperty(req.params.id);
-      res.status(204).send();
+      const property = await PropertyService.deleteProperty(req.params.id);
+      if (!property) {
+        return res.status(404).json({ message: "Property not found" });
+      }
+      res.json({ success: true, message: "Property deleted successfully" });
     } catch (error) {
-      res.status(500).json({ message: 'Server error' });
+      next(error);
     }
   }
 }
-
-export default new PropertyController();

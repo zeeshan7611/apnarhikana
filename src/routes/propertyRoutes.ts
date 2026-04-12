@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import PropertyController from '../controllers/PropertyController';
-import { authenticate, authorize } from '../middleware/auth';
+import { authorizePermissions } from '../middleware/jwtAuth';
 
 const router = Router();
 
-router.get('/', authenticate, PropertyController.getAllProperties);
-router.get('/:id', authenticate, PropertyController.getPropertyById);
-router.post('/', authenticate, authorize('manager', 'admin'), PropertyController.createProperty);
-router.put('/:id', authenticate, authorize('manager', 'admin'), PropertyController.updateProperty);
-router.delete('/:id', authenticate, authorize('admin'), PropertyController.deleteProperty);
+router.get('/', authorizePermissions('properties:read'), PropertyController.getAllProperties);
+router.get('/:id', authorizePermissions('properties:read'), PropertyController.getPropertyById);
+router.post('/', authorizePermissions('properties:write'), PropertyController.createProperty);
+router.put('/:id', authorizePermissions('properties:write'), PropertyController.updateProperty);
+router.delete('/:id', authorizePermissions('properties:write'), PropertyController.deleteProperty);
 
 export default router;

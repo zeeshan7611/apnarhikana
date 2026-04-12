@@ -1,23 +1,44 @@
-import Room from '../models/Room';
+import Room, { IRoom } from "../models/Room";
 
 export default class RoomService {
-  static async createRoom(data: { name: string; isActive?: boolean; roomCode: string }) {
+  // Create Room
+  static async createRoom(data: {
+    name: string;
+    isActive?: boolean;
+    roomCode: string;
+  }): Promise<IRoom> {
+    const existing = await Room.findOne({ name: data.name });
+    if (existing) {
+      throw new Error("Room with this name already exists");
+    }
+
     return Room.create(data);
   }
 
-  static async getAllRooms() {
-    return Room.find();
+  // Get all rooms
+  static async getAllRooms(): Promise<IRoom[]> {
+    return Room.find().sort({ createdAt: -1 });
   }
 
-  static async getRoomById(id: string) {
+  // Get single room
+  static async getRoomById(id: string): Promise<IRoom | null> {
     return Room.findById(id);
   }
 
-  static async updateRoom(id: string, data: Partial<{ name: string; isActive: boolean; roomCode: string }>) {
+  // Update room
+  static async updateRoom(
+    id: string,
+    data: Partial<{
+      name: string;
+      isActive: boolean;
+      roomCode: string;
+    }>
+  ): Promise<IRoom | null> {
     return Room.findByIdAndUpdate(id, data, { new: true });
   }
 
-  static async deleteRoom(id: string) {
+  // Delete room
+  static async deleteRoom(id: string): Promise<IRoom | null> {
     return Room.findByIdAndDelete(id);
   }
 }

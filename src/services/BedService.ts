@@ -1,30 +1,42 @@
-import Bed, { IBed } from '../models/Bed';
+import Bed, { IBed } from "../models/Bed";
 
-class BedService {
-  async getAllBeds(): Promise<IBed[]> {
-    return Bed.find().populate('floorId').populate('roomCategoryId');
+export default class BedService {
+  // Create Bed
+  static async createBed(data: {
+    name: string;
+    isActive?: boolean;
+  }): Promise<IBed> {
+    const existing = await Bed.findOne({ name: data.name });
+    if (existing) {
+      throw new Error("Bed with this name already exists");
+    }
+
+    return Bed.create(data);
   }
 
-  async getBedById(id: string): Promise<IBed | null> {
-    return Bed.findById(id).populate('floorId').populate('roomCategoryId');
+  // Get all beds
+  static async getAllBeds(): Promise<IBed[]> {
+    return Bed.find().sort({ createdAt: -1 });
   }
 
-  async createBed(data: Partial<IBed>): Promise<IBed> {
-    const bed = new Bed(data);
-    return bed.save();
+  // Get bed by ID
+  static async getBedById(id: string): Promise<IBed | null> {
+    return Bed.findById(id);
   }
 
-  async updateBed(id: string, data: Partial<IBed>): Promise<IBed | null> {
+  // Update bed
+  static async updateBed(
+    id: string,
+    data: Partial<{
+      name: string;
+      isActive: boolean;
+    }>
+  ): Promise<IBed | null> {
     return Bed.findByIdAndUpdate(id, data, { new: true });
   }
 
-  async deleteBed(id: string): Promise<void> {
-    await Bed.findByIdAndDelete(id);
-  }
-
-  async getBedsByFloor(floorId: string): Promise<IBed[]> {
-    return Bed.find({ floorId });
+  // Delete bed
+  static async deleteBed(id: string): Promise<IBed | null> {
+    return Bed.findByIdAndDelete(id);
   }
 }
-
-export default new BedService();

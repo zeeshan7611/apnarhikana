@@ -1,18 +1,13 @@
 import { Router } from 'express';
 import BedController from '../controllers/BedController';
-import { authenticate, authorize } from '../middleware/auth';
+import { authorizePermissions } from '../middleware/jwtAuth';
 
 const router = Router();
 
-// Get all beds
-router.post('/beds/list', authenticate, BedController.getAllBeds);
-// Get a bed by ID (send { bedId } in body)
-router.post('/beds/get', authenticate, BedController.getBedById);
-// Create a new bed
-router.post('/beds/create', authenticate, authorize('manager', 'admin'), BedController.createBed);
-// Update a bed (send { bedId, ...fields } in body)
-router.post('/beds/update', authenticate, authorize('manager', 'admin'), BedController.updateBed);
-// Delete a bed (send { bedId } in body)
-router.post('/beds/delete', authenticate, authorize('admin'), BedController.deleteBed);
+router.get('/', authorizePermissions('beds:read'), BedController.getAllBeds);
+router.get('/:id', authorizePermissions('beds:read'), BedController.getBedById);
+router.post('/', authorizePermissions('beds:write'), BedController.createBed);
+router.put('/:id', authorizePermissions('beds:write'), BedController.updateBed);
+router.delete('/:id', authorizePermissions('beds:write'), BedController.deleteBed);
 
 export default router;

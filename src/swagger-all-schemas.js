@@ -1,105 +1,209 @@
 /**
  * @swagger
  * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
+ *
  *   schemas:
+ *     ApiResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *         data:
+ *           type: object
+ *
+ *     ErrorResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *
  *     User:
  *       type: object
- *       required:
- *         - name
- *         - email
  *       properties:
  *         _id:
  *           type: string
- *           description: MongoDB ObjectId
  *         name:
  *           type: string
- *           description: User's name
  *         email:
  *           type: string
- *           description: User's email address
- *         isActive:
+ *         roleIds:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Role'
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *
+ *     Permission:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *         name:
+ *           type: string
+ *         resource:
+ *           type: string
+ *         action:
+ *           type: string
+ *
+ *     Role:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *         name:
+ *           type: string
+ *         permissionIds:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Permission'
+ *
+ *     RegisterRequest:
+ *       type: object
+ *       required: [name, email, password]
+ *       properties:
+ *         name:
+ *           type: string
+ *         email:
+ *           type: string
+ *         password:
+ *           type: string
+ *
+ *     LoginRequest:
+ *       type: object
+ *       required: [email, password]
+ *       properties:
+ *         email:
+ *           type: string
+ *         password:
+ *           type: string
+ *
+ *     AuthResponse:
+ *       type: object
+ *       properties:
+ *         success:
  *           type: boolean
- *           description: User active status
- *       example:
- *         _id: 6613e7c2b1e4a2a1b2c3d4e5
- *         name: John Doe
- *         email: john@example.com
- *         isActive: true
+ *         token:
+ *           type: string
+ *         user:
+ *           $ref: '#/components/schemas/User'
+ *
  *     Property:
  *       type: object
- *       required:
- *         - name
  *       properties:
  *         _id:
  *           type: string
  *         name:
  *           type: string
- *           description: Property name
  *         address:
  *           type: string
- *           description: Property address
- *         isActive:
- *           type: boolean
- *           description: Property active status
- *       example:
- *         _id: 6613e7c2b1e4a2a1b2c3d4e5
- *         name: My Property
- *         address: 123 Main St
- *         isActive: true
+ *         description:
+ *           type: string
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *
+ *     CreatePropertyRequest:
+ *       type: object
+ *       required: [name, address]
+ *       properties:
+ *         name:
+ *           type: string
+ *         address:
+ *           type: string
+ *         description:
+ *           type: string
+ *
  *     Floor:
  *       type: object
- *       required:
- *         - name
- *         - propertyId
  *       properties:
  *         _id:
  *           type: string
- *         name:
- *           type: string
- *           description: Floor name
  *         propertyId:
  *           type: string
- *           description: Reference to Property
+ *         name:
+ *           type: string
  *         isActive:
  *           type: boolean
- *           description: Floor active status
- *       example:
- *         _id: 6613e7c2b1e4a2a1b2c3d4e5
- *         name: First Floor
- *         propertyId: 6613e7c2b1e4a2a1b2c3d4e5
- *         isActive: true
- *     Bed:
+ *
+ *     CreateFloorRequest:
  *       type: object
- *       required:
- *         - name
- *         - roomId
+ *       required: [propertyId, name]
  *       properties:
- *         _id:
+ *         propertyId:
  *           type: string
  *         name:
  *           type: string
- *           description: Bed name
- *         roomId:
- *           type: string
- *           description: Reference to Room
  *         isActive:
  *           type: boolean
- *           description: Bed active status
- *       example:
- *         _id: 6613e7c2b1e4a2a1b2c3d4e5
- *         name: Bed 1
- *         roomId: 6613e7c2b1e4a2a1b2c3d4e5
- *         isActive: true
- *     Allocation:
+ *
+ *     Room:
  *       type: object
- *       required:
- *         - propertyId
- *         - floorId
- *         - roomId
- *         - beds
- *         - tenantId
- *         - checkInDate
- *         - priceDetails
+ *       properties:
+ *         _id:
+ *           type: string
+ *         propertyId:
+ *           type: string
+ *         floorId:
+ *           type: string
+ *         name:
+ *           type: string
+ *         roomCode:
+ *           type: string
+ *         isActive:
+ *           type: boolean
+ *
+ *     CreateRoomRequest:
+ *       type: object
+ *       required: [propertyId, floorId, name, roomCode]
+ *       properties:
+ *         propertyId:
+ *           type: string
+ *         floorId:
+ *           type: string
+ *         name:
+ *           type: string
+ *         roomCode:
+ *           type: string
+ *         isActive:
+ *           type: boolean
+ *
+ *     Bed:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *         roomId:
+ *           type: string
+ *         name:
+ *           type: string
+ *         isActive:
+ *           type: boolean
+ *
+ *     CreateBedRequest:
+ *       type: object
+ *       required: [roomId, name]
+ *       properties:
+ *         roomId:
+ *           type: string
+ *         name:
+ *           type: string
+ *         isActive:
+ *           type: boolean
+ *
+ *     Inventory:
+ *       type: object
  *       properties:
  *         _id:
  *           type: string
@@ -110,64 +214,49 @@
  *         roomId:
  *           type: string
  *         beds:
- *           type: array
- *           items:
- *             type: object
- *             properties:
- *               bedId:
- *                 type: string
- *               bedName:
- *                 type: string
- *         tenantId:
  *           type: string
- *         checkInDate:
- *           type: string
- *           format: date
- *         checkOutDate:
- *           type: string
- *           format: date
- *         priceDetails:
- *           type: object
- *           properties:
- *             rentAmount:
- *               type: number
- *             advanceAmount:
- *               type: number
- *             securityDeposit:
- *               type: number
- *             maintenanceFee:
- *               type: number
- *             otherCharges:
- *               type: number
- *             totalAmount:
- *               type: number
- *             paymentFrequency:
- *               type: string
- *               enum: [monthly, quarterly, yearly]
+ *           description: Bed ID
+ *         BedBasePrice:
+ *           type: number
  *         notes:
  *           type: string
  *         status:
  *           type: string
  *           enum: [active, inactive, terminated]
- *       example:
- *         _id: 6613e7c2b1e4a2a1b2c3d4e5
- *         propertyId: 6613e7c2b1e4a2a1b2c3d4e5
- *         floorId: 6613e7c2b1e4a2a1b2c3d4e5
- *         roomId: 6613e7c2b1e4a2a1b2c3d4e5
+ *         createdAt:
+ *           type: string
+ *         updatedAt:
+ *           type: string
+ *
+ *     CreateInventoryRequest:
+ *       type: object
+ *       required: [propertyId, floorId, roomId, beds, BedBasePrice]
+ *       properties:
+ *         propertyId:
+ *           type: string
+ *         floorId:
+ *           type: string
+ *         roomId:
+ *           type: string
  *         beds:
- *           - bedId: 6613e7c2b1e4a2a1b2c3d4e5
- *             bedName: Bed 1
- *         tenantId: 123456
- *         checkInDate: 2026-04-08
- *         checkOutDate: 2026-05-08
- *         priceDetails:
- *           rentAmount: 10000
- *           advanceAmount: 2000
- *           securityDeposit: 5000
- *           maintenanceFee: 500
- *           otherCharges: 0
- *           totalAmount: 17500
- *           paymentFrequency: monthly
- *         notes: "Special request"
- *         status: active
+ *           type: string
+ *         BedBasePrice:
+ *           type: number
+ *           example: 5000
+ *         notes:
+ *           type: string
+ *         status:
+ *           type: string
+ *           enum: [active, inactive, terminated]
+ *
+ *     UpdateInventoryRequest:
+ *       type: object
+ *       properties:
+ *         BedBasePrice:
+ *           type: number
+ *         notes:
+ *           type: string
+ *         status:
+ *           type: string
+ *           enum: [active, inactive, terminated]
  */

@@ -1,7 +1,6 @@
 import swaggerUi from 'swagger-ui-express';
 import swaggerJSDoc from 'swagger-jsdoc';
 import path from 'path';
-import fs from 'fs';
 
 const swaggerDefinition = {
   openapi: '3.0.0',
@@ -10,6 +9,12 @@ const swaggerDefinition = {
     version: '1.0.0',
     description: 'API documentation for Apna Thikana Backend',
   },
+  servers: [
+    {
+      url: '/',
+      description: 'Current server',
+    },
+  ],
 };
 
 const apis = [

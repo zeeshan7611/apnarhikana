@@ -1,30 +1,44 @@
-import Property, { IProperty } from '../models/Property';
+import Property, { IProperty } from "../models/Property";
 
-class PropertyService {
-  async getAllProperties(): Promise<IProperty[]> {
-    return Property.find();
+export default class PropertyService {
+  // Create Property
+  static async createProperty(data: {
+    name: string;
+    address: string;
+    description?: string;
+  }): Promise<IProperty> {
+    const existing = await Property.findOne({ name: data.name });
+    if (existing) {
+      throw new Error("Property with this name already exists");
+    }
+
+    return Property.create(data);
   }
 
-  async getPropertyById(id: string): Promise<IProperty | null> {
+  // Get all properties
+  static async getAllProperties(): Promise<IProperty[]> {
+    return Property.find().sort({ createdAt: -1 });
+  }
+
+  // Get property by ID
+  static async getPropertyById(id: string): Promise<IProperty | null> {
     return Property.findById(id);
   }
 
-  async createProperty(data: Partial<IProperty>): Promise<IProperty> {
-    const property = new Property(data);
-    return property.save();
-  }
-
-  async updateProperty(id: string, data: Partial<IProperty>): Promise<IProperty | null> {
+  // Update property
+  static async updateProperty(
+    id: string,
+    data: Partial<{
+      name: string;
+      address: string;
+      description: string;
+    }>
+  ): Promise<IProperty | null> {
     return Property.findByIdAndUpdate(id, data, { new: true });
   }
 
-  async deleteProperty(id: string): Promise<void> {
-    await Property.findByIdAndDelete(id);
-  }
-
-  async getPropertiesByOwner(ownerId: string): Promise<IProperty[]> {
-    return Property.find({ ownerId });
+  // Delete property
+  static async deleteProperty(id: string): Promise<IProperty | null> {
+    return Property.findByIdAndDelete(id);
   }
 }
-
-export default new PropertyService();

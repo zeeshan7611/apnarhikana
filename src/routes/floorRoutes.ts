@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import FloorController from '../controllers/FloorController';
-import { authenticate, authorize } from '../middleware/auth';
+import { authorizePermissions } from '../middleware/jwtAuth';
 
 const router = Router();
 
-router.get('/', authenticate, FloorController.getAllFloors);
-router.get('/:id', authenticate, FloorController.getFloorById);
-router.post('/', authenticate, authorize('manager', 'admin'), FloorController.createFloor);
-router.put('/:id', authenticate, authorize('manager', 'admin'), FloorController.updateFloor);
-router.delete('/:id', authenticate, authorize('admin'), FloorController.deleteFloor);
+router.get('/', authorizePermissions('floors:read'), FloorController.getAllFloors);
+router.get('/:id', authorizePermissions('floors:read'), FloorController.getFloorById);
+router.post('/', authorizePermissions('floors:write'), FloorController.createFloor);
+router.put('/:id', authorizePermissions('floors:write'), FloorController.updateFloor);
+router.delete('/:id', authorizePermissions('floors:write'), FloorController.deleteFloor);
 
 export default router;
