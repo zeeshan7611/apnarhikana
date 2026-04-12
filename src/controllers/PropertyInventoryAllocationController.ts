@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import InventoryService from "../services/propertyInventoryAllocation";
+import InventoryService from "../services/PropertyInventoryAllocation";
 
 export default class PropertyInventoryAllocationController {
   static async createAllocation(req: Request, res: Response, next: NextFunction) {

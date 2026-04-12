@@ -1,6 +1,6 @@
 import PropertyInventoryAllocation, {
   IPropertyInventoryAllocation,
-} from "../models/propertyInventoryAllocation";
+} from "../models/PropertyInventoryAllocation";
 
 import Property from "../models/Property";
 import Floor from "../models/Floor";
