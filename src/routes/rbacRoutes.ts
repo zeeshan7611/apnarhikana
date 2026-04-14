@@ -1,0 +1,184 @@
+import { Router } from 'express';
+import RbacController from '../controllers/RbacController';
+import { authorizePermissions } from '../middleware/jwtAuth';
+
+const router = Router();
+
+/**
+ * @swagger
+ * tags:
+ *   name: RBAC
+ *   description: Role and Permission management
+ */
+
+/**
+ * @swagger
+ * /api/rbac/get-roles:
+ *   get:
+ *     summary: Get all roles
+ *     tags: [RBAC]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of roles
+ */
+router.get('/get-roles', authorizePermissions('users:read'), RbacController.getAllRoles);
+
+/**
+ * @swagger
+ * /api/rbac/get-permissions:
+ *   get:
+ *     summary: Get all permissions
+ *     tags: [RBAC]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of permissions
+ */
+router.get('/get-permissions', authorizePermissions('users:read'), RbacController.getAllPermissions);
+
+/**
+ * @swagger
+ * /api/rbac/create-role:
+ *   post:
+ *     summary: Create a new role
+ *     tags: [RBAC]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name]
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               permissionIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       201:
+ *         description: Role created
+ */
+router.post('/create-role', authorizePermissions('users:write'), RbacController.createRole);
+
+/**
+ * @swagger
+ * /api/rbac/update-role:
+ *   put:
+ *     summary: Update an existing role
+ *     tags: [RBAC]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [id]
+ *             properties:
+ *               id:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               permissionIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       200:
+ *         description: Role updated
+ */
+router.put('/update-role', authorizePermissions('users:write'), RbacController.updateRole);
+
+/**
+ * @swagger
+ * /api/rbac/delete-role:
+ *   delete:
+ *     summary: Delete a role
+ *     tags: [RBAC]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [id]
+ *             properties:
+ *               id:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Role deleted
+ */
+router.delete('/delete-role', authorizePermissions('users:write'), RbacController.deleteRole);
+
+/**
+ * @swagger
+ * /api/rbac/assign-role-to-user:
+ *   post:
+ *     summary: Assign roles to a user
+ *     tags: [RBAC]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [userId, roleIds]
+ *             properties:
+ *               userId:
+ *                 type: string
+ *               roleIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       200:
+ *         description: Roles assigned successfully
+ */
+router.post('/assign-role-to-user', authorizePermissions('users:roles:update'), RbacController.assignRoleToUser);
+
+/**
+ * @swagger
+ * /api/rbac/bind-permission-to-role:
+ *   post:
+ *     summary: Bind a permission (feature + action) to a role
+ *     tags: [RBAC]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [featureId, action, roleId]
+ *             properties:
+ *               featureId:
+ *                 type: string
+ *               action:
+ *                 type: string
+ *               roleId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Permission bound to role successfully
+ */
+router.post('/bind-permission-to-role', authorizePermissions('users:roles:update'), RbacController.bindPermissionToRole);
+
+export default router;

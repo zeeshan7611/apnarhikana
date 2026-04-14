@@ -9,6 +9,8 @@ import roomRoutes from './routes/roomRoutes';
 import bedRoutes from './routes/bedRoutes';
 import allocationRoutes from './routes/propertInventoryAllocationRoutes';
 import authRoutes from './routes/authRoutes';
+import rbacRoutes from './routes/rbacRoutes';
+import featureRoutes from './routes/featureRoutes';
 import { jwtAuth } from './middleware/jwtAuth';
 import RbacService from './services/RbacService';
 
@@ -38,6 +40,12 @@ app.use('/api/allocations', jwtAuth, allocationRoutes);
 
 // property-users route has a public login endpoint, so jwtAuth is handled internally for protected routes.
 app.use('/api/property-users', propertyUserRoutes);
+
+// RBAC routes (Protected)
+app.use('/api/rbac', jwtAuth, rbacRoutes);
+
+// Feature routes (Protected)
+app.use('/api/features', jwtAuth, featureRoutes);
 
 // Connect to DB and start server
 connectDB().then(() => {

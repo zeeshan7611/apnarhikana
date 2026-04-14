@@ -1,22 +1,23 @@
 import Permission from '../models/Permission';
 import Role from '../models/Role';
 import User from '../models/PropertyUser';
+import Feature from '../models/Feature';
 
 const DEFAULT_PERMISSIONS = [
-  { name: 'properties:read', resource: 'properties', action: 'read' },
-  { name: 'properties:write', resource: 'properties', action: 'write' },
-  { name: 'floors:read', resource: 'floors', action: 'read' },
-  { name: 'floors:write', resource: 'floors', action: 'write' },
-  { name: 'rooms:read', resource: 'rooms', action: 'read' },
-  { name: 'rooms:write', resource: 'rooms', action: 'write' },
-  { name: 'beds:read', resource: 'beds', action: 'read' },
-  { name: 'beds:write', resource: 'beds', action: 'write' },
-  { name: 'allocations:read', resource: 'allocations', action: 'read' },
-  { name: 'allocations:write', resource: 'allocations', action: 'write' },
-  { name: 'users:read', resource: 'users', action: 'read' },
-  { name: 'users:write', resource: 'users', action: 'write' },
-  { name: 'users:delete', resource: 'users', action: 'delete' },
-  { name: 'users:roles:update', resource: 'users', action: 'roles:update' },
+  { name: 'properties:read', feature: 'properties', action: 'read' },
+  { name: 'properties:write', feature: 'properties', action: 'write' },
+  { name: 'floors:read', feature: 'floors', action: 'read' },
+  { name: 'floors:write', feature: 'floors', action: 'write' },
+  { name: 'rooms:read', feature: 'rooms', action: 'read' },
+  { name: 'rooms:write', feature: 'rooms', action: 'write' },
+  { name: 'beds:read', feature: 'beds', action: 'read' },
+  { name: 'beds:write', feature: 'beds', action: 'write' },
+  { name: 'allocations:read', feature: 'allocations', action: 'read' },
+  { name: 'allocations:write', feature: 'allocations', action: 'write' },
+  { name: 'users:read', feature: 'users', action: 'read' },
+  { name: 'users:write', feature: 'users', action: 'write' },
+  { name: 'users:delete', feature: 'users', action: 'delete' },
+  { name: 'users:roles:update', feature: 'users', action: 'roles:update' },
 ];
 
 export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
@@ -40,12 +41,32 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
 
 class RbacService {
   async ensureDefaults(): Promise<void> {
-    await Promise.all(
-      DEFAULT_PERMISSIONS.map((permission) =>
-        Permission.findOneAndUpdate({ name: permission.name }, permission, { upsert: true, new: true }),
+    // 1. Create Features
+    const featureKeys = [...new Set(DEFAULT_PERMISSIONS.map((p) => p.feature))];
+    const features = await Promise.all(
+      featureKeys.map((key) =>
+        Feature.findOneAndUpdate(
+          { key },
+          { name: key.charAt(0).toUpperCase() + key.slice(1), key },
+          { upsert: true, new: true },
+        ),
       ),
     );
 
+    const featureMap = new Map(features.map((f) => [f.key, f._id]));
+
+    // 2. Create Permissions
+    await Promise.all(
+      DEFAULT_PERMISSIONS.map((p) =>
+        Permission.findOneAndUpdate(
+          { name: p.name },
+          { name: p.name, featureId: featureMap.get(p.feature), action: p.action },
+          { upsert: true, new: true },
+        ),
+      ),
+    );
+
+    // 3. Create Roles
     for (const [roleName, permissionNames] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
       const permissions = await Permission.find({ name: { $in: permissionNames } }).select('_id');
       await Role.findOneAndUpdate(
@@ -84,6 +105,61 @@ class RbacService {
       (role.permissionIds || []).forEach((permission: any) => permissionNames.add(permission.name));
     });
     return Array.from(permissionNames);
+  }
+
+  // Management Methods
+  async getAllRoles() {
+    return Role.find().populate({
+      path: 'permissionIds',
+      populate: { path: 'featureId' },
+    });
+  }
+
+  async getAllPermissions() {
+    return Permission.find().populate('featureId');
+  }
+
+  async createRole(data: { name: string; description?: string; permissionIds?: string[] }) {
+    return Role.create(data);
+  }
+
+  async updateRole(id: string, data: { name?: string; description?: string; permissionIds?: string[] }) {
+    return Role.findByIdAndUpdate(id, data, { new: true }).populate('permissionIds');
+  }
+
+  async deleteRole(id: string) {
+    return Role.findByIdAndDelete(id);
+  }
+
+  async assignRoleToUser(userId: string, roleIds: string[]) {
+    return User.findByIdAndUpdate(userId, { roleIds }, { new: true }).populate('roleIds');
+  }
+
+  async bindPermissionToRole(featureId: string, action: string, roleId: string) {
+    // 1. Find or create the permission
+    const feature = await Feature.findById(featureId);
+    if (!feature) throw new Error('Feature not found');
+
+    const permissionName = `${feature.key}:${action}`;
+    let permission = await Permission.findOne({ name: permissionName });
+
+    if (!permission) {
+      permission = await Permission.create({
+        name: permissionName,
+        featureId,
+        action,
+      });
+    }
+
+    // 2. Add permission to role
+    return Role.findByIdAndUpdate(
+      roleId,
+      { $addToSet: { permissionIds: permission._id } },
+      { new: true },
+    ).populate({
+      path: 'permissionIds',
+      populate: { path: 'featureId' },
+    });
   }
 }
 
