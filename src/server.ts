@@ -11,6 +11,11 @@ import allocationRoutes from './routes/propertInventoryAllocationRoutes';
 import authRoutes from './routes/authRoutes';
 import rbacRoutes from './routes/rbacRoutes';
 import featureRoutes from './routes/featureRoutes';
+import tenantRoutes from './routes/tenantRoutes';
+import tenantAllocationRoutes from './routes/tenantAllocationRoutes';
+import expenseRoutes from './routes/expenseRoutes';
+import complaintRoutes from './routes/complaintRoutes';
+import announcementRoutes from './routes/announcementRoutes';
 import { jwtAuth } from './middleware/jwtAuth';
 import RbacService from './services/RbacService';
 
@@ -46,6 +51,21 @@ app.use('/api/rbac', jwtAuth, rbacRoutes);
 
 // Feature routes (Protected)
 app.use('/api/features', jwtAuth, featureRoutes);
+
+// Tenant routes (Protected)
+app.use('/api/tenants', jwtAuth, tenantRoutes);
+
+// Tenant Allocation routes (Protected)
+app.use('/api/tenant-allocations', jwtAuth, tenantAllocationRoutes);
+
+// Expense routes (Protected)
+app.use('/api/expenses', jwtAuth, expenseRoutes);
+
+// Complaint routes (Protected)
+app.use('/api/complaints', jwtAuth, complaintRoutes);
+
+// Announcement routes (Protected)
+app.use('/api/announcements', jwtAuth, announcementRoutes);
 
 // Connect to DB and start server
 connectDB().then(() => {

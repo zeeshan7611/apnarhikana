@@ -18,6 +18,17 @@ const DEFAULT_PERMISSIONS = [
   { name: 'users:write', feature: 'users', action: 'write' },
   { name: 'users:delete', feature: 'users', action: 'delete' },
   { name: 'users:roles:update', feature: 'users', action: 'roles:update' },
+  { name: 'tenants:read', feature: 'tenants', action: 'read' },
+  { name: 'tenants:write', feature: 'tenants', action: 'write' },
+  { name: 'tenants:delete', feature: 'tenants', action: 'delete' },
+  { name: 'expenses:read', feature: 'expenses', action: 'read' },
+  { name: 'expenses:write', feature: 'expenses', action: 'write' },
+  { name: 'expenses:delete', feature: 'expenses', action: 'delete' },
+  { name: 'complaints:read', feature: 'complaints', action: 'read' },
+  { name: 'complaints:write', feature: 'complaints', action: 'write' },
+  { name: 'complaints:delete', feature: 'complaints', action: 'delete' },
+  { name: 'announcements:read', feature: 'announcements', action: 'read' },
+  { name: 'announcements:write', feature: 'announcements', action: 'write' },
 ];
 
 export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
@@ -35,6 +46,14 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'allocations:write',
     'users:read',
     'users:write',
+    'tenants:read',
+    'tenants:write',
+    'expenses:read',
+    'expenses:write',
+    'complaints:read',
+    'complaints:write',
+    'announcements:read',
+    'announcements:write',
   ],
   user: ['properties:read', 'floors:read', 'rooms:read', 'beds:read', 'allocations:read'],
 };
