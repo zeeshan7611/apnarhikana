@@ -13,6 +13,9 @@ const DEFAULT_PERMISSIONS = [
   { name: 'beds:write', resource: 'beds', action: 'write' },
   { name: 'allocations:read', resource: 'allocations', action: 'read' },
   { name: 'allocations:write', resource: 'allocations', action: 'write' },
+  { name: 'users:read', resource: 'users', action: 'read' },
+  { name: 'users:write', resource: 'users', action: 'write' },
+  { name: 'users:delete', resource: 'users', action: 'delete' },
   { name: 'users:roles:update', resource: 'users', action: 'roles:update' },
 ];
 
@@ -29,6 +32,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'beds:write',
     'allocations:read',
     'allocations:write',
+    'users:read',
+    'users:write',
   ],
   user: ['properties:read', 'floors:read', 'rooms:read', 'beds:read', 'allocations:read'],
 };

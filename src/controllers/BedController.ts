@@ -22,7 +22,8 @@ export default class BedController {
 
   static async getBedById(req: Request, res: Response, next: NextFunction) {
     try {
-      const bed = await BedService.getBedById(req.params.id);
+      const id = (req.params.id || req.query.id || req.body.id) as string;
+      const bed = await BedService.getBedById(id);
       if (!bed) {
         return res.status(404).json({ message: "Bed not found" });
       }
@@ -34,7 +35,8 @@ export default class BedController {
 
   static async updateBed(req: Request, res: Response, next: NextFunction) {
     try {
-      const bed = await BedService.updateBed(req.params.id, req.body);
+      const id = (req.params.id || req.query.id || req.body.id) as string;
+      const bed = await BedService.updateBed(id, req.body);
       if (!bed) {
         return res.status(404).json({ message: "Bed not found" });
       }
@@ -46,7 +48,8 @@ export default class BedController {
 
   static async deleteBed(req: Request, res: Response, next: NextFunction) {
     try {
-      const bed = await BedService.deleteBed(req.params.id);
+      const id = (req.params.id || req.query.id || req.body.id) as string;
+      const bed = await BedService.deleteBed(id);
       if (!bed) {
         return res.status(404).json({ message: "Bed not found" });
       }

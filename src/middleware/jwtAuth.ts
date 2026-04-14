@@ -6,7 +6,7 @@ import RbacService from '../services/RbacService';
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET as string;
 
-export function generateToken(payload: object) {
+export async function generateToken(payload: object) {
   return jwt.sign(payload, JWT_SECRET);
 }
 
@@ -18,9 +18,9 @@ export async function jwtAuth(req: Request, res: Response, next: NextFunction) {
     const userId = (decoded as any)?.id;
     const userDoc = userId
       ? await User.findById(userId).populate({
-          path: 'roleIds',
-          populate: { path: 'permissionIds', model: 'Permission' },
-        })
+        path: 'roleIds',
+        populate: { path: 'permissionIds', model: 'Permission' },
+      })
       : null;
     (req as any).userDoc = userDoc;
     (req as any).user = decoded;

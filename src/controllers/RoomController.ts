@@ -22,7 +22,8 @@ export default class RoomController {
 
   static async getRoomById(req: Request, res: Response, next: NextFunction) {
     try {
-      const room = await RoomService.getRoomById(req.params.id);
+      const id = (req.params.id || req.query.id || req.body.id) as string;
+      const room = await RoomService.getRoomById(id);
       if (!room) {
         return res.status(404).json({ message: "Room not found" });
       }
@@ -34,7 +35,8 @@ export default class RoomController {
 
   static async updateRoom(req: Request, res: Response, next: NextFunction) {
     try {
-      const room = await RoomService.updateRoom(req.params.id, req.body);
+      const id = (req.params.id || req.query.id || req.body.id) as string;
+      const room = await RoomService.updateRoom(id, req.body);
       if (!room) {
         return res.status(404).json({ message: "Room not found" });
       }
@@ -46,7 +48,8 @@ export default class RoomController {
 
   static async deleteRoom(req: Request, res: Response, next: NextFunction) {
     try {
-      const room = await RoomService.deleteRoom(req.params.id);
+      const id = (req.params.id || req.query.id || req.body.id) as string;
+      const room = await RoomService.deleteRoom(id);
       if (!room) {
         return res.status(404).json({ message: "Room not found" });
       }

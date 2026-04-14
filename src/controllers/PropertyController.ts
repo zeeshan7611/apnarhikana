@@ -22,7 +22,8 @@ export default class PropertyController {
 
   static async getPropertyById(req: Request, res: Response, next: NextFunction) {
     try {
-      const property = await PropertyService.getPropertyById(req.params.id);
+      const id = (req.params.id || req.query.id || req.body.id) as string;
+      const property = await PropertyService.getPropertyById(id);
       if (!property) {
         return res.status(404).json({ message: "Property not found" });
       }
@@ -34,8 +35,9 @@ export default class PropertyController {
 
   static async updateProperty(req: Request, res: Response, next: NextFunction) {
     try {
+      const id = (req.params.id || req.query.id || req.body.id) as string;
       const property = await PropertyService.updateProperty(
-        req.params.id,
+        id,
         req.body
       );
       if (!property) {
@@ -49,7 +51,8 @@ export default class PropertyController {
 
   static async deleteProperty(req: Request, res: Response, next: NextFunction) {
     try {
-      const property = await PropertyService.deleteProperty(req.params.id);
+      const id = (req.params.id || req.query.id || req.body.id) as string;
+      const property = await PropertyService.deleteProperty(id);
       if (!property) {
         return res.status(404).json({ message: "Property not found" });
       }

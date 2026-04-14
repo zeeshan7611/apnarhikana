@@ -22,7 +22,8 @@ export default class PropertyInventoryAllocationController {
 
   static async getAllocationById(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await InventoryService.getById(req.params.id);
+      const id = (req.params.id || req.query.id || req.body.id) as string;
+      const data = await InventoryService.getById(id);
       if (!data) {
         return res.status(404).json({ message: "Inventory not found" });
       }
@@ -34,8 +35,9 @@ export default class PropertyInventoryAllocationController {
 
   static async updateAllocation(req: Request, res: Response, next: NextFunction) {
     try {
+      const id = (req.params.id || req.query.id || req.body.id) as string;
       const data = await InventoryService.update(
-        req.params.id,
+        id,
         req.body
       );
       if (!data) {
@@ -49,7 +51,8 @@ export default class PropertyInventoryAllocationController {
 
   static async deleteAllocation(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await InventoryService.delete(req.params.id);
+      const id = (req.params.id || req.query.id || req.body.id) as string;
+      const data = await InventoryService.delete(id);
       if (!data) {
         return res.status(404).json({ message: "Inventory not found" });
       }

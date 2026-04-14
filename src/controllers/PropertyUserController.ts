@@ -22,7 +22,8 @@ export default class PropertyUserController {
 
   static async getUserById(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = await PropertyUserService.getUserById(req.params.id);
+      const id = (req.params.id || req.query.id || req.body.id) as string;
+      const user = await PropertyUserService.getUserById(id);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -34,8 +35,9 @@ export default class PropertyUserController {
 
   static async updateUser(req: Request, res: Response, next: NextFunction) {
     try {
+      const id = (req.params.id || req.query.id || req.body.id) as string;
       const user = await PropertyUserService.updateUser(
-        req.params.id,
+        id,
         req.body
       );
       if (!user) {
@@ -49,7 +51,8 @@ export default class PropertyUserController {
 
   static async deleteUser(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = await PropertyUserService.deleteUser(req.params.id);
+      const id = (req.params.id || req.query.id || req.body.id) as string;
+      const user = await PropertyUserService.deleteUser(id);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }

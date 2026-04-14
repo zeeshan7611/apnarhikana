@@ -1,41 +1,166 @@
 import { Router } from "express";
 import Controller from "../controllers/PropertyUserController";
-import { authorizePermissions } from "../middleware/jwtAuth";
+import { authorizePermissions, jwtAuth } from "../middleware/jwtAuth";
 
 const router = Router();
 
-// 🔐 Auth
-router.post("/login", Controller.login);
+/**
+ * @swagger
+ * tags:
+ *   name: PropertyUsers
+ *   description: Property user management operations
+ */
 
-// CRUD (Protected)
-router.post(
-  "/",
-  authorizePermissions("user:create"),
-  Controller.createUser
-);
+/**
+ * @swagger
+ * /api/property-users/login-property-user:
+ *   post:
+ *     summary: Login for property users
+ *     tags: [PropertyUsers]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password]
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login successful
+ */
+router.post("/login-property-user", Controller.login);
 
-router.get(
-  "/",
-  authorizePermissions("user:read"),
-  Controller.getAllUsers
-);
+// CRUD (Protected via internal jwtAuth)
+router.use(jwtAuth);
 
-router.get(
-  "/:id",
-  authorizePermissions("user:read"),
-  Controller.getUserById
-);
+/**
+ * @swagger
+ * /api/property-users/create-property-user:
+ *   post:
+ *     summary: Create a property user
+ *     tags: [PropertyUsers]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, email, password]
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               roleIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       201:
+ *         description: Property User created
+ */
+router.post("/create-property-user", authorizePermissions("users:write"), Controller.createUser);
 
-router.put(
-  "/:id",
-  authorizePermissions("user:update"),
-  Controller.updateUser
-);
+/**
+ * @swagger
+ * /api/property-users/get-property-users:
+ *   get:
+ *     summary: Get all property users
+ *     tags: [PropertyUsers]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of property users
+ */
+router.get("/get-property-users", authorizePermissions("users:read"), Controller.getAllUsers);
 
-router.delete(
-  "/:id",
-  authorizePermissions("user:delete"),
-  Controller.deleteUser
-);
+/**
+ * @swagger
+ * /api/property-users/get-property-user:
+ *   get:
+ *     summary: Get property user by ID
+ *     tags: [PropertyUsers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User details
+ */
+router.get("/get-property-user", authorizePermissions("users:read"), Controller.getUserById);
+
+/**
+ * @swagger
+ * /api/property-users/update-property-user:
+ *   put:
+ *     summary: Update property user
+ *     tags: [PropertyUsers]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: string
+ *                 description: User ID
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               roleIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       200:
+ *         description: User updated
+ */
+router.put("/update-property-user", authorizePermissions("users:write"), Controller.updateUser);
+
+/**
+ * @swagger
+ * /api/property-users/delete-property-user:
+ *   delete:
+ *     summary: Delete property user
+ *     tags: [PropertyUsers]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [id]
+ *             properties:
+ *               id:
+ *                 type: string
+ *                 description: User ID
+ *     responses:
+ *       200:
+ *         description: User deleted
+ */
+router.delete("/delete-property-user", authorizePermissions("users:delete"), Controller.deleteUser);
 
 export default router;

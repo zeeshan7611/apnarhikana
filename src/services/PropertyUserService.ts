@@ -1,3 +1,4 @@
+import { generateToken } from "../middleware/jwtAuth";
 import PropertyUser, { IPropertyUser } from "../models/PropertyUser";
 import bcrypt from "bcryptjs";
 
@@ -91,6 +92,11 @@ export default class PropertyUserService {
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) throw new Error("Invalid credentials");
 
-    return user;
+    //store jwt token
+
+    //generate jwt auth token
+    const token = await generateToken({ id: user._id, email: user.email });
+
+    return { ...user.toObject(), token };
   }
 }

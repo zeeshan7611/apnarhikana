@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/database';
-import userRoutes from './routes/propertyUserRoutes';
+import propertyUserRoutes from './routes/propertyUserRoutes';
 import propertyRoutes from './routes/propertyRoutes';
 import floorRoutes from './routes/floorRoutes';
 import roomRoutes from './routes/roomRoutes';
@@ -29,13 +29,15 @@ app.use('/api/auth', authRoutes);
 // Swagger UI
 setupSwagger(app);
 
-// Routes
-app.use('/api/users', jwtAuth, userRoutes);
+// Routes - Protected
 app.use('/api/properties', jwtAuth, propertyRoutes);
 app.use('/api/floors', jwtAuth, floorRoutes);
 app.use('/api/rooms', jwtAuth, roomRoutes);
 app.use('/api/beds', jwtAuth, bedRoutes);
 app.use('/api/allocations', jwtAuth, allocationRoutes);
+
+// property-users route has a public login endpoint, so jwtAuth is handled internally for protected routes.
+app.use('/api/property-users', propertyUserRoutes);
 
 // Connect to DB and start server
 connectDB().then(() => {

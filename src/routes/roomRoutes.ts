@@ -4,10 +4,116 @@ import { authorizePermissions } from '../middleware/jwtAuth';
 
 const router = Router();
 
-router.get('/', authorizePermissions('rooms:read'), RoomController.getAllRooms);
-router.get('/:id', authorizePermissions('rooms:read'), RoomController.getRoomById);
-router.post('/', authorizePermissions('rooms:write'), RoomController.createRoom);
-router.put('/:id', authorizePermissions('rooms:write'), RoomController.updateRoom);
-router.delete('/:id', authorizePermissions('rooms:write'), RoomController.deleteRoom);
+/**
+ * @swagger
+ * tags:
+ *   name: Rooms
+ *   description: Room management operations
+ */
+
+/**
+ * @swagger
+ * /api/rooms/get-rooms:
+ *   get:
+ *     summary: Get all rooms
+ *     tags: [Rooms]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of rooms
+ * /api/rooms/create-room:
+ *   post:
+ *     summary: Create a new room
+ *     tags: [Rooms]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, roomCode]
+ *             properties:
+ *               name:
+ *                 type: string
+ *               roomCode:
+ *                 type: string
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       201:
+ *         description: Room created successfully
+ */
+router.get('/get-rooms', authorizePermissions('rooms:read'), RoomController.getAllRooms);
+router.post('/create-room', authorizePermissions('rooms:write'), RoomController.createRoom);
+
+/**
+ * @swagger
+ * /api/rooms/get-room:
+ *   get:
+ *     summary: Get room by ID
+ *     tags: [Rooms]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Room details
+ *       404:
+ *         description: Room not found
+ * /api/rooms/update-room:
+ *   put:
+ *     summary: Update an existing room
+ *     tags: [Rooms]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               roomCode:
+ *                 type: string
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Room updated successfully
+ * /api/rooms/delete-room:
+ *   delete:
+ *     summary: Delete a room
+ *     tags: [Rooms]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [id]
+ *             properties:
+ *               id:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Room deleted successfully
+ */
+router.get('/get-room', authorizePermissions('rooms:read'), RoomController.getRoomById);
+router.put('/update-room', authorizePermissions('rooms:write'), RoomController.updateRoom);
+router.delete('/delete-room', authorizePermissions('rooms:write'), RoomController.deleteRoom);
 
 export default router;

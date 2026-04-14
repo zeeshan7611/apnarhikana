@@ -15,11 +15,19 @@ const swaggerDefinition = {
       description: 'Current server',
     },
   ],
+  components: {
+    securitySchemes: {
+      bearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+      },
+    },
+  },
 };
 
 const apis = [
-  path.join(__dirname, './swagger-all-paths.js'),
-  path.join(__dirname, './swagger-all-schemas.js'),
+  path.join(__dirname, './routes/*.{ts,js}'),
 ];
 
 const swaggerSpec = swaggerJSDoc({ swaggerDefinition, apis });

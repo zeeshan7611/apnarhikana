@@ -5,6 +5,8 @@ export interface IPropertyUser extends Document {
   passwordHash: string;
   name: string;
   roleIds: mongoose.Types.ObjectId[];
+  jwtAccessToken?: string;
+  notficationToken?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -14,6 +16,8 @@ const PropertyUserSchema: Schema = new Schema({
   email: { type: String, required: true, unique: true },
   roleIds: [{ type: Schema.Types.ObjectId, ref: 'Role', default: [] }],
   passwordHash: { type: String }, 
+  jwtAccessToken: { type: String },
+  notficationToken: { type: String },
 }, {
   timestamps: true,
 });
