@@ -27,6 +27,26 @@ router.get('/get-properties', authorizePermissions('properties:read'), PropertyC
 
 /**
  * @swagger
+ * /api/properties/get-occupancy:
+ *   get:
+ *     summary: Get occupancy percentage and stats
+ *     tags: [Properties]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: propertyId
+ *         schema:
+ *           type: string
+ *         description: Optional property filter
+ *     responses:
+ *       200:
+ *         description: Occupancy statistics
+ */
+router.get('/get-occupancy', authorizePermissions('properties:read'), PropertyController.getOccupancy);
+
+/**
+ * @swagger
  * /api/properties/get-property:
  *   get:
  *     summary: Get property by ID

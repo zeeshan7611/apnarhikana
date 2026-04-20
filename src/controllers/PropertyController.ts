@@ -61,4 +61,14 @@ export default class PropertyController {
       next(error);
     }
   }
+
+  static async getOccupancy(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyId } = req.query;
+      const stats = await PropertyService.getOccupancyStats(propertyId as string);
+      res.json({ success: true, data: stats });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
