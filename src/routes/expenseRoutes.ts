@@ -44,6 +44,10 @@ const router = Router();
  *                 type: string
  *               paymentMethod:
  *                 type: string
+ *               paidBy:
+ *                 type: string
+ *               paidTo:
+ *                 type: string
  *     responses:
  *       201:
  *         description: Expense recorded
@@ -122,6 +126,10 @@ router.get('/get-expense', authorizePermissions('expenses:read'), ExpenseControl
  *               status:
  *                 type: string
  *                 enum: [pending, approved, rejected]
+ *               paidBy:
+ *                 type: string
+ *               paidTo:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Expense updated

@@ -11,6 +11,8 @@ export interface IExpense extends Document {
   propertyId: mongoose.Types.ObjectId;
   status: 'pending' | 'approved' | 'rejected';
   paymentMethod?: string;
+  paidBy?: string;
+  paidTo?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,6 +28,8 @@ const ExpenseSchema: Schema = new Schema({
   propertyId: { type: Schema.Types.ObjectId, ref: 'Property', required: true, index: true },
   status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
   paymentMethod: { type: String },
+  paidBy: { type: String },
+  paidTo: { type: String },
 }, {
   timestamps: true,
 });

@@ -64,6 +64,28 @@ router.use(jwtAuth);
  *                 type: array
  *                 items:
  *                   type: string
+ *               phoneNumber:
+ *                 type: string
+ *               education:
+ *                 type: string
+ *               designation:
+ *                 type: string
+ *               joiningDate:
+ *                 type: string
+ *                 format: date
+ *               monthlySalary:
+ *                 type: number
+ *               isActive:
+ *                 type: boolean
+ *               kycDocument:
+ *                 type: object
+ *                 properties:
+ *                   adharCard:
+ *                     type: string
+ *                   panCard:
+ *                     type: string
+ *                   drivingLicense:
+ *                     type: string
  *     responses:
  *       201:
  *         description: Property User created
@@ -132,6 +154,28 @@ router.get("/get-property-user", authorizePermissions("users:read"), Controller.
  *                 type: array
  *                 items:
  *                   type: string
+ *               phoneNumber:
+ *                 type: string
+ *               education:
+ *                 type: string
+ *               designation:
+ *                 type: string
+ *               joiningDate:
+ *                 type: string
+ *                 format: date
+ *               monthlySalary:
+ *                 type: number
+ *               isActive:
+ *                 type: boolean
+ *               kycDocument:
+ *                 type: object
+ *                 properties:
+ *                   adharCard:
+ *                     type: string
+ *                   panCard:
+ *                     type: string
+ *                   drivingLicense:
+ *                     type: string
  *     responses:
  *       200:
  *         description: User updated

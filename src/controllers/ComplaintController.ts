@@ -65,4 +65,13 @@ export default class ComplaintController {
       next(error);
     }
   }
+
+  static async getRecent(req: Request, res: Response, next: NextFunction) {
+    try {
+      const complaints = await ComplaintService.getRecentComplaints(4);
+      res.json({ success: true, data: complaints });
+    } catch (err) {
+      next(err);
+    }
+  }
 }

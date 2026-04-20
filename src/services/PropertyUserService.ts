@@ -9,6 +9,17 @@ export default class PropertyUserService {
     email: string;
     password: string;
     roleIds?: string[];
+    phoneNumber?: string;
+    education?: string;
+    designation?: string;
+    joiningDate?: Date;
+    monthlySalary?: number;
+    kycDocument?: {
+      adharCard?: string;
+      panCard?: string;
+      drivingLicense?: string;
+    };
+    isActive?: boolean;
   }): Promise<IPropertyUser> {
     const existing = await PropertyUser.findOne({ email: data.email });
     if (existing) {
@@ -18,8 +29,7 @@ export default class PropertyUserService {
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
     return PropertyUser.create({
-      name: data.name,
-      email: data.email,
+      ...data,
       passwordHash: hashedPassword,
       roleIds: data.roleIds || [],
     });
@@ -52,6 +62,17 @@ export default class PropertyUserService {
       email: string;
       password: string;
       roleIds: string[];
+      phoneNumber: string;
+      education: string;
+      designation: string;
+      joiningDate: Date;
+      monthlySalary: number;
+      kycDocument: {
+        adharCard: string;
+        panCard: string;
+        drivingLicense: string;
+      };
+      isActive: boolean;
     }>
   ): Promise<IPropertyUser> {
     const updateData: any = { ...data };

@@ -82,6 +82,20 @@ router.get('/get-complaints', authorizePermissions('complaints:read'), Complaint
 
 /**
  * @swagger
+ * /api/complaints/get-recent-complaints:
+ *   get:
+ *     summary: Get the 4 most recent complaints
+ *     tags: [Complaints]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of recent complaints
+ */
+router.get('/get-recent-complaints', authorizePermissions('complaints:read'), ComplaintController.getRecent);
+
+/**
+ * @swagger
  * /api/complaints/get-complaint:
  *   get:
  *     summary: Get complaint details by ID

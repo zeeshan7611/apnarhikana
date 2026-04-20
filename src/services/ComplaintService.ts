@@ -43,4 +43,13 @@ export default class ComplaintService {
   static async deleteComplaint(id: string): Promise<IComplaint | null> {
     return Complaint.findByIdAndDelete(id);
   }
+
+  static async getRecentComplaints(limit: number = 4): Promise<IComplaint[]> {
+    return Complaint.find()
+      .populate('tenantId', 'fullName phoneNumber')
+      .populate('propertyId', 'name')
+      .populate('assignedTo', 'name')
+      .sort({ createdAt: -1 })
+      .limit(limit);
+  }
 }
