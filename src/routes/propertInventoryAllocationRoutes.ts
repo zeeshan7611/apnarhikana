@@ -29,7 +29,7 @@ router.get('/get-allocations', authorizePermissions('allocations:read'), Allocat
  * @swagger
  * /api/allocations/create-allocation:
  *   post:
- *     summary: Create a new inventory allocation or batch allocations
+ *     summary: Create a single inventory allocation
  *     tags: [Allocations]
  *     security:
  *       - bearerAuth: []
@@ -38,42 +38,60 @@ router.get('/get-allocations', authorizePermissions('allocations:read'), Allocat
  *       content:
  *         application/json:
  *           schema:
- *             oneOf:
- *               - type: object
- *                 required: [propertyId, floorId, roomId, bedId, roomCategoryId]
- *                 properties:
- *                   propertyId:
- *                     type: string
- *                   floorId:
- *                     type: string
- *                   roomId:
- *                     type: string
- *                   bedId:
- *                     type: string
- *                   roomCategoryId:
- *                     type: string
- *                   notes:
- *                     type: string
- *               - type: array
- *                 items:
- *                   type: object
- *                   required: [propertyId, floorId, roomId, roomCategoryId]
- *                   properties:
- *                     propertyId:
- *                       type: string
- *                     floorId:
- *                       type: string
- *                     roomId:
- *                       type: string
- *                     roomCategoryId:
- *                       type: string
- *                     notes:
- *                       type: string
+ *             type: object
+ *             required: [propertyId, floorId, roomId, bedId, roomCategoryId]
+ *             properties:
+ *               propertyId:
+ *                 type: string
+ *               floorId:
+ *                 type: string
+ *               roomId:
+ *                 type: string
+ *               bedId:
+ *                 type: string
+ *               roomCategoryId:
+ *                 type: string
+ *               notes:
+ *                 type: string
  *     responses:
  *       201:
- *         description: Allocation(s) created successfully
+ *         description: Allocation created successfully
  */
 router.post('/create-allocation', authorizePermissions('allocations:write'), AllocationController.createAllocation);
+
+/**
+ * @swagger
+ * /api/allocations/create-batch-allocation:
+ *   post:
+ *     summary: Batch create inventory allocations (automatic bed assignment)
+ *     tags: [Allocations]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: array
+ *             items:
+ *               type: object
+ *               required: [propertyId, floorId, roomId, roomCategoryId]
+ *               properties:
+ *                 propertyId:
+ *                   type: string
+ *                 floorId:
+ *                   type: string
+ *                 roomId:
+ *                   type: string
+ *                 roomCategoryId:
+ *                   type: string
+ *                 notes:
+ *                   type: string
+ *     responses:
+ *       201:
+ *         description: Allocations created successfully
+ */
+router.post('/create-batch-allocation', authorizePermissions('allocations:write'), AllocationController.createBatch);
 
 /**
  * @swagger

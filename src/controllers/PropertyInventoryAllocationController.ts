@@ -4,11 +4,16 @@ import InventoryService from "../services/PropertyInventoryAllocation";
 export default class PropertyInventoryAllocationController {
   static async createAllocation(req: Request, res: Response, next: NextFunction) {
     try {
-      if (Array.isArray(req.body)) {
-        const data = await InventoryService.createBatchAllocations(req.body);
-        return res.status(201).json({ success: true, data });
-      }
       const data = await InventoryService.create(req.body);
+      res.status(201).json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async createBatch(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await InventoryService.createBatchAllocations(req.body);
       res.status(201).json({ success: true, data });
     } catch (err) {
       next(err);
