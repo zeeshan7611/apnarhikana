@@ -32,9 +32,12 @@ export default class ExpenseController {
     try {
       const { id } = req.query;
       const expense = await ExpenseService.getExpenseById(id as string);
+      if (!expense) {
+        return res.status(404).json({ message: "Expense not found" });
+      }
       res.json({ success: true, data: expense });
-    } catch (err) {
-      next(err);
+    } catch (error) {
+      next(error);
     }
   }
 
@@ -42,19 +45,25 @@ export default class ExpenseController {
     try {
       const { id } = req.body;
       const expense = await ExpenseService.updateExpense(id, req.body);
+      if (!expense) {
+        return res.status(404).json({ message: "Expense not found" });
+      }
       res.json({ success: true, data: expense });
-    } catch (err) {
-      next(err);
+    } catch (error) {
+      next(error);
     }
   }
 
   static async delete(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.body;
-      await ExpenseService.deleteExpense(id);
-      res.json({ success: true, message: 'Expense deleted' });
-    } catch (err) {
-      next(err);
+      const expense = await ExpenseService.deleteExpense(id);
+      if (!expense) {
+        return res.status(404).json({ message: "Expense not found" });
+      }
+      res.json({ success: true, message: "Expense deleted successfully" });
+    } catch (error) {
+      next(error);
     }
   }
 }

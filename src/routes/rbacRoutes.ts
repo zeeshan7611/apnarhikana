@@ -19,6 +19,12 @@ const router = Router();
  *     tags: [RBAC]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: propertyId
+ *         schema:
+ *           type: string
+ *         description: Optional property filter
  *     responses:
  *       200:
  *         description: List of roles
@@ -41,6 +47,26 @@ router.get('/get-permissions', authorizePermissions('users:read'), RbacControlle
 
 /**
  * @swagger
+ * /api/rbac/get-role:
+ *   get:
+ *     summary: Get role details by ID
+ *     tags: [RBAC]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Role details
+ */
+router.get('/get-role', authorizePermissions('users:read'), RbacController.getRoleById);
+
+/**
+ * @swagger
  * /api/rbac/create-role:
  *   post:
  *     summary: Create a new role
@@ -53,9 +79,11 @@ router.get('/get-permissions', authorizePermissions('users:read'), RbacControlle
  *         application/json:
  *           schema:
  *             type: object
- *             required: [name]
+ *             required: [name, propertyId]
  *             properties:
  *               name:
+ *                 type: string
+ *               propertyId:
  *                 type: string
  *               description:
  *                 type: string
@@ -72,7 +100,7 @@ router.post('/create-role', authorizePermissions('users:write'), RbacController.
 /**
  * @swagger
  * /api/rbac/update-role:
- *   put:
+ *   patch:
  *     summary: Update an existing role
  *     tags: [RBAC]
  *     security:
@@ -89,6 +117,8 @@ router.post('/create-role', authorizePermissions('users:write'), RbacController.
  *                 type: string
  *               name:
  *                 type: string
+ *               propertyId:
+ *                 type: string
  *               description:
  *                 type: string
  *               permissionIds:
@@ -99,7 +129,7 @@ router.post('/create-role', authorizePermissions('users:write'), RbacController.
  *       200:
  *         description: Role updated
  */
-router.put('/update-role', authorizePermissions('users:write'), RbacController.updateRole);
+router.patch('/update-role', authorizePermissions('users:write'), RbacController.updateRole);
 
 /**
  * @swagger

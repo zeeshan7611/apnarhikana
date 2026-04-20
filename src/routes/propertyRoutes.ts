@@ -13,7 +13,7 @@ const router = Router();
 
 /**
  * @swagger
- * /api/properties:
+ * /api/properties/get-properties:
  *   get:
  *     summary: Get all properties
  *     tags: [Properties]
@@ -23,18 +23,18 @@ const router = Router();
  *       200:
  *         description: List of properties
  */
-router.get('/', authorizePermissions('properties:read'), PropertyController.getAllProperties);
+router.get('/get-properties', authorizePermissions('properties:read'), PropertyController.getAllProperties);
 
 /**
  * @swagger
- * /api/properties/{id}:
+ * /api/properties/get-property:
  *   get:
  *     summary: Get property by ID
  *     tags: [Properties]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
+ *       - in: query
  *         name: id
  *         required: true
  *         schema:
@@ -46,11 +46,11 @@ router.get('/', authorizePermissions('properties:read'), PropertyController.getA
  *       404:
  *         description: Property not found
  */
-router.get('/:id', authorizePermissions('properties:read'), PropertyController.getPropertyById);
+router.get('/get-property', authorizePermissions('properties:read'), PropertyController.getPropertyById);
 
 /**
  * @swagger
- * /api/properties:
+ * /api/properties/create-property:
  *   post:
  *     summary: Create a new property
  *     tags: [Properties]
@@ -62,71 +62,84 @@ router.get('/:id', authorizePermissions('properties:read'), PropertyController.g
  *         application/json:
  *           schema:
  *             type: object
- *             required: [name, address]
+ *             required: [name, address, location, numberOfFloors, numberOfRooms]
  *             properties:
  *               name:
  *                 type: string
  *               address:
  *                 type: string
+ *               location:
+ *                 type: string
+ *               numberOfFloors:
+ *                 type: number
+ *               numberOfRooms:
+ *                 type: number
  *               description:
  *                 type: string
  *     responses:
  *       201:
  *         description: Property created successfully
  */
-router.post('/', authorizePermissions('properties:write'), PropertyController.createProperty);
+router.post('/create-property', authorizePermissions('properties:write'), PropertyController.createProperty);
 
 /**
  * @swagger
- * /api/properties/{id}:
- *   put:
+ * /api/properties/update-property:
+ *   patch:
  *     summary: Update an existing property
  *     tags: [Properties]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required: [id]
  *             properties:
+ *               id:
+ *                 type: string
  *               name:
  *                 type: string
  *               address:
  *                 type: string
+ *               location:
+ *                 type: string
+ *               numberOfFloors:
+ *                 type: number
+ *               numberOfRooms:
+ *                 type: number
  *               description:
  *                 type: string
  *     responses:
  *       200:
  *         description: Property updated successfully
  */
-router.put('/:id', authorizePermissions('properties:write'), PropertyController.updateProperty);
+router.patch('/update-property', authorizePermissions('properties:write'), PropertyController.updateProperty);
 
 /**
  * @swagger
- * /api/properties/{id}:
+ * /api/properties/delete-property:
  *   delete:
  *     summary: Delete a property
  *     tags: [Properties]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [id]
+ *             properties:
+ *               id:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Property deleted successfully
  */
-router.delete('/:id', authorizePermissions('properties:write'), PropertyController.deleteProperty);
+router.delete('/delete-property', authorizePermissions('properties:write'), PropertyController.deleteProperty);
 
 export default router;

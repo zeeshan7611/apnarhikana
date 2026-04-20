@@ -5,6 +5,9 @@ export default class PropertyService {
   static async createProperty(data: {
     name: string;
     address: string;
+    location: string;
+    numberOfFloors: number;
+    numberOfRooms: number;
     description?: string;
   }): Promise<IProperty> {
     const existing = await Property.findOne({ name: data.name });
@@ -31,6 +34,9 @@ export default class PropertyService {
     data: Partial<{
       name: string;
       address: string;
+      location: string;
+      numberOfFloors: number;
+      numberOfRooms: number;
       description: string;
     }>
   ): Promise<IProperty | null> {

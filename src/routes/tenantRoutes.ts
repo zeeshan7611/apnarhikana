@@ -85,7 +85,7 @@ router.get('/get-tenant', authorizePermissions('tenants:read'), TenantController
 /**
  * @swagger
  * /api/tenants/update-tenant:
- *   put:
+ *   patch:
  *     summary: Update tenant details
  *     tags: [Tenants]
  *     security:
@@ -116,7 +116,7 @@ router.get('/get-tenant', authorizePermissions('tenants:read'), TenantController
  *       200:
  *         description: Tenant updated
  */
-router.put('/update-tenant', authorizePermissions('tenants:write'), TenantController.update);
+router.patch('/update-tenant', authorizePermissions('tenants:write'), TenantController.update);
 
 /**
  * @swagger

@@ -10,7 +10,7 @@ export default class TenantAllocationService {
       .populate('tenantId')
       .populate({
         path: 'inventoryAllocationId',
-        populate: ['propertyId', 'floorId', 'roomId', 'beds']
+        populate: ['propertyId', 'floorId', 'roomId', 'bedId', 'roomCategoryId']
       })
       .populate('createdById', 'name email')
       .sort({ createdAt: -1 });
@@ -21,7 +21,7 @@ export default class TenantAllocationService {
       .populate('tenantId')
       .populate({
         path: 'inventoryAllocationId',
-        populate: ['propertyId', 'floorId', 'roomId', 'beds']
+        populate: ['propertyId', 'floorId', 'roomId', 'bedId', 'roomCategoryId']
       })
       .populate('createdById', 'name email');
   }

@@ -22,6 +22,11 @@ const router = Router();
  *     responses:
  *       200:
  *         description: List of floors
+ */
+router.get('/get-floors', authorizePermissions('floors:read'), FloorController.getAllFloors);
+
+/**
+ * @swagger
  * /api/floors/create-floor:
  *   post:
  *     summary: Create a new floor
@@ -44,7 +49,6 @@ const router = Router();
  *       201:
  *         description: Floor created successfully
  */
-router.get('/get-floors', authorizePermissions('floors:read'), FloorController.getAllFloors);
 router.post('/create-floor', authorizePermissions('floors:write'), FloorController.createFloor);
 
 /**
@@ -66,8 +70,13 @@ router.post('/create-floor', authorizePermissions('floors:write'), FloorControll
  *         description: Floor details
  *       404:
  *         description: Floor not found
+ */
+router.get('/get-floor', authorizePermissions('floors:read'), FloorController.getFloorById);
+
+/**
+ * @swagger
  * /api/floors/update-floor:
- *   put:
+ *   patch:
  *     summary: Update an existing floor
  *     tags: [Floors]
  *     security:
@@ -88,6 +97,11 @@ router.post('/create-floor', authorizePermissions('floors:write'), FloorControll
  *     responses:
  *       200:
  *         description: Floor updated successfully
+ */
+router.patch('/update-floor', authorizePermissions('floors:write'), FloorController.updateFloor);
+
+/**
+ * @swagger
  * /api/floors/delete-floor:
  *   delete:
  *     summary: Delete a floor
@@ -108,8 +122,6 @@ router.post('/create-floor', authorizePermissions('floors:write'), FloorControll
  *       200:
  *         description: Floor deleted successfully
  */
-router.get('/get-floor', authorizePermissions('floors:read'), FloorController.getFloorById);
-router.put('/update-floor', authorizePermissions('floors:write'), FloorController.updateFloor);
 router.delete('/delete-floor', authorizePermissions('floors:write'), FloorController.deleteFloor);
 
 export default router;

@@ -16,6 +16,8 @@ import tenantAllocationRoutes from './routes/tenantAllocationRoutes';
 import expenseRoutes from './routes/expenseRoutes';
 import complaintRoutes from './routes/complaintRoutes';
 import announcementRoutes from './routes/announcementRoutes';
+import roomCategoryRoutes from './routes/roomCategoryRoutes';
+
 import { jwtAuth } from './middleware/jwtAuth';
 import RbacService from './services/RbacService';
 
@@ -66,6 +68,10 @@ app.use('/api/complaints', jwtAuth, complaintRoutes);
 
 // Announcement routes (Protected)
 app.use('/api/announcements', jwtAuth, announcementRoutes);
+
+// Room Category routes (Protected)
+app.use('/api/room-categories', jwtAuth, roomCategoryRoutes);
+
 
 // Connect to DB and start server
 connectDB().then(() => {

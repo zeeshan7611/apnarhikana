@@ -103,7 +103,7 @@ router.get('/get-complaint', authorizePermissions('complaints:read'), ComplaintC
 /**
  * @swagger
  * /api/complaints/update-complaint:
- *   put:
+ *   patch:
  *     summary: Update complaint (status, resolution notes, etc)
  *     tags: [Complaints]
  *     security:
@@ -132,7 +132,7 @@ router.get('/get-complaint', authorizePermissions('complaints:read'), ComplaintC
  *       200:
  *         description: Complaint updated
  */
-router.put('/update-complaint', authorizePermissions('complaints:write'), ComplaintController.update);
+router.patch('/update-complaint', authorizePermissions('complaints:write'), ComplaintController.update);
 
 /**
  * @swagger

@@ -96,8 +96,8 @@ router.get('/get-expense', authorizePermissions('expenses:read'), ExpenseControl
 /**
  * @swagger
  * /api/expenses/update-expense:
- *   put:
- *     summary: Update expense details
+ *   patch:
+ *     summary: Update an existing expense details
  *     tags: [Expenses]
  *     security:
  *       - bearerAuth: []
@@ -126,7 +126,7 @@ router.get('/get-expense', authorizePermissions('expenses:read'), ExpenseControl
  *       200:
  *         description: Expense updated
  */
-router.put('/update-expense', authorizePermissions('expenses:write'), ExpenseController.update);
+router.patch('/update-expense', authorizePermissions('expenses:write'), ExpenseController.update);
 
 /**
  * @swagger

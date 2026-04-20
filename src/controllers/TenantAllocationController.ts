@@ -23,13 +23,16 @@ export default class TenantAllocationController {
     }
   }
 
-  static async getById(req: Request, res: Response, next: NextFunction) {
+  static async getAllocationById(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.query;
       const allocation = await TenantAllocationService.getAllocationById(id as string);
+      if (!allocation) {
+        return res.status(404).json({ message: "Allocation not found" });
+      }
       res.json({ success: true, data: allocation });
-    } catch (err) {
-      next(err);
+    } catch (error) {
+      next(error);
     }
   }
 
@@ -37,19 +40,25 @@ export default class TenantAllocationController {
     try {
       const { id } = req.body;
       const allocation = await TenantAllocationService.updateAllocation(id, req.body);
+      if (!allocation) {
+        return res.status(404).json({ message: "Allocation not found" });
+      }
       res.json({ success: true, data: allocation });
-    } catch (err) {
-      next(err);
+    } catch (error) {
+      next(error);
     }
   }
 
   static async delete(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.body;
-      await TenantAllocationService.deleteAllocation(id);
-      res.json({ success: true, message: 'Allocation deleted' });
-    } catch (err) {
-      next(err);
+      const allocation = await TenantAllocationService.deleteAllocation(id);
+      if (!allocation) {
+        return res.status(404).json({ message: "Allocation not found" });
+      }
+      res.json({ success: true, message: "Allocation deleted successfully" });
+    } catch (error) {
+      next(error);
     }
   }
 }

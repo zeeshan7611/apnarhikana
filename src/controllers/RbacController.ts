@@ -4,7 +4,8 @@ import RbacService from '../services/RbacService';
 export default class RbacController {
   static async getAllRoles(req: Request, res: Response, next: NextFunction) {
     try {
-      const roles = await RbacService.getAllRoles();
+      const { propertyId } = req.query;
+      const roles = await RbacService.getAllRoles(propertyId as string);
       res.json({ success: true, data: roles });
     } catch (err) {
       next(err);
@@ -29,23 +30,42 @@ export default class RbacController {
     }
   }
 
+  static async getRoleById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.query;
+      const role = await RbacService.getRoleById(id as string);
+      if (!role) {
+        return res.status(404).json({ message: "Role not found" });
+      }
+      res.json({ success: true, data: role });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async updateRole(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.body;
       const role = await RbacService.updateRole(id, req.body);
+      if (!role) {
+        return res.status(404).json({ message: "Role not found" });
+      }
       res.json({ success: true, data: role });
-    } catch (err) {
-      next(err);
+    } catch (error) {
+      next(error);
     }
   }
 
   static async deleteRole(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.body;
-      await RbacService.deleteRole(id);
-      res.json({ success: true, message: 'Role deleted' });
-    } catch (err) {
-      next(err);
+      const role = await RbacService.deleteRole(id);
+      if (!role) {
+        return res.status(404).json({ message: "Role not found" });
+      }
+      res.json({ success: true, message: "Role deleted successfully" });
+    } catch (error) {
+      next(error);
     }
   }
 

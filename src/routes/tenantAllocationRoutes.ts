@@ -81,12 +81,12 @@ router.get('/get-allocations', authorizePermissions('allocations:read'), TenantA
  *       200:
  *         description: Allocation details
  */
-router.get('/get-allocation', authorizePermissions('allocations:read'), TenantAllocationController.getById);
+router.get('/get-allocation', authorizePermissions('allocations:read'), TenantAllocationController.getAllocationById);
 
 /**
  * @swagger
  * /api/tenant-allocations/update-allocation:
- *   put:
+ *   patch:
  *     summary: Update allocation details
  *     tags: [TenantAllocations]
  *     security:
@@ -117,7 +117,7 @@ router.get('/get-allocation', authorizePermissions('allocations:read'), TenantAl
  *       200:
  *         description: Allocation updated
  */
-router.put('/update-allocation', authorizePermissions('allocations:write'), TenantAllocationController.update);
+router.patch('/update-allocation', authorizePermissions('allocations:write'), TenantAllocationController.update);
 
 /**
  * @swagger

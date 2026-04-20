@@ -10,6 +10,7 @@ const DEFAULT_PERMISSIONS = [
   { name: 'floors:write', feature: 'floors', action: 'write' },
   { name: 'rooms:read', feature: 'rooms', action: 'read' },
   { name: 'rooms:write', feature: 'rooms', action: 'write' },
+  { name: 'rooms:delete', feature: 'rooms', action: 'delete' },
   { name: 'beds:read', feature: 'beds', action: 'read' },
   { name: 'beds:write', feature: 'beds', action: 'write' },
   { name: 'allocations:read', feature: 'allocations', action: 'read' },
@@ -40,6 +41,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'floors:write',
     'rooms:read',
     'rooms:write',
+    'rooms:delete',
     'beds:read',
     'beds:write',
     'allocations:read',
@@ -127,8 +129,17 @@ class RbacService {
   }
 
   // Management Methods
-  async getAllRoles() {
-    return Role.find().populate({
+  async getAllRoles(propertyId?: string) {
+    const filter: any = {};
+    if (propertyId) filter.propertyId = propertyId;
+    return Role.find(filter).populate({
+      path: 'permissionIds',
+      populate: { path: 'featureId' },
+    });
+  }
+
+  async getRoleById(id: string) {
+    return Role.findById(id).populate({
       path: 'permissionIds',
       populate: { path: 'featureId' },
     });
@@ -138,11 +149,11 @@ class RbacService {
     return Permission.find().populate('featureId');
   }
 
-  async createRole(data: { name: string; description?: string; permissionIds?: string[] }) {
+  async createRole(data: { name: string; propertyId?: string; description?: string; permissionIds?: string[] }) {
     return Role.create(data);
   }
 
-  async updateRole(id: string, data: { name?: string; description?: string; permissionIds?: string[] }) {
+  async updateRole(id: string, data: { name?: string; propertyId?: string; description?: string; permissionIds?: string[] }) {
     return Role.findByIdAndUpdate(id, data, { new: true }).populate('permissionIds');
   }
 

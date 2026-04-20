@@ -22,9 +22,14 @@ const router = Router();
  *     responses:
  *       200:
  *         description: List of allocations
+ */
+router.get('/get-allocations', authorizePermissions('allocations:read'), AllocationController.getAllAllocations);
+
+/**
+ * @swagger
  * /api/allocations/create-allocation:
  *   post:
- *     summary: Create a new inventory allocation
+ *     summary: Create a new inventory allocation or batch allocations
  *     tags: [Allocations]
  *     security:
  *       - bearerAuth: []
@@ -33,26 +38,41 @@ const router = Router();
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required: [propertyId, floorId, roomId, beds, BedBasePrice]
- *             properties:
- *               propertyId:
- *                 type: string
- *               floorId:
- *                 type: string
- *               roomId:
- *                 type: string
- *               beds:
- *                 type: string
- *               BedBasePrice:
- *                 type: number
- *               notes:
- *                 type: string
+ *             oneOf:
+ *               - type: object
+ *                 required: [propertyId, floorId, roomId, bedId, roomCategoryId]
+ *                 properties:
+ *                   propertyId:
+ *                     type: string
+ *                   floorId:
+ *                     type: string
+ *                   roomId:
+ *                     type: string
+ *                   bedId:
+ *                     type: string
+ *                   roomCategoryId:
+ *                     type: string
+ *                   notes:
+ *                     type: string
+ *               - type: array
+ *                 items:
+ *                   type: object
+ *                   required: [propertyId, floorId, roomId, roomCategoryId]
+ *                   properties:
+ *                     propertyId:
+ *                       type: string
+ *                     floorId:
+ *                       type: string
+ *                     roomId:
+ *                       type: string
+ *                     roomCategoryId:
+ *                       type: string
+ *                     notes:
+ *                       type: string
  *     responses:
  *       201:
- *         description: Allocation created successfully
+ *         description: Allocation(s) created successfully
  */
-router.get('/get-allocations', authorizePermissions('allocations:read'), AllocationController.getAllAllocations);
 router.post('/create-allocation', authorizePermissions('allocations:write'), AllocationController.createAllocation);
 
 /**
@@ -74,8 +94,13 @@ router.post('/create-allocation', authorizePermissions('allocations:write'), All
  *         description: Allocation details
  *       404:
  *         description: Allocation not found
+ */
+router.get('/get-allocation', authorizePermissions('allocations:read'), AllocationController.getAllocationById);
+
+/**
+ * @swagger
  * /api/allocations/update-allocation:
- *   put:
+ *   patch:
  *     summary: Update an existing allocation
  *     tags: [Allocations]
  *     security:
@@ -89,8 +114,6 @@ router.post('/create-allocation', authorizePermissions('allocations:write'), All
  *             properties:
  *               id:
  *                 type: string
- *               BedBasePrice:
- *                 type: number
  *               notes:
  *                 type: string
  *               status:
@@ -99,6 +122,11 @@ router.post('/create-allocation', authorizePermissions('allocations:write'), All
  *     responses:
  *       200:
  *         description: Allocation updated successfully
+ */
+router.patch('/update-allocation', authorizePermissions('allocations:write'), AllocationController.updateAllocation);
+
+/**
+ * @swagger
  * /api/allocations/delete-allocation:
  *   delete:
  *     summary: Delete an allocation
@@ -119,8 +147,6 @@ router.post('/create-allocation', authorizePermissions('allocations:write'), All
  *       200:
  *         description: Allocation deleted successfully
  */
-router.get('/get-allocation', authorizePermissions('allocations:read'), AllocationController.getAllocationById);
-router.put('/update-allocation', authorizePermissions('allocations:write'), AllocationController.updateAllocation);
 router.delete('/delete-allocation', authorizePermissions('allocations:write'), AllocationController.deleteAllocation);
 
 export default router;

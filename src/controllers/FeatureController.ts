@@ -24,19 +24,25 @@ export default class FeatureController {
     try {
       const { id } = req.body;
       const feature = await FeatureService.updateFeature(id, req.body);
+      if (!feature) {
+        return res.status(404).json({ message: "Feature not found" });
+      }
       res.json({ success: true, data: feature });
-    } catch (err) {
-      next(err);
+    } catch (error) {
+      next(error);
     }
   }
 
   static async deleteFeature(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.body;
-      await FeatureService.deleteFeature(id);
-      res.json({ success: true, message: 'Feature deleted' });
-    } catch (err) {
-      next(err);
+      const feature = await FeatureService.deleteFeature(id);
+      if (!feature) {
+        return res.status(404).json({ message: "Feature not found" });
+      }
+      res.json({ success: true, message: "Feature deleted successfully" });
+    } catch (error) {
+      next(error);
     }
   }
 }

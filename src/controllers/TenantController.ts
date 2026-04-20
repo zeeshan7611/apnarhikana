@@ -27,9 +27,12 @@ export default class TenantController {
     try {
       const { id } = req.query;
       const tenant = await TenantService.getTenantById(id as string);
+      if (!tenant) {
+        return res.status(404).json({ message: "Tenant not found" });
+      }
       res.json({ success: true, data: tenant });
-    } catch (err) {
-      next(err);
+    } catch (error) {
+      next(error);
     }
   }
 
@@ -37,19 +40,25 @@ export default class TenantController {
     try {
       const { id } = req.body;
       const tenant = await TenantService.updateTenant(id, req.body);
+      if (!tenant) {
+        return res.status(404).json({ message: "Tenant not found" });
+      }
       res.json({ success: true, data: tenant });
-    } catch (err) {
-      next(err);
+    } catch (error) {
+      next(error);
     }
   }
 
   static async delete(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.body;
-      await TenantService.deleteTenant(id);
-      res.json({ success: true, message: 'Tenant deleted' });
-    } catch (err) {
-      next(err);
+      const tenant = await TenantService.deleteTenant(id);
+      if (!tenant) {
+        return res.status(404).json({ message: "Tenant not found" });
+      }
+      res.json({ success: true, message: "Tenant deleted successfully" });
+    } catch (error) {
+      next(error);
     }
   }
 }

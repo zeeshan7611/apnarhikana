@@ -22,6 +22,11 @@ const router = Router();
  *     responses:
  *       200:
  *         description: List of rooms
+ */
+router.get('/get-rooms', authorizePermissions('rooms:read'), RoomController.getAllRooms);
+
+/**
+ * @swagger
  * /api/rooms/create-room:
  *   post:
  *     summary: Create a new room
@@ -46,7 +51,6 @@ const router = Router();
  *       201:
  *         description: Room created successfully
  */
-router.get('/get-rooms', authorizePermissions('rooms:read'), RoomController.getAllRooms);
 router.post('/create-room', authorizePermissions('rooms:write'), RoomController.createRoom);
 
 /**
@@ -68,8 +72,13 @@ router.post('/create-room', authorizePermissions('rooms:write'), RoomController.
  *         description: Room details
  *       404:
  *         description: Room not found
+ */
+router.get('/get-room', authorizePermissions('rooms:read'), RoomController.getRoomById);
+
+/**
+ * @swagger
  * /api/rooms/update-room:
- *   put:
+ *   patch:
  *     summary: Update an existing room
  *     tags: [Rooms]
  *     security:
@@ -92,6 +101,11 @@ router.post('/create-room', authorizePermissions('rooms:write'), RoomController.
  *     responses:
  *       200:
  *         description: Room updated successfully
+ */
+router.patch('/update-room', authorizePermissions('rooms:write'), RoomController.updateRoom);
+
+/**
+ * @swagger
  * /api/rooms/delete-room:
  *   delete:
  *     summary: Delete a room
@@ -112,8 +126,6 @@ router.post('/create-room', authorizePermissions('rooms:write'), RoomController.
  *       200:
  *         description: Room deleted successfully
  */
-router.get('/get-room', authorizePermissions('rooms:read'), RoomController.getRoomById);
-router.put('/update-room', authorizePermissions('rooms:write'), RoomController.updateRoom);
 router.delete('/delete-room', authorizePermissions('rooms:write'), RoomController.deleteRoom);
 
 export default router;

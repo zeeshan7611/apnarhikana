@@ -22,6 +22,11 @@ const router = Router();
  *     responses:
  *       200:
  *         description: List of beds
+ */
+router.get('/get-beds', authorizePermissions('beds:read'), BedController.getAllBeds);
+
+/**
+ * @swagger
  * /api/beds/create-bed:
  *   post:
  *     summary: Create a new bed
@@ -40,11 +45,10 @@ const router = Router();
  *                 type: string
  *               isActive:
  *                 type: boolean
- *     responses:
+     *     responses:
  *       201:
  *         description: Bed created successfully
  */
-router.get('/get-beds', authorizePermissions('beds:read'), BedController.getAllBeds);
 router.post('/create-bed', authorizePermissions('beds:write'), BedController.createBed);
 
 /**
@@ -66,8 +70,13 @@ router.post('/create-bed', authorizePermissions('beds:write'), BedController.cre
  *         description: Bed details
  *       404:
  *         description: Bed not found
+ */
+router.get('/get-bed', authorizePermissions('beds:read'), BedController.getBedById);
+
+/**
+ * @swagger
  * /api/beds/update-bed:
- *   put:
+ *   patch:
  *     summary: Update an existing bed
  *     tags: [Beds]
  *     security:
@@ -88,6 +97,11 @@ router.post('/create-bed', authorizePermissions('beds:write'), BedController.cre
  *     responses:
  *       200:
  *         description: Bed updated successfully
+ */
+router.patch('/update-bed', authorizePermissions('beds:write'), BedController.updateBed);
+
+/**
+ * @swagger
  * /api/beds/delete-bed:
  *   delete:
  *     summary: Delete a bed
@@ -108,8 +122,6 @@ router.post('/create-bed', authorizePermissions('beds:write'), BedController.cre
  *       200:
  *         description: Bed deleted successfully
  */
-router.get('/get-bed', authorizePermissions('beds:read'), BedController.getBedById);
-router.put('/update-bed', authorizePermissions('beds:write'), BedController.updateBed);
 router.delete('/delete-bed', authorizePermissions('beds:write'), BedController.deleteBed);
 
 export default router;

@@ -107,7 +107,7 @@ router.get("/get-property-user", authorizePermissions("users:read"), Controller.
 /**
  * @swagger
  * /api/property-users/update-property-user:
- *   put:
+ *   patch:
  *     summary: Update property user
  *     tags: [PropertyUsers]
  *     security:
@@ -136,7 +136,7 @@ router.get("/get-property-user", authorizePermissions("users:read"), Controller.
  *       200:
  *         description: User updated
  */
-router.put("/update-property-user", authorizePermissions("users:write"), Controller.updateUser);
+router.patch("/update-property-user", authorizePermissions("users:write"), Controller.updateUser);
 
 /**
  * @swagger

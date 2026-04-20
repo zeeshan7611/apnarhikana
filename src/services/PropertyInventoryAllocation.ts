@@ -6,6 +6,7 @@ import Property from "../models/Property";
 import Floor from "../models/Floor";
 import Room from "../models/Room";
 import Bed from "../models/Bed";
+import RoomCategory from "../models/RoomCategory";
 
 export default class PropertyInventoryAllocationService {
   // ✅ Create Inventory Allocation
@@ -13,8 +14,8 @@ export default class PropertyInventoryAllocationService {
     propertyId: string;
     floorId: string;
     roomId: string;
-    beds: string;
-    BedBasePrice: number;
+    bedId: string;
+    roomCategoryId: string;
     notes?: string;
     status?: "active" | "inactive" | "terminated";
   }): Promise<IPropertyInventoryAllocation> {
@@ -31,7 +32,7 @@ export default class PropertyInventoryAllocationService {
     if (!room) throw new Error("Room not found");
 
     // 4️⃣ Validate Bed
-    const bed = await Bed.findById(data.beds);
+    const bed = await Bed.findById(data.bedId);
     if (!bed) throw new Error("Bed not found");
 
     // 🔥 Optional: Prevent duplicate allocation
@@ -39,7 +40,8 @@ export default class PropertyInventoryAllocationService {
       propertyId: data.propertyId,
       floorId: data.floorId,
       roomId: data.roomId,
-      beds: data.beds,
+      bedId: data.bedId,
+      status: "active"
     });
 
     if (existing) {
@@ -49,13 +51,64 @@ export default class PropertyInventoryAllocationService {
     return PropertyInventoryAllocation.create(data);
   }
 
+  // ✅ Batch Create Inventory Allocation
+  static async createBatchAllocations(batchData: Array<{
+    propertyId: string;
+    floorId: string;
+    roomId: string;
+    roomCategoryId: string;
+    notes?: string;
+  }>): Promise<IPropertyInventoryAllocation[]> {
+    const results: IPropertyInventoryAllocation[] = [];
+
+    for (const item of batchData) {
+      // 1. Find Room Category
+      const category = await RoomCategory.findById(item.roomCategoryId);
+      if (!category) throw new Error(`Room category not found for ID: ${item.roomCategoryId}`);
+
+      const bedCount = category.bedCount;
+      const basePrice = category.basePrice;
+
+      // 2. Find Available Beds
+      // We need beds that are NOT currently active in any allocation
+      const activeAllocations = await PropertyInventoryAllocation.find({ status: "active" }).select('bedId');
+      const allocatedBedIds = activeAllocations.map(a => a.bedId);
+
+      const availableBeds = await Bed.find({
+        _id: { $nin: allocatedBedIds },
+        isActive: true
+      }).limit(bedCount);
+
+      if (availableBeds.length < bedCount) {
+        throw new Error(`Not enough available beds for category ${category.roomCategory}. Needed ${bedCount}, found ${availableBeds.length}`);
+      }
+
+      // 3. Create Allocations for each bed
+      for (const bed of availableBeds) {
+        const allocation = await PropertyInventoryAllocation.create({
+          propertyId: item.propertyId,
+          floorId: item.floorId,
+          roomId: item.roomId,
+          bedId: bed._id,
+          roomCategoryId: item.roomCategoryId,
+          notes: item.notes,
+          status: "active"
+        });
+        results.push(allocation);
+      }
+    }
+
+    return results;
+  }
+
   // ✅ Get all allocations (with population)
   static async getAll(): Promise<IPropertyInventoryAllocation[]> {
     return PropertyInventoryAllocation.find()
       .populate("propertyId")
       .populate("floorId")
       .populate("roomId")
-      .populate("beds")
+      .populate("bedId")
+      .populate("roomCategoryId")
       .sort({ createdAt: -1 });
   }
 
@@ -67,14 +120,14 @@ export default class PropertyInventoryAllocationService {
       .populate("propertyId")
       .populate("floorId")
       .populate("roomId")
-      .populate("beds");
+      .populate("bedId")
+      .populate("roomCategoryId");
   }
 
   // ✅ Update
   static async update(
     id: string,
     data: Partial<{
-      BedBasePrice: number;
       notes: string;
       status: "active" | "inactive" | "terminated";
     }>

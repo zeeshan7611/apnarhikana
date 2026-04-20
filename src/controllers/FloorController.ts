@@ -22,8 +22,8 @@ export default class FloorController {
 
   static async getFloorById(req: Request, res: Response, next: NextFunction) {
     try {
-      const id = (req.params.id || req.query.id || req.body.id) as string;
-      const floor = await FloorService.getFloorById(id);
+      const { id } = req.query;
+      const floor = await FloorService.getFloorById(id as string);
       if (!floor) {
         return res.status(404).json({ message: "Floor not found" });
       }
@@ -35,7 +35,7 @@ export default class FloorController {
 
   static async updateFloor(req: Request, res: Response, next: NextFunction) {
     try {
-      const id = (req.params.id || req.query.id || req.body.id) as string;
+      const { id } = req.body;
       const floor = await FloorService.updateFloor(id, req.body);
       if (!floor) {
         return res.status(404).json({ message: "Floor not found" });
@@ -48,7 +48,7 @@ export default class FloorController {
 
   static async deleteFloor(req: Request, res: Response, next: NextFunction) {
     try {
-      const id = (req.params.id || req.query.id || req.body.id) as string;
+      const { id } = req.body;
       const floor = await FloorService.deleteFloor(id);
       if (!floor) {
         return res.status(404).json({ message: "Floor not found" });

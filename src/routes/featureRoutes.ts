@@ -56,8 +56,8 @@ router.post('/create-feature', authorizePermissions('users:write'), FeatureContr
 /**
  * @swagger
  * /api/features/update-feature:
- *   put:
- *     summary: Update an existing feature
+ *   patch:
+ *     summary: Update feature details
  *     tags: [Features]
  *     security:
  *       - bearerAuth: []
@@ -81,7 +81,7 @@ router.post('/create-feature', authorizePermissions('users:write'), FeatureContr
  *       200:
  *         description: Feature updated
  */
-router.put('/update-feature', authorizePermissions('users:write'), FeatureController.updateFeature);
+router.patch('/update-feature', authorizePermissions('users:write'), FeatureController.updateFeature);
 
 /**
  * @swagger

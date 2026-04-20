@@ -31,9 +31,12 @@ export default class ComplaintController {
     try {
       const { id } = req.query;
       const complaint = await ComplaintService.getComplaintById(id as string);
+      if (!complaint) {
+        return res.status(404).json({ message: "Complaint not found" });
+      }
       res.json({ success: true, data: complaint });
-    } catch (err) {
-      next(err);
+    } catch (error) {
+      next(error);
     }
   }
 
@@ -41,19 +44,25 @@ export default class ComplaintController {
     try {
       const { id } = req.body;
       const complaint = await ComplaintService.updateComplaint(id, req.body);
+      if (!complaint) {
+        return res.status(404).json({ message: "Complaint not found" });
+      }
       res.json({ success: true, data: complaint });
-    } catch (err) {
-      next(err);
+    } catch (error) {
+      next(error);
     }
   }
 
   static async delete(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.body;
-      await ComplaintService.deleteComplaint(id);
-      res.json({ success: true, message: 'Complaint deleted' });
-    } catch (err) {
-      next(err);
+      const complaint = await ComplaintService.deleteComplaint(id);
+      if (!complaint) {
+        return res.status(404).json({ message: "Complaint not found" });
+      }
+      res.json({ success: true, message: "Complaint deleted successfully" });
+    } catch (error) {
+      next(error);
     }
   }
 }
