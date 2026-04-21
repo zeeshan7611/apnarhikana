@@ -146,4 +146,30 @@ router.put('/update-room', authorizePermissions('rooms:write'), RoomController.u
  */
 router.delete('/delete-room', authorizePermissions('rooms:write'), RoomController.deleteRoom);
 
+/**
+ * @swagger
+ * /api/rooms/get-rooms-by-property:
+ *   get:
+ *     summary: Get rooms based on property room count
+ *     tags: [Rooms]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: propertyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of rooms
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Room'
+ */
+router.get('/get-rooms-by-property', authorizePermissions('rooms:read'), RoomController.getRoomsByProperty);
+
 export default router;

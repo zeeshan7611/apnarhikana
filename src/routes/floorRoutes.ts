@@ -142,4 +142,30 @@ router.put('/update-floor', authorizePermissions('floors:write'), FloorControlle
  */
 router.delete('/delete-floor', authorizePermissions('floors:write'), FloorController.deleteFloor);
 
+/**
+ * @swagger
+ * /api/floors/get-floors-by-property:
+ *   get:
+ *     summary: Get floors based on property floor count
+ *     tags: [Floors]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: propertyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of floors
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Floor'
+ */
+router.get('/get-floors-by-property', authorizePermissions('floors:read'), FloorController.getFloorsByProperty);
+
 export default router;

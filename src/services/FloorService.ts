@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Floor, { IFloor } from "../models/Floor";
 
 export default class FloorService {
@@ -38,5 +39,17 @@ export default class FloorService {
   // Delete floor
   static async deleteFloor(id: string): Promise<IFloor | null> {
     return Floor.findByIdAndDelete(id);
+  }
+
+  // Get floors by property ID based on property's numberOfFloors
+  static async getFloorsByPropertyId(propertyId: string): Promise<IFloor[]> {
+    const Property = mongoose.model("Property");
+    const property: any = await Property.findById(propertyId);
+    if (!property) {
+      throw new Error("Property not found");
+    }
+
+    const floors = await Floor.find();
+    return floors.slice(0, property.numberOfFloors);
   }
 }

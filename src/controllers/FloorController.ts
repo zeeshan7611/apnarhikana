@@ -58,4 +58,17 @@ export default class FloorController {
       next(error);
     }
   }
+
+  static async getFloorsByProperty(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyId } = req.query;
+      if (!propertyId) {
+        return res.status(400).json({ message: "Property ID is required" });
+      }
+      const floors = await FloorService.getFloorsByPropertyId(propertyId as string);
+      res.json({ success: true, data: floors });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

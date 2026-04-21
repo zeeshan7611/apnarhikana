@@ -53,6 +53,31 @@ router.get('/get-occupancy', authorizePermissions('properties:read'), PropertyCo
 
 /**
  * @swagger
+ * /api/properties/get-property-names:
+ *   get:
+ *     summary: Get list of property names and IDs
+ *     tags: [Properties]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of properties with name and ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   _id:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ */
+router.get('/get-property-names', authorizePermissions('properties:read'), PropertyController.getPropertyNames);
+
+/**
+ * @swagger
  * /api/properties/{id}:
  *   get:
  *     summary: Get property by ID

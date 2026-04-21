@@ -78,4 +78,9 @@ export default class PropertyService {
       occupancyPercentage: parseFloat(occupancyPercentage.toFixed(2))
     };
   }
+
+  // Get property names with IDs only
+  static async getPropertyNames(): Promise<{ _id: any; name: string }[]> {
+    return Property.find({}, { name: 1 }).lean() as any;
+  }
 }

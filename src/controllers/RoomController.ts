@@ -58,4 +58,17 @@ export default class RoomController {
       next(error);
     }
   }
+
+  static async getRoomsByProperty(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyId } = req.query;
+      if (!propertyId) {
+        return res.status(400).json({ message: "Property ID is required" });
+      }
+      const rooms = await RoomService.getRoomsByPropertyId(propertyId as string);
+      res.json({ success: true, data: rooms });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

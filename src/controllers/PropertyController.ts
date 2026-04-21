@@ -71,4 +71,13 @@ export default class PropertyController {
       next(error);
     }
   }
+
+  static async getPropertyNames(req: Request, res: Response, next: NextFunction) {
+    try {
+      const properties = await PropertyService.getPropertyNames();
+      res.json({ success: true, data: properties });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Room, { IRoom } from "../models/Room";
 
 export default class RoomService {
@@ -40,5 +41,17 @@ export default class RoomService {
   // Delete room
   static async deleteRoom(id: string): Promise<IRoom | null> {
     return Room.findByIdAndDelete(id);
+  }
+
+  // Get rooms by property ID based on property's numberOfRooms
+  static async getRoomsByPropertyId(propertyId: string): Promise<IRoom[]> {
+    const Property = mongoose.model("Property");
+    const property: any = await Property.findById(propertyId);
+    if (!property) {
+      throw new Error("Property not found");
+    }
+
+    const rooms = await Room.find();
+    return rooms.slice(0, property.numberOfRooms);
   }
 }
