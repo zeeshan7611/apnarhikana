@@ -27,28 +27,20 @@ const router = Router();
  *             type: object
  *             required: [title, message]
  *             properties:
- *               title:
- *                 type: string
- *               message:
- *                 type: string
- *               tenantId:
- *                 type: string
- *                 description: Target a specific tenant
- *               propertyId:
- *                 type: string
- *                 description: Target an entire property
- *               floorId:
- *                 type: string
- *                 description: Target an entire floor
- *               roomId:
- *                 type: string
- *                 description: Target an entire room
- *               type:
- *                 type: string
- *                 enum: [announcement, notification, emergency]
+ *               title: { type: string }
+ *               message: { type: string }
+ *               tenantId: { type: string, description: Target a specific tenant }
+ *               propertyId: { type: string, description: Target an entire property }
+ *               floorId: { type: string, description: Target an entire floor }
+ *               roomId: { type: string, description: Target an entire room }
+ *               type: { type: string, enum: [announcement, notification, emergency] }
  *     responses:
  *       201:
  *         description: Announcement broadcasted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Announcement'
  */
 router.post('/create-announcement', authorizePermissions('announcements:write'), AnnouncementController.create);
 
@@ -63,15 +55,19 @@ router.post('/create-announcement', authorizePermissions('announcements:write'),
  *     parameters:
  *       - in: query
  *         name: propertyId
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *       - in: query
  *         name: type
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *     responses:
  *       200:
  *         description: List of announcements
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Announcement'
  */
 router.get('/get-announcements', authorizePermissions('announcements:read'), AnnouncementController.getAll);
 

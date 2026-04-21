@@ -13,20 +13,6 @@ const router = Router();
 
 /**
  * @swagger
- * /api/floors/get-floors:
- *   get:
- *     summary: Get all floors
- *     tags: [Floors]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of floors
- */
-router.get('/get-floors', authorizePermissions('floors:read'), FloorController.getAllFloors);
-
-/**
- * @swagger
  * /api/floors/create-floor:
  *   post:
  *     summary: Create a new floor
@@ -48,8 +34,32 @@ router.get('/get-floors', authorizePermissions('floors:read'), FloorController.g
  *     responses:
  *       201:
  *         description: Floor created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Floor'
  */
 router.post('/create-floor', authorizePermissions('floors:write'), FloorController.createFloor);
+
+/**
+ * @swagger
+ * /api/floors/get-floors:
+ *   get:
+ *     summary: Get all floors
+ *     tags: [Floors]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of floors
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Floor'
+ */
+router.get('/get-floors', authorizePermissions('floors:read'), FloorController.getAllFloors);
 
 /**
  * @swagger
@@ -68,6 +78,10 @@ router.post('/create-floor', authorizePermissions('floors:write'), FloorControll
  *     responses:
  *       200:
  *         description: Floor details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Floor'
  *       404:
  *         description: Floor not found
  */
@@ -76,7 +90,7 @@ router.get('/get-floor', authorizePermissions('floors:read'), FloorController.ge
 /**
  * @swagger
  * /api/floors/update-floor:
- *   patch:
+ *   put:
  *     summary: Update an existing floor
  *     tags: [Floors]
  *     security:
@@ -97,8 +111,12 @@ router.get('/get-floor', authorizePermissions('floors:read'), FloorController.ge
  *     responses:
  *       200:
  *         description: Floor updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Floor'
  */
-router.patch('/update-floor', authorizePermissions('floors:write'), FloorController.updateFloor);
+router.put('/update-floor', authorizePermissions('floors:write'), FloorController.updateFloor);
 
 /**
  * @swagger

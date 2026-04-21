@@ -13,7 +13,7 @@ const router = Router();
 
 /**
  * @swagger
- * /api/properties/get-properties:
+ * /api/properties:
  *   get:
  *     summary: Get all properties
  *     tags: [Properties]
@@ -22,8 +22,14 @@ const router = Router();
  *     responses:
  *       200:
  *         description: List of properties
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Property'
  */
-router.get('/get-properties', authorizePermissions('properties:read'), PropertyController.getAllProperties);
+router.get('/', authorizePermissions('properties:read'), PropertyController.getAllProperties);
 
 /**
  * @swagger
@@ -47,14 +53,14 @@ router.get('/get-occupancy', authorizePermissions('properties:read'), PropertyCo
 
 /**
  * @swagger
- * /api/properties/get-property:
+ * /api/properties/{id}:
  *   get:
  *     summary: Get property by ID
  *     tags: [Properties]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: query
+ *       - in: path
  *         name: id
  *         required: true
  *         schema:
@@ -63,14 +69,18 @@ router.get('/get-occupancy', authorizePermissions('properties:read'), PropertyCo
  *     responses:
  *       200:
  *         description: Property details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Property'
  *       404:
  *         description: Property not found
  */
-router.get('/get-property', authorizePermissions('properties:read'), PropertyController.getPropertyById);
+router.get('/:id', authorizePermissions('properties:read'), PropertyController.getPropertyById);
 
 /**
  * @swagger
- * /api/properties/create-property:
+ * /api/properties:
  *   post:
  *     summary: Create a new property
  *     tags: [Properties]
@@ -99,27 +109,35 @@ router.get('/get-property', authorizePermissions('properties:read'), PropertyCon
  *     responses:
  *       201:
  *         description: Property created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Property'
  */
-router.post('/create-property', authorizePermissions('properties:write'), PropertyController.createProperty);
+router.post('/', authorizePermissions('properties:write'), PropertyController.createProperty);
 
 /**
  * @swagger
- * /api/properties/update-property:
- *   patch:
+ * /api/properties/{id}:
+ *   put:
  *     summary: Update an existing property
  *     tags: [Properties]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Property ID
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required: [id]
  *             properties:
- *               id:
- *                 type: string
  *               name:
  *                 type: string
  *               address:
@@ -135,8 +153,12 @@ router.post('/create-property', authorizePermissions('properties:write'), Proper
  *     responses:
  *       200:
  *         description: Property updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Property'
  */
-router.patch('/update-property', authorizePermissions('properties:write'), PropertyController.updateProperty);
+router.put('/:id', authorizePermissions('properties:write'), PropertyController.updateProperty);
 
 /**
  * @swagger
@@ -161,5 +183,6 @@ router.patch('/update-property', authorizePermissions('properties:write'), Prope
  *         description: Property deleted successfully
  */
 router.delete('/delete-property', authorizePermissions('properties:write'), PropertyController.deleteProperty);
+
 
 export default router;

@@ -27,24 +27,20 @@ const router = Router();
  *             type: object
  *             required: [fullName, phoneNumber, email, joiningDate, emergencyContactNumber]
  *             properties:
- *               fullName:
- *                 type: string
- *               phoneNumber:
- *                 type: string
- *               email:
- *                 type: string
- *               joiningDate:
- *                 type: string
- *                 format: date
- *               alternateNumber:
- *                 type: string
- *               emergencyContactNumber:
- *                 type: string
- *               homeContactNumber:
- *                 type: string
+ *               fullName: { type: string }
+ *               phoneNumber: { type: string }
+ *               email: { type: string }
+ *               joiningDate: { type: string, format: date }
+ *               alternateNumber: { type: string }
+ *               emergencyContactNumber: { type: string }
+ *               homeContactNumber: { type: string }
  *     responses:
  *       201:
  *         description: Tenant created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Tenant'
  */
 router.post('/create-tenant', authorizePermissions('tenants:write'), TenantController.create);
 
@@ -59,6 +55,12 @@ router.post('/create-tenant', authorizePermissions('tenants:write'), TenantContr
  *     responses:
  *       200:
  *         description: List of tenants
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Tenant'
  */
 router.get('/get-tenants', authorizePermissions('tenants:read'), TenantController.getAll);
 
@@ -79,13 +81,17 @@ router.get('/get-tenants', authorizePermissions('tenants:read'), TenantControlle
  *     responses:
  *       200:
  *         description: Tenant details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Tenant'
  */
 router.get('/get-tenant', authorizePermissions('tenants:read'), TenantController.getById);
 
 /**
  * @swagger
  * /api/tenants/update-tenant:
- *   patch:
+ *   put:
  *     summary: Update tenant details
  *     tags: [Tenants]
  *     security:
@@ -98,25 +104,23 @@ router.get('/get-tenant', authorizePermissions('tenants:read'), TenantController
  *             type: object
  *             required: [id]
  *             properties:
- *               id:
- *                 type: string
- *               fullName:
- *                 type: string
- *               phoneNumber:
- *                 type: string
- *               email:
- *                 type: string
- *               alternateNumber:
- *                 type: string
- *               emergencyContactNumber:
- *                 type: string
- *               homeContactNumber:
- *                 type: string
+ *               id: { type: string }
+ *               fullName: { type: string }
+ *               phoneNumber: { type: string }
+ *               email: { type: string }
+ *               alternateNumber: { type: string }
+ *               emergencyContactNumber: { type: string }
+ *               homeContactNumber: { type: string }
  *     responses:
  *       200:
  *         description: Tenant updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Tenant'
  */
-router.patch('/update-tenant', authorizePermissions('tenants:write'), TenantController.update);
+router.put('/update-tenant', authorizePermissions('tenants:write'), TenantController.update);
+
 
 /**
  * @swagger

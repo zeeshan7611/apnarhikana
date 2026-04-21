@@ -22,6 +22,12 @@ const router = Router();
  *     responses:
  *       200:
  *         description: List of features
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Feature'
  */
 router.get('/get-features', authorizePermissions('users:read'), FeatureController.getAllFeatures);
 
@@ -41,22 +47,23 @@ router.get('/get-features', authorizePermissions('users:read'), FeatureControlle
  *             type: object
  *             required: [name, key]
  *             properties:
- *               name:
- *                 type: string
- *               key:
- *                 type: string
- *               description:
- *                 type: string
+ *               name: { type: string }
+ *               key: { type: string }
+ *               description: { type: string }
  *     responses:
  *       201:
  *         description: Feature created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Feature'
  */
 router.post('/create-feature', authorizePermissions('users:write'), FeatureController.createFeature);
 
 /**
  * @swagger
  * /api/features/update-feature:
- *   patch:
+ *   put:
  *     summary: Update feature details
  *     tags: [Features]
  *     security:
@@ -69,19 +76,19 @@ router.post('/create-feature', authorizePermissions('users:write'), FeatureContr
  *             type: object
  *             required: [id]
  *             properties:
- *               id:
- *                 type: string
- *               name:
- *                 type: string
- *               key:
- *                 type: string
- *               description:
- *                 type: string
+ *               id: { type: string }
+ *               name: { type: string }
+ *               key: { type: string }
+ *               description: { type: string }
  *     responses:
  *       200:
  *         description: Feature updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Feature'
  */
-router.patch('/update-feature', authorizePermissions('users:write'), FeatureController.updateFeature);
+router.put('/update-feature', authorizePermissions('users:write'), FeatureController.updateFeature);
 
 /**
  * @swagger

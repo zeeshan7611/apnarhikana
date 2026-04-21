@@ -13,20 +13,6 @@ const router = Router();
 
 /**
  * @swagger
- * /api/rooms/get-rooms:
- *   get:
- *     summary: Get all rooms
- *     tags: [Rooms]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of rooms
- */
-router.get('/get-rooms', authorizePermissions('rooms:read'), RoomController.getAllRooms);
-
-/**
- * @swagger
  * /api/rooms/create-room:
  *   post:
  *     summary: Create a new room
@@ -50,8 +36,32 @@ router.get('/get-rooms', authorizePermissions('rooms:read'), RoomController.getA
  *     responses:
  *       201:
  *         description: Room created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Room'
  */
 router.post('/create-room', authorizePermissions('rooms:write'), RoomController.createRoom);
+
+/**
+ * @swagger
+ * /api/rooms/get-rooms:
+ *   get:
+ *     summary: Get all rooms
+ *     tags: [Rooms]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of rooms
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Room'
+ */
+router.get('/get-rooms', authorizePermissions('rooms:read'), RoomController.getAllRooms);
 
 /**
  * @swagger
@@ -70,6 +80,10 @@ router.post('/create-room', authorizePermissions('rooms:write'), RoomController.
  *     responses:
  *       200:
  *         description: Room details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Room'
  *       404:
  *         description: Room not found
  */
@@ -78,7 +92,7 @@ router.get('/get-room', authorizePermissions('rooms:read'), RoomController.getRo
 /**
  * @swagger
  * /api/rooms/update-room:
- *   patch:
+ *   put:
  *     summary: Update an existing room
  *     tags: [Rooms]
  *     security:
@@ -101,8 +115,12 @@ router.get('/get-room', authorizePermissions('rooms:read'), RoomController.getRo
  *     responses:
  *       200:
  *         description: Room updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Room'
  */
-router.patch('/update-room', authorizePermissions('rooms:write'), RoomController.updateRoom);
+router.put('/update-room', authorizePermissions('rooms:write'), RoomController.updateRoom);
 
 /**
  * @swagger

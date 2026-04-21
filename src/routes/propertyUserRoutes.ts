@@ -54,41 +54,29 @@ router.use(jwtAuth);
  *             type: object
  *             required: [name, email, password]
  *             properties:
- *               name:
- *                 type: string
- *               email:
- *                 type: string
- *               password:
- *                 type: string
- *               roleIds:
- *                 type: array
- *                 items:
- *                   type: string
- *               phoneNumber:
- *                 type: string
- *               education:
- *                 type: string
- *               designation:
- *                 type: string
- *               joiningDate:
- *                 type: string
- *                 format: date
- *               monthlySalary:
- *                 type: number
- *               isActive:
- *                 type: boolean
+ *               name: { type: string }
+ *               email: { type: string }
+ *               password: { type: string }
+ *               roleIds: { type: array, items: { type: string } }
+ *               phoneNumber: { type: string }
+ *               education: { type: string }
+ *               designation: { type: string }
+ *               joiningDate: { type: string, format: date }
+ *               monthlySalary: { type: number }
+ *               isActive: { type: boolean }
  *               kycDocument:
  *                 type: object
  *                 properties:
- *                   adharCard:
- *                     type: string
- *                   panCard:
- *                     type: string
- *                   drivingLicense:
- *                     type: string
+ *                   adharCard: { type: string }
+ *                   panCard: { type: string }
+ *                   drivingLicense: { type: string }
  *     responses:
  *       201:
  *         description: Property User created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PropertyUser'
  */
 router.post("/create-property-user", authorizePermissions("users:write"), Controller.createUser);
 
@@ -103,6 +91,12 @@ router.post("/create-property-user", authorizePermissions("users:write"), Contro
  *     responses:
  *       200:
  *         description: List of property users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/PropertyUser'
  */
 router.get("/get-property-users", authorizePermissions("users:read"), Controller.getAllUsers);
 
@@ -123,13 +117,17 @@ router.get("/get-property-users", authorizePermissions("users:read"), Controller
  *     responses:
  *       200:
  *         description: User details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PropertyUser'
  */
 router.get("/get-property-user", authorizePermissions("users:read"), Controller.getUserById);
 
 /**
  * @swagger
  * /api/property-users/update-property-user:
- *   patch:
+ *   put:
  *     summary: Update property user
  *     tags: [PropertyUsers]
  *     security:
@@ -141,46 +139,32 @@ router.get("/get-property-user", authorizePermissions("users:read"), Controller.
  *           schema:
  *             type: object
  *             properties:
- *               id:
- *                 type: string
- *                 description: User ID
- *               name:
- *                 type: string
- *               email:
- *                 type: string
- *               password:
- *                 type: string
- *               roleIds:
- *                 type: array
- *                 items:
- *                   type: string
- *               phoneNumber:
- *                 type: string
- *               education:
- *                 type: string
- *               designation:
- *                 type: string
- *               joiningDate:
- *                 type: string
- *                 format: date
- *               monthlySalary:
- *                 type: number
- *               isActive:
- *                 type: boolean
+ *               id: { type: string, description: User ID }
+ *               name: { type: string }
+ *               email: { type: string }
+ *               password: { type: string }
+ *               roleIds: { type: array, items: { type: string } }
+ *               phoneNumber: { type: string }
+ *               education: { type: string }
+ *               designation: { type: string }
+ *               joiningDate: { type: string, format: date }
+ *               monthlySalary: { type: number }
+ *               isActive: { type: boolean }
  *               kycDocument:
  *                 type: object
  *                 properties:
- *                   adharCard:
- *                     type: string
- *                   panCard:
- *                     type: string
- *                   drivingLicense:
- *                     type: string
+ *                   adharCard: { type: string }
+ *                   panCard: { type: string }
+ *                   drivingLicense: { type: string }
  *     responses:
  *       200:
  *         description: User updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PropertyUser'
  */
-router.patch("/update-property-user", authorizePermissions("users:write"), Controller.updateUser);
+router.put("/update-property-user", authorizePermissions("users:write"), Controller.updateUser);
 
 /**
  * @swagger

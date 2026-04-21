@@ -27,30 +27,21 @@ const router = Router();
  *             type: object
  *             required: [title, amount, category, propertyId]
  *             properties:
- *               title:
- *                 type: string
- *               description:
- *                 type: string
- *               amount:
- *                 type: number
- *               category:
- *                 type: string
- *               date:
- *                 type: string
- *                 format: date
- *               uploadBillImageUrl:
- *                 type: string
- *               propertyId:
- *                 type: string
- *               paymentMethod:
- *                 type: string
- *               paidBy:
- *                 type: string
- *               paidTo:
- *                 type: string
+ *               title: { type: string }
+ *               description: { type: string }
+ *               amount: { type: number }
+ *               category: { type: string }
+ *               date: { type: string, format: date }
+ *               uploadBillImageUrl: { type: string }
+ *               propertyId: { type: string }
+ *               paymentMethod: { type: string }
  *     responses:
  *       201:
  *         description: Expense recorded
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Expense'
  */
 router.post('/create-expense', authorizePermissions('expenses:write'), ExpenseController.create);
 
@@ -65,15 +56,19 @@ router.post('/create-expense', authorizePermissions('expenses:write'), ExpenseCo
  *     parameters:
  *       - in: query
  *         name: propertyId
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *       - in: query
  *         name: category
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *     responses:
  *       200:
  *         description: List of expenses
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Expense'
  */
 router.get('/get-expenses', authorizePermissions('expenses:read'), ExpenseController.getAll);
 
@@ -89,18 +84,21 @@ router.get('/get-expenses', authorizePermissions('expenses:read'), ExpenseContro
  *       - in: query
  *         name: id
  *         required: true
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *     responses:
  *       200:
  *         description: Expense details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Expense'
  */
 router.get('/get-expense', authorizePermissions('expenses:read'), ExpenseController.getById);
 
 /**
  * @swagger
  * /api/expenses/update-expense:
- *   patch:
+ *   put:
  *     summary: Update an existing expense details
  *     tags: [Expenses]
  *     security:
@@ -113,28 +111,21 @@ router.get('/get-expense', authorizePermissions('expenses:read'), ExpenseControl
  *             type: object
  *             required: [id]
  *             properties:
- *               id:
- *                 type: string
- *               title:
- *                 type: string
- *               description:
- *                 type: string
- *               amount:
- *                 type: number
- *               category:
- *                 type: string
- *               status:
- *                 type: string
- *                 enum: [pending, approved, rejected]
- *               paidBy:
- *                 type: string
- *               paidTo:
- *                 type: string
+ *               id: { type: string }
+ *               title: { type: string }
+ *               description: { type: string }
+ *               amount: { type: number }
+ *               category: { type: string }
+ *               status: { type: string, enum: [pending, approved, rejected] }
  *     responses:
  *       200:
  *         description: Expense updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Expense'
  */
-router.patch('/update-expense', authorizePermissions('expenses:write'), ExpenseController.update);
+router.put('/update-expense', authorizePermissions('expenses:write'), ExpenseController.update);
 
 /**
  * @swagger

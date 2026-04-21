@@ -42,20 +42,19 @@ router.get('/get-allocations', authorizePermissions('allocations:read'), Allocat
  *             required: [propertyId, floorId, roomId, bedId, roomCategoryId]
  *             properties:
  *               propertyId:
- *                 type: string
- *               floorId:
- *                 type: string
- *               roomId:
- *                 type: string
- *               bedId:
- *                 type: string
- *               roomCategoryId:
- *                 type: string
- *               notes:
- *                 type: string
+ *               propertyId: { type: string }
+ *               floorId: { type: string }
+ *               roomId: { type: string }
+ *               bedId: { type: string }
+ *               roomCategoryId: { type: string }
+ *               notes: { type: string }
  *     responses:
  *       201:
  *         description: Allocation created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/InventoryAllocation'
  */
 router.post('/create-allocation', authorizePermissions('allocations:write'), AllocationController.createAllocation);
 
@@ -105,11 +104,14 @@ router.post('/create-batch-allocation', authorizePermissions('allocations:write'
  *       - in: query
  *         name: id
  *         required: true
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *     responses:
  *       200:
  *         description: Allocation details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/InventoryAllocation'
  *       404:
  *         description: Allocation not found
  */
@@ -118,7 +120,7 @@ router.get('/get-allocation', authorizePermissions('allocations:read'), Allocati
 /**
  * @swagger
  * /api/allocations/update-allocation:
- *   patch:
+ *   put:
  *     summary: Update an existing allocation
  *     tags: [Allocations]
  *     security:
@@ -130,18 +132,18 @@ router.get('/get-allocation', authorizePermissions('allocations:read'), Allocati
  *           schema:
  *             type: object
  *             properties:
- *               id:
- *                 type: string
- *               notes:
- *                 type: string
- *               status:
- *                 type: string
- *                 enum: [active, inactive, terminated]
+ *               id: { type: string }
+ *               notes: { type: string }
+ *               status: { type: string, enum: [active, inactive, terminated] }
  *     responses:
  *       200:
  *         description: Allocation updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/InventoryAllocation'
  */
-router.patch('/update-allocation', authorizePermissions('allocations:write'), AllocationController.updateAllocation);
+router.put('/update-allocation', authorizePermissions('allocations:write'), AllocationController.updateAllocation);
 
 /**
  * @swagger

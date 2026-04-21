@@ -28,6 +28,12 @@ const router = Router();
  *     responses:
  *       200:
  *         description: List of roles
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Role'
  */
 router.get('/get-roles', authorizePermissions('users:read'), RbacController.getAllRoles);
 
@@ -42,6 +48,12 @@ router.get('/get-roles', authorizePermissions('users:read'), RbacController.getA
  *     responses:
  *       200:
  *         description: List of permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Permission'
  */
 router.get('/get-permissions', authorizePermissions('users:read'), RbacController.getAllPermissions);
 
@@ -62,6 +74,10 @@ router.get('/get-permissions', authorizePermissions('users:read'), RbacControlle
  *     responses:
  *       200:
  *         description: Role details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Role'
  */
 router.get('/get-role', authorizePermissions('users:read'), RbacController.getRoleById);
 
@@ -81,26 +97,24 @@ router.get('/get-role', authorizePermissions('users:read'), RbacController.getRo
  *             type: object
  *             required: [name, propertyId]
  *             properties:
- *               name:
- *                 type: string
- *               propertyId:
- *                 type: string
- *               description:
- *                 type: string
- *               permissionIds:
- *                 type: array
- *                 items:
- *                   type: string
+ *               name: { type: string }
+ *               propertyId: { type: string }
+ *               description: { type: string }
+ *               permissionIds: { type: array, items: { type: string } }
  *     responses:
  *       201:
  *         description: Role created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Role'
  */
 router.post('/create-role', authorizePermissions('users:write'), RbacController.createRole);
 
 /**
  * @swagger
  * /api/rbac/update-role:
- *   patch:
+ *   put:
  *     summary: Update an existing role
  *     tags: [RBAC]
  *     security:
@@ -113,23 +127,20 @@ router.post('/create-role', authorizePermissions('users:write'), RbacController.
  *             type: object
  *             required: [id]
  *             properties:
- *               id:
- *                 type: string
- *               name:
- *                 type: string
- *               propertyId:
- *                 type: string
- *               description:
- *                 type: string
- *               permissionIds:
- *                 type: array
- *                 items:
- *                   type: string
+ *               id: { type: string }
+ *               name: { type: string }
+ *               propertyId: { type: string }
+ *               description: { type: string }
+ *               permissionIds: { type: array, items: { type: string } }
  *     responses:
  *       200:
  *         description: Role updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Role'
  */
-router.patch('/update-role', authorizePermissions('users:write'), RbacController.updateRole);
+router.put('/update-role', authorizePermissions('users:write'), RbacController.updateRole);
 
 /**
  * @swagger

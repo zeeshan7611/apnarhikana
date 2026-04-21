@@ -27,25 +27,20 @@ const router = Router();
  *             type: object
  *             required: [tenantId, inventoryAllocationId, rentAmount, depositAmount, startDate]
  *             properties:
- *               tenantId:
- *                 type: string
- *               inventoryAllocationId:
- *                 type: string
- *               rentAmount:
- *                 type: number
- *               depositAmount:
- *                 type: number
- *               startDate:
- *                 type: string
- *                 format: date
- *               endDate:
- *                 type: string
- *                 format: date
- *               notes:
- *                 type: string
+ *               tenantId: { type: string }
+ *               inventoryAllocationId: { type: string }
+ *               rentAmount: { type: number }
+ *               depositAmount: { type: number }
+ *               startDate: { type: string, format: date }
+ *               endDate: { type: string, format: date }
+ *               notes: { type: string }
  *     responses:
  *       201:
  *         description: Allocation created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TenantAllocation'
  */
 router.post('/create-allocation', authorizePermissions('allocations:write'), TenantAllocationController.create);
 
@@ -60,6 +55,12 @@ router.post('/create-allocation', authorizePermissions('allocations:write'), Ten
  *     responses:
  *       200:
  *         description: List of allocations
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/TenantAllocation'
  */
 router.get('/get-allocations', authorizePermissions('allocations:read'), TenantAllocationController.getAll);
 
@@ -75,18 +76,21 @@ router.get('/get-allocations', authorizePermissions('allocations:read'), TenantA
  *       - in: query
  *         name: id
  *         required: true
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *     responses:
  *       200:
  *         description: Allocation details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TenantAllocation'
  */
 router.get('/get-allocation', authorizePermissions('allocations:read'), TenantAllocationController.getAllocationById);
 
 /**
  * @swagger
  * /api/tenant-allocations/update-allocation:
- *   patch:
+ *   put:
  *     summary: Update allocation details
  *     tags: [TenantAllocations]
  *     security:
@@ -99,25 +103,21 @@ router.get('/get-allocation', authorizePermissions('allocations:read'), TenantAl
  *             type: object
  *             required: [id]
  *             properties:
- *               id:
- *                 type: string
- *               rentAmount:
- *                 type: number
- *               depositAmount:
- *                 type: number
- *               status:
- *                 type: string
- *                 enum: [active, inactive, terminated]
- *               endDate:
- *                 type: string
- *                 format: date
- *               notes:
- *                 type: string
+ *               id: { type: string }
+ *               rentAmount: { type: number }
+ *               depositAmount: { type: number }
+ *               status: { type: string, enum: [active, inactive, terminated] }
+ *               endDate: { type: string, format: date }
+ *               notes: { type: string }
  *     responses:
  *       200:
  *         description: Allocation updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TenantAllocation'
  */
-router.patch('/update-allocation', authorizePermissions('allocations:write'), TenantAllocationController.update);
+router.put('/update-allocation', authorizePermissions('allocations:write'), TenantAllocationController.update);
 
 /**
  * @swagger

@@ -27,25 +27,20 @@ const router = Router();
  *             type: object
  *             required: [tenantId, category, title, description, sourceApp]
  *             properties:
- *               tenantId:
- *                 type: string
- *               propertyId:
- *                 type: string
- *               category:
- *                 type: string
- *               priority:
- *                 type: string
- *                 enum: [low, medium, high, urgent]
- *               title:
- *                 type: string
- *               description:
- *                 type: string
- *               sourceApp:
- *                 type: string
- *                 enum: [tenant, propertyManager]
+ *               tenantId: { type: string }
+ *               propertyId: { type: string }
+ *               category: { type: string }
+ *               priority: { type: string, enum: [low, medium, high, urgent] }
+ *               title: { type: string }
+ *               description: { type: string }
+ *               sourceApp: { type: string, enum: [tenant, propertyManager] }
  *     responses:
  *       201:
  *         description: Complaint created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Complaint'
  */
 router.post('/create-complaint', authorizePermissions('complaints:write'), ComplaintController.create);
 
@@ -60,23 +55,25 @@ router.post('/create-complaint', authorizePermissions('complaints:write'), Compl
  *     parameters:
  *       - in: query
  *         name: propertyId
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *       - in: query
  *         name: status
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *       - in: query
  *         name: priority
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *       - in: query
  *         name: tenantId
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *     responses:
  *       200:
  *         description: List of complaints
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Complaint'
  */
 router.get('/get-complaints', authorizePermissions('complaints:read'), ComplaintController.getAll);
 
@@ -106,18 +103,21 @@ router.get('/get-recent-complaints', authorizePermissions('complaints:read'), Co
  *       - in: query
  *         name: id
  *         required: true
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *     responses:
  *       200:
  *         description: Complaint details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Complaint'
  */
 router.get('/get-complaint', authorizePermissions('complaints:read'), ComplaintController.getById);
 
 /**
  * @swagger
  * /api/complaints/update-complaint:
- *   patch:
+ *   put:
  *     summary: Update complaint (status, resolution notes, etc)
  *     tags: [Complaints]
  *     security:
@@ -130,23 +130,20 @@ router.get('/get-complaint', authorizePermissions('complaints:read'), ComplaintC
  *             type: object
  *             required: [id]
  *             properties:
- *               id:
- *                 type: string
- *               status:
- *                 type: string
- *                 enum: [open, in-progress, resolved, closed]
- *               priority:
- *                 type: string
- *                 enum: [low, medium, high, urgent]
- *               assignedTo:
- *                 type: string
- *               resolutionNotes:
- *                 type: string
+ *               id: { type: string }
+ *               status: { type: string, enum: [open, in-progress, resolved, closed] }
+ *               priority: { type: string, enum: [low, medium, high, urgent] }
+ *               assignedTo: { type: string }
+ *               resolutionNotes: { type: string }
  *     responses:
  *       200:
  *         description: Complaint updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Complaint'
  */
-router.patch('/update-complaint', authorizePermissions('complaints:write'), ComplaintController.update);
+router.put('/update-complaint', authorizePermissions('complaints:write'), ComplaintController.update);
 
 /**
  * @swagger

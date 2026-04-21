@@ -13,20 +13,6 @@ const router = Router();
 
 /**
  * @swagger
- * /api/beds/get-beds:
- *   get:
- *     summary: Get all beds
- *     tags: [Beds]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of beds
- */
-router.get('/get-beds', authorizePermissions('beds:read'), BedController.getAllBeds);
-
-/**
- * @swagger
  * /api/beds/create-bed:
  *   post:
  *     summary: Create a new bed
@@ -45,11 +31,35 @@ router.get('/get-beds', authorizePermissions('beds:read'), BedController.getAllB
  *                 type: string
  *               isActive:
  *                 type: boolean
-     *     responses:
+ *     responses:
  *       201:
  *         description: Bed created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Bed'
  */
 router.post('/create-bed', authorizePermissions('beds:write'), BedController.createBed);
+
+/**
+ * @swagger
+ * /api/beds/get-beds:
+ *   get:
+ *     summary: Get all beds
+ *     tags: [Beds]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of beds
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Bed'
+ */
+router.get('/get-beds', authorizePermissions('beds:read'), BedController.getAllBeds);
 
 /**
  * @swagger
@@ -68,6 +78,10 @@ router.post('/create-bed', authorizePermissions('beds:write'), BedController.cre
  *     responses:
  *       200:
  *         description: Bed details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Bed'
  *       404:
  *         description: Bed not found
  */
@@ -76,7 +90,7 @@ router.get('/get-bed', authorizePermissions('beds:read'), BedController.getBedBy
 /**
  * @swagger
  * /api/beds/update-bed:
- *   patch:
+ *   put:
  *     summary: Update an existing bed
  *     tags: [Beds]
  *     security:
@@ -97,8 +111,12 @@ router.get('/get-bed', authorizePermissions('beds:read'), BedController.getBedBy
  *     responses:
  *       200:
  *         description: Bed updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Bed'
  */
-router.patch('/update-bed', authorizePermissions('beds:write'), BedController.updateBed);
+router.put('/update-bed', authorizePermissions('beds:write'), BedController.updateBed);
 
 /**
  * @swagger
