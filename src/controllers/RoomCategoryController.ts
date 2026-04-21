@@ -63,4 +63,13 @@ export default class RoomCategoryController {
       next(error);
     }
   }
+
+  static async getStaticCategories(req: Request, res: Response, next: NextFunction) {
+    try {
+      const categories = RoomCategoryService.getStaticRoomCategories();
+      res.json({ success: true, data: categories });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

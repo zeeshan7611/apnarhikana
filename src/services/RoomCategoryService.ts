@@ -23,4 +23,13 @@ export default class RoomCategoryService {
   static async deleteRoomCategory(id: string): Promise<IRoomCategory | null> {
     return RoomCategory.findByIdAndDelete(id);
   }
+
+  static getStaticRoomCategories() {
+    return [
+      { name: "single", count: 1 },
+      { name: "double", count: 2 },
+      { name: "triple", count: 3 },
+      { name: "four", count: 4 },
+    ];
+  }
 }

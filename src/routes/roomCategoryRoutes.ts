@@ -142,4 +142,18 @@ router.patch('/update-category', authorizePermissions('rooms:write'), RoomCatego
  */
 router.delete('/delete-category', authorizePermissions('rooms:delete'), RoomCategoryController.delete);
 
+/**
+ * @swagger
+ * /api/room-categories/get-static-categories:
+ *   get:
+ *     summary: Get static room categories
+ *     tags: [RoomCategories]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of static categories
+ */
+router.get('/get-static-categories', authorizePermissions('rooms:read'), RoomCategoryController.getStaticCategories);
+
 export default router;
