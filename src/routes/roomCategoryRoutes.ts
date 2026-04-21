@@ -156,4 +156,24 @@ router.delete('/delete-category', authorizePermissions('rooms:delete'), RoomCate
  */
 router.get('/get-static-categories', authorizePermissions('rooms:read'), RoomCategoryController.getStaticCategories);
 
+/**
+ * @swagger
+ * /api/room-categories/get-categories-by-property:
+ *   get:
+ *     summary: Get room categories by property ID
+ *     tags: [RoomCategories]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: propertyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of room categories for the property
+ */
+router.get('/get-categories-by-property', authorizePermissions('rooms:read'), RoomCategoryController.getByProperty);
+
 export default router;

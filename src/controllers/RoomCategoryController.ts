@@ -72,4 +72,17 @@ export default class RoomCategoryController {
       next(error);
     }
   }
+
+  static async getByProperty(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyId } = req.query;
+      if (!propertyId) {
+        return res.status(400).json({ message: "Property ID is required" });
+      }
+      const roomCategories = await RoomCategoryService.getAllRoomCategories({ propertyId });
+      res.json({ success: true, data: roomCategories });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
