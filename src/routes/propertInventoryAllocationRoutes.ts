@@ -22,6 +22,12 @@ const router = Router();
  *     responses:
  *       200:
  *         description: List of allocations
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/InventoryAllocation'
  */
 router.get('/get-allocations', authorizePermissions('allocations:read'), AllocationController.getAllAllocations);
 
@@ -41,7 +47,6 @@ router.get('/get-allocations', authorizePermissions('allocations:read'), Allocat
  *             type: object
  *             required: [propertyId, floorId, roomId, bedId, roomCategoryId]
  *             properties:
- *               propertyId:
  *               propertyId: { type: string }
  *               floorId: { type: string }
  *               roomId: { type: string }
@@ -76,19 +81,20 @@ router.post('/create-allocation', authorizePermissions('allocations:write'), All
  *               type: object
  *               required: [propertyId, floorId, roomId, roomCategoryId]
  *               properties:
- *                 propertyId:
- *                   type: string
- *                 floorId:
- *                   type: string
- *                 roomId:
- *                   type: string
- *                 roomCategoryId:
- *                   type: string
- *                 notes:
- *                   type: string
+ *                 propertyId: { type: string }
+ *                 floorId: { type: string }
+ *                 roomId: { type: string }
+ *                 roomCategoryId: { type: string }
+ *                 notes: { type: string }
  *     responses:
  *       201:
  *         description: Allocations created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/InventoryAllocation'
  */
 router.post('/create-batch-allocation', authorizePermissions('allocations:write'), AllocationController.createBatch);
 
