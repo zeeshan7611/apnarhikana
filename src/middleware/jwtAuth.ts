@@ -4,10 +4,10 @@ import { Request, Response, NextFunction } from 'express';
 import User from '../models/PropertyUser';
 import RbacService from '../services/RbacService';
 dotenv.config();
-const JWT_SECRET = process.env.JWT_SECRET as string;
+const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
-export async function generateToken(payload: object) {
-  return jwt.sign(payload, JWT_SECRET);
+export function generateToken(payload: object) {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
 }
 
 export async function jwtAuth(req: Request, res: Response, next: NextFunction) {

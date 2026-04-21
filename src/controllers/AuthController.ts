@@ -22,8 +22,8 @@ export default class AuthController {
         populate: { path: 'permissionIds', model: 'Permission' },
       });
       res.status(201).json({ token, user: populatedUser });
-    } catch (e) {
-      res.status(500).json({ error: e });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message || e });
     }
   }
 
@@ -41,8 +41,8 @@ export default class AuthController {
         populate: { path: 'permissionIds', model: 'Permission' },
       });
       res.json({ token, user: populatedUser });
-    } catch (e) {
-      res.status(500).json({ error: e });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message || e });
     }
   }
 }

@@ -107,17 +107,27 @@ export default class PropertyUserService {
 
   // ✅ Login (for auth)
   static async login(email: string, password: string) {
-    const user = await PropertyUser.findOne({ email }).populate("roleIds");
-    if (!user) throw new Error("Invalid credentials");
+    const user = await PropertyUser
+      .findOne({ email })
+      .select("+passwordHash")
+      .populate("roleIds");
+
+    if (!user || !user.passwordHash) {
+      throw new Error("Invalid credentials");
+    }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) throw new Error("Invalid credentials");
+    if (!isMatch) {
+      throw new Error("Invalid credentials");
+    }
 
-    //store jwt token
+    const token = generateToken({
+      id: user._id,
+      email: user.email,
+      roles: user.roleIds
+    });
 
-    //generate jwt auth token
-    const token = await generateToken({ id: user._id, email: user.email });
-
-    return { ...user.toObject(), token };
+    const { passwordHash, ...userObj } = user.toObject();
+    return { ...userObj, token };
   }
 }
