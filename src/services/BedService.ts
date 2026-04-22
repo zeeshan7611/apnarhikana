@@ -4,6 +4,7 @@ export default class BedService {
   // Create Bed
   static async createBed(data: {
     name: string;
+    keyNumber?: number;
     isActive?: boolean;
   }): Promise<IBed> {
     const existing = await Bed.findOne({ name: data.name });
@@ -16,7 +17,7 @@ export default class BedService {
 
   // Get all beds
   static async getAllBeds(): Promise<IBed[]> {
-    return Bed.find().sort({ createdAt: -1 });
+    return Bed.find().sort({ keyNumber: 1 });
   }
 
   // Get bed by ID
@@ -29,6 +30,7 @@ export default class BedService {
     id: string,
     data: Partial<{
       name: string;
+      keyNumber: number;
       isActive: boolean;
     }>
   ): Promise<IBed | null> {

@@ -172,8 +172,25 @@ export default class TenantAllocationService {
         vacantBeds: [vacantBed],
       });
     }
+  }
 
-    return Array.from(rooms.values());
+    // Convert map to array and sort by room.keyNumber
+    const result = Array.from(rooms.values()).sort((a, b) => {
+      const keyA = a.room?.keyNumber || 0;
+      const keyB = b.room?.keyNumber || 0;
+      return keyA - keyB;
+    });
+
+    // Sort vacant beds within each room by bed.keyNumber
+    result.forEach((roomData) => {
+      roomData.vacantBeds.sort((a, b) => {
+        const keyA = (a.bedId as any)?.keyNumber || 0;
+        const keyB = (b.bedId as any)?.keyNumber || 0;
+        return keyA - keyB;
+      });
+    });
+
+    return result;
   }
 
   // ✅ Create Tenant and Allocation in one flow (with Rollback)
@@ -225,29 +242,51 @@ export default class TenantAllocationService {
     }
   }
 
+  // ✅ Helper to sort tenant allocations by floor, room, and bed keyNumber
+  private static sortTenantAllocations(allocations: ITenantAllocation[]): ITenantAllocation[] {
+    return allocations.sort((a, b) => {
+      const invA = a.inventoryAllocationId as any;
+      const invB = b.inventoryAllocationId as any;
+
+      const floorA = invA?.floorId?.keyNumber || 0;
+      const floorB = invB?.floorId?.keyNumber || 0;
+      if (floorA !== floorB) return floorA - floorB;
+
+      const roomA = invA?.roomId?.keyNumber || 0;
+      const roomB = invB?.roomId?.keyNumber || 0;
+      if (roomA !== roomB) return roomA - roomB;
+
+      const bedA = invA?.bedId?.keyNumber || 0;
+      const bedB = invB?.bedId?.keyNumber || 0;
+      return bedA - bedB;
+    });
+  }
+
   static async getAllAllocations(): Promise<ITenantAllocation[]> {
-    return TenantAllocation.find()
+    const allocations = await TenantAllocation.find()
       .populate('tenantId')
       .populate({
         path: 'inventoryAllocationId',
         populate: ['propertyId', 'floorId', 'roomId', 'bedId', 'roomCategoryId'],
       })
-      .populate('createdById', 'name email')
-      .sort({ createdAt: -1 });
+      .populate('createdById', 'name email');
+
+    return this.sortTenantAllocations(allocations);
   }
 
   static async getByPropertyId(propertyId: string): Promise<ITenantAllocation[]> {
     const inventoryAllocations = await PropertyInventoryAllocation.find({ propertyId }).select('_id');
     const inventoryIds = inventoryAllocations.map((item) => item._id);
 
-    return TenantAllocation.find({ inventoryAllocationId: { $in: inventoryIds } })
+    const allocations = await TenantAllocation.find({ inventoryAllocationId: { $in: inventoryIds } })
       .populate('tenantId')
       .populate({
         path: 'inventoryAllocationId',
         populate: ['propertyId', 'floorId', 'roomId', 'bedId', 'roomCategoryId'],
       })
-      .populate('createdById', 'name email')
-      .sort({ createdAt: -1 });
+      .populate('createdById', 'name email');
+
+    return this.sortTenantAllocations(allocations);
   }
 
   static async getAllocationById(id: string): Promise<ITenantAllocation | null> {

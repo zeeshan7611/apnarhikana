@@ -5,6 +5,7 @@ export default class FloorService {
   // Create Floor
   static async createFloor(data: {
     name: string;
+    keyNumber?: number;
     isActive?: boolean;
   }): Promise<IFloor> {
     const existing = await Floor.findOne({ name: data.name });
@@ -17,7 +18,7 @@ export default class FloorService {
 
   // Get all floors
   static async getAllFloors(): Promise<IFloor[]> {
-    return Floor.find().sort({ createdAt: -1 });
+    return Floor.find().sort({ keyNumber: 1 });
   }
 
   // Get floor by ID
@@ -30,6 +31,7 @@ export default class FloorService {
     id: string,
     data: Partial<{
       name: string;
+      keyNumber: number;
       isActive: boolean;
     }>
   ): Promise<IFloor | null> {

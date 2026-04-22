@@ -7,6 +7,7 @@ export default class RoomService {
     name: string;
     isActive?: boolean;
     roomCode: string;
+    keyNumber?: number;
   }): Promise<IRoom> {
     const existing = await Room.findOne({ name: data.name });
     if (existing) {
@@ -18,7 +19,7 @@ export default class RoomService {
 
   // Get all rooms
   static async getAllRooms(): Promise<IRoom[]> {
-    return Room.find().sort({ createdAt: -1 });
+    return Room.find().sort({ keyNumber: 1 });
   }
 
   // Get single room
@@ -33,6 +34,7 @@ export default class RoomService {
       name: string;
       isActive: boolean;
       roomCode: string;
+      keyNumber: number;
     }>
   ): Promise<IRoom | null> {
     return Room.findByIdAndUpdate(id, data, { new: true });

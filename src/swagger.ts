@@ -62,6 +62,7 @@ const swaggerDefinition = {
         properties: {
           id: { type: 'string' },
           name: { type: 'string' },
+          keyNumber: { type: 'number' },
           isActive: { type: 'boolean' },
         },
       },
@@ -71,6 +72,7 @@ const swaggerDefinition = {
           id: { type: 'string' },
           name: { type: 'string' },
           roomCode: { type: 'string' },
+          keyNumber: { type: 'number' },
           isActive: { type: 'boolean' },
         },
       },
@@ -79,6 +81,7 @@ const swaggerDefinition = {
         properties: {
           id: { type: 'string' },
           name: { type: 'string' },
+          keyNumber: { type: 'number' },
           isActive: { type: 'boolean' },
         },
       },

@@ -103,15 +103,33 @@ export default class PropertyInventoryAllocationService {
     return results;
   }
 
+  // ✅ Helper to sort allocations by floor, room, and bed keyNumber
+  private static sortAllocations(allocations: IPropertyInventoryAllocation[]): IPropertyInventoryAllocation[] {
+    return allocations.sort((a, b) => {
+      const floorA = (a.floorId as any)?.keyNumber || 0;
+      const floorB = (b.floorId as any)?.keyNumber || 0;
+      if (floorA !== floorB) return floorA - floorB;
+
+      const roomA = (a.roomId as any)?.keyNumber || 0;
+      const roomB = (b.roomId as any)?.keyNumber || 0;
+      if (roomA !== roomB) return roomA - roomB;
+
+      const bedA = (a.bedId as any)?.keyNumber || 0;
+      const bedB = (b.bedId as any)?.keyNumber || 0;
+      return bedA - bedB;
+    });
+  }
+
   // ✅ Get all allocations (with population)
   static async getAll(): Promise<IPropertyInventoryAllocation[]> {
-    return PropertyInventoryAllocation.find()
+    const allocations = await PropertyInventoryAllocation.find()
       .populate("propertyId")
       .populate("floorId")
       .populate("roomId")
       .populate("bedId")
-      .populate("roomCategoryId")
-      .sort({ createdAt: -1 });
+      .populate("roomCategoryId");
+    
+    return this.sortAllocations(allocations);
   }
 
   // ✅ Get all by Property and Room
@@ -119,26 +137,28 @@ export default class PropertyInventoryAllocationService {
     propertyId: string,
     roomId: string
   ): Promise<IPropertyInventoryAllocation[]> {
-    return PropertyInventoryAllocation.find({ propertyId, roomId })
+    const allocations = await PropertyInventoryAllocation.find({ propertyId, roomId })
       .populate("propertyId")
       .populate("floorId")
       .populate("roomId")
       .populate("bedId")
-      .populate("roomCategoryId")
-      .sort({ createdAt: -1 });
+      .populate("roomCategoryId");
+    
+    return this.sortAllocations(allocations);
   }
 
   // ✅ Get all by Property
   static async getAllByPropertyId(
     propertyId: string
   ): Promise<IPropertyInventoryAllocation[]> {
-    return PropertyInventoryAllocation.find({ propertyId })
+    const allocations = await PropertyInventoryAllocation.find({ propertyId })
       .populate("propertyId")
       .populate("floorId")
       .populate("roomId")
       .populate("bedId")
-      .populate("roomCategoryId")
-      .sort({ createdAt: -1 });
+      .populate("roomCategoryId");
+    
+    return this.sortAllocations(allocations);
   }
 
   // ✅ Get by ID

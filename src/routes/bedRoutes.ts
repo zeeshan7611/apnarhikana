@@ -29,6 +29,8 @@ const router = Router();
  *             properties:
  *               name:
  *                 type: string
+ *               keyNumber:
+ *                 type: number
  *               isActive:
  *                 type: boolean
  *     responses:

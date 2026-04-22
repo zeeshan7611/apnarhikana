@@ -31,6 +31,8 @@ const router = Router();
  *                 type: string
  *               roomCode:
  *                 type: string
+ *               keyNumber:
+ *                 type: number
  *               isActive:
  *                 type: boolean
  *     responses:
