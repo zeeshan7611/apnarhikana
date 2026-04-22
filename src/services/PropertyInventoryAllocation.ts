@@ -59,32 +59,33 @@ export default class PropertyInventoryAllocationService {
     roomCategoryId: string;
     notes?: string;
   }>): Promise<IPropertyInventoryAllocation[]> {
+
     const results: IPropertyInventoryAllocation[] = [];
 
     for (const item of batchData) {
-      // 1. Find Room Category
+
+      // 1. Get room category
       const category = await RoomCategory.findById(item.roomCategoryId);
-      if (!category) throw new Error(`Room category not found for ID: ${item.roomCategoryId}`);
+      if (!category) continue;
 
       const bedCount = category.bedCount;
-      const basePrice = category.basePrice;
 
-      // 2. Find Available Beds
-      // We need beds that are NOT currently active in any allocation
-      const activeAllocations = await PropertyInventoryAllocation.find({ status: "active" }).select('bedId');
-      const allocatedBedIds = activeAllocations.map(a => a.bedId);
+      // 2. Fetch beds (no global restriction)
+      const beds = await Bed.find({ isActive: true }).limit(bedCount);
 
-      const availableBeds = await Bed.find({
-        _id: { $nin: allocatedBedIds },
-        isActive: true
-      }).limit(bedCount);
+      if (beds.length < bedCount) continue;
 
-      if (availableBeds.length < bedCount) {
-        throw new Error(`Not enough available beds for category ${category.roomCategory}. Needed ${bedCount}, found ${availableBeds.length}`);
-      }
+      for (const bed of beds) {
 
-      // 3. Create Allocations for each bed
-      for (const bed of availableBeds) {
+        // 3. Only prevent duplicate (roomId + bedId)
+        const exists = await PropertyInventoryAllocation.findOne({
+          roomId: item.roomId,
+          bedId: bed._id,
+          status: "active"
+        });
+
+        if (exists) continue;
+
         const allocation = await PropertyInventoryAllocation.create({
           propertyId: item.propertyId,
           floorId: item.floorId,
@@ -94,6 +95,7 @@ export default class PropertyInventoryAllocationService {
           notes: item.notes,
           status: "active"
         });
+
         results.push(allocation);
       }
     }
