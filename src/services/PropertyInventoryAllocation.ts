@@ -114,6 +114,33 @@ export default class PropertyInventoryAllocationService {
       .sort({ createdAt: -1 });
   }
 
+  // ✅ Get all by Property and Room
+  static async getAllByPropertyAndRoom(
+    propertyId: string,
+    roomId: string
+  ): Promise<IPropertyInventoryAllocation[]> {
+    return PropertyInventoryAllocation.find({ propertyId, roomId })
+      .populate("propertyId")
+      .populate("floorId")
+      .populate("roomId")
+      .populate("bedId")
+      .populate("roomCategoryId")
+      .sort({ createdAt: -1 });
+  }
+
+  // ✅ Get all by Property
+  static async getAllByPropertyId(
+    propertyId: string
+  ): Promise<IPropertyInventoryAllocation[]> {
+    return PropertyInventoryAllocation.find({ propertyId })
+      .populate("propertyId")
+      .populate("floorId")
+      .populate("roomId")
+      .populate("bedId")
+      .populate("roomCategoryId")
+      .sort({ createdAt: -1 });
+  }
+
   // ✅ Get by ID
   static async getById(
     id: string

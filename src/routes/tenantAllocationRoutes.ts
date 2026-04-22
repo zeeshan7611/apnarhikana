@@ -66,6 +66,31 @@ router.get('/get-allocations', authorizePermissions('allocations:read'), TenantA
 
 /**
  * @swagger
+ * /api/tenant-allocations/get-tenant-by-property:
+ *   get:
+ *     summary: Get all tenant allocations for a specific property
+ *     tags: [TenantAllocations]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: propertyId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: List of tenant allocations
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/TenantAllocation'
+ */
+router.get('/get-tenant-by-property', authorizePermissions('allocations:read'), TenantAllocationController.getTenantByPropertyId);
+
+/**
+ * @swagger
  * /api/tenant-allocations/get-allocation:
  *   get:
  *     summary: Get allocation details by ID

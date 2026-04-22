@@ -29,6 +29,26 @@ export default class PropertyInventoryAllocationController {
     }
   }
 
+  static async getAllocationsByPropertyAndRoom(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyId, roomId } = req.query;
+      const data = await InventoryService.getAllByPropertyAndRoom(propertyId as string, roomId as string);
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async getAllocationsByPropertyId(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyId } = req.query;
+      const data = await InventoryService.getAllByPropertyId(propertyId as string);
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   static async getAllocationById(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.query;

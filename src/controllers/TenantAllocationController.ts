@@ -23,6 +23,16 @@ export default class TenantAllocationController {
     }
   }
 
+  static async getTenantByPropertyId(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyId } = req.query;
+      const allocations = await TenantAllocationService.getByPropertyId(propertyId as string);
+      res.json({ success: true, data: allocations });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   static async getAllocationById(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.query;

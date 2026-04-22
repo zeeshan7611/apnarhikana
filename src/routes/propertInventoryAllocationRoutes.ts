@@ -33,6 +33,60 @@ router.get('/get-allocations', authorizePermissions('allocations:read'), Allocat
 
 /**
  * @swagger
+ * /api/allocations/get-allocation-by-property-room:
+ *   get:
+ *     summary: Get all inventory allocations by propertyId and roomId
+ *     tags: [Allocations]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: propertyId
+ *         required: true
+ *         schema: { type: string }
+ *       - in: query
+ *         name: roomId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: List of allocations
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/PropertyInventoryAllocation'
+ */
+router.get('/get-allocation-by-property-room', authorizePermissions('allocations:read'), AllocationController.getAllocationsByPropertyAndRoom);
+
+/**
+ * @swagger
+ * /api/allocations/get-allocation-by-property:
+ *   get:
+ *     summary: Get all inventory allocations by propertyId
+ *     tags: [Allocations]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: propertyId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: List of allocations
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/PropertyInventoryAllocation'
+ */
+router.get('/get-allocation-by-property', authorizePermissions('allocations:read'), AllocationController.getAllocationsByPropertyId);
+
+/**
+ * @swagger
  * /api/allocations/create-allocation:
  *   post:
  *     summary: Create a single inventory allocation
