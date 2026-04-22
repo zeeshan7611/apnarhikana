@@ -27,7 +27,7 @@ const router = Router();
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/InventoryAllocation'
+ *                 $ref: '#/components/schemas/PropertyInventoryAllocation'
  */
 router.get('/get-allocations', authorizePermissions('allocations:read'), AllocationController.getAllAllocations);
 
@@ -59,7 +59,7 @@ router.get('/get-allocations', authorizePermissions('allocations:read'), Allocat
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/InventoryAllocation'
+ *               $ref: '#/components/schemas/PropertyInventoryAllocation'
  */
 router.post('/create-allocation', authorizePermissions('allocations:write'), AllocationController.createAllocation);
 
@@ -94,7 +94,7 @@ router.post('/create-allocation', authorizePermissions('allocations:write'), All
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/InventoryAllocation'
+ *                 $ref: '#/components/schemas/PropertyInventoryAllocation'
  */
 router.post('/create-batch-allocation', authorizePermissions('allocations:write'), AllocationController.createBatch);
 
@@ -117,7 +117,7 @@ router.post('/create-batch-allocation', authorizePermissions('allocations:write'
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/InventoryAllocation'
+ *               $ref: '#/components/schemas/PropertyInventoryAllocation'
  *       404:
  *         description: Allocation not found
  */
@@ -147,7 +147,7 @@ router.get('/get-allocation', authorizePermissions('allocations:read'), Allocati
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/InventoryAllocation'
+ *               $ref: '#/components/schemas/PropertyInventoryAllocation'
  */
 router.put('/update-allocation', authorizePermissions('allocations:write'), AllocationController.updateAllocation);
 

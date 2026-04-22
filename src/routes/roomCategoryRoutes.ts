@@ -40,6 +40,10 @@ const router = Router();
  *     responses:
  *       201:
  *         description: Room category created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RoomCategory'
  */
 router.post('/create-category', authorizePermissions('rooms:write'), RoomCategoryController.create);
 
@@ -63,6 +67,12 @@ router.post('/create-category', authorizePermissions('rooms:write'), RoomCategor
  *     responses:
  *       200:
  *         description: List of room categories
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/RoomCategory'
  */
 router.get('/get-categories', authorizePermissions('rooms:read'), RoomCategoryController.getAll);
 
@@ -83,6 +93,10 @@ router.get('/get-categories', authorizePermissions('rooms:read'), RoomCategoryCo
  *     responses:
  *       200:
  *         description: Room category details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RoomCategory'
  */
 router.get('/get-category', authorizePermissions('rooms:read'), RoomCategoryController.getById);
 
@@ -115,6 +129,10 @@ router.get('/get-category', authorizePermissions('rooms:read'), RoomCategoryCont
  *     responses:
  *       200:
  *         description: Room category updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RoomCategory'
  */
 router.patch('/update-category', authorizePermissions('rooms:write'), RoomCategoryController.update);
 
@@ -173,6 +191,12 @@ router.get('/get-static-categories', authorizePermissions('rooms:read'), RoomCat
  *     responses:
  *       200:
  *         description: List of room categories for the property
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/RoomCategory'
  */
 router.get('/get-categories-by-property', authorizePermissions('rooms:read'), RoomCategoryController.getByProperty);
 

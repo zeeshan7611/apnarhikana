@@ -25,7 +25,7 @@ const router = Router();
  *         application/json:
  *           schema:
  *             type: object
- *             required: [title, message]
+ *             required: [title, message, sentBy]
  *             properties:
  *               title: { type: string }
  *               message: { type: string }
@@ -34,6 +34,7 @@ const router = Router();
  *               floorId: { type: string, description: Target an entire floor }
  *               roomId: { type: string, description: Target an entire room }
  *               type: { type: string, enum: [announcement, notification, emergency] }
+ *               sentBy: { type: string, description: ID of the user sending the announcement }
  *     responses:
  *       201:
  *         description: Announcement broadcasted
@@ -58,6 +59,9 @@ router.post('/create-announcement', authorizePermissions('announcements:write'),
  *         schema: { type: string }
  *       - in: query
  *         name: type
+ *         schema: { type: string }
+ *       - in: query
+ *         name: sentBy
  *         schema: { type: string }
  *     responses:
  *       200:

@@ -34,6 +34,8 @@ const router = Router();
  *               title: { type: string }
  *               description: { type: string }
  *               sourceApp: { type: string, enum: [tenant, propertyManager] }
+ *               assignedTo: { type: string }
+ *               resolutionNotes: { type: string }
  *     responses:
  *       201:
  *         description: Complaint created
@@ -88,6 +90,12 @@ router.get('/get-complaints', authorizePermissions('complaints:read'), Complaint
  *     responses:
  *       200:
  *         description: List of recent complaints
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Complaint'
  */
 router.get('/get-recent-complaints', authorizePermissions('complaints:read'), ComplaintController.getRecent);
 
@@ -111,6 +119,8 @@ router.get('/get-recent-complaints', authorizePermissions('complaints:read'), Co
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Complaint'
+ *       404:
+ *         description: Complaint not found
  */
 router.get('/get-complaint', authorizePermissions('complaints:read'), ComplaintController.getById);
 
@@ -133,6 +143,9 @@ router.get('/get-complaint', authorizePermissions('complaints:read'), ComplaintC
  *               id: { type: string }
  *               status: { type: string, enum: [open, in-progress, resolved, closed] }
  *               priority: { type: string, enum: [low, medium, high, urgent] }
+ *               category: { type: string }
+ *               title: { type: string }
+ *               description: { type: string }
  *               assignedTo: { type: string }
  *               resolutionNotes: { type: string }
  *     responses:

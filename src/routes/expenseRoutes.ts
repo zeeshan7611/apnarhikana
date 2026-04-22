@@ -31,10 +31,13 @@ const router = Router();
  *               description: { type: string }
  *               amount: { type: number }
  *               category: { type: string }
- *               date: { type: string, format: date }
+ *               date: { type: string, format: date-time }
  *               uploadBillImageUrl: { type: string }
  *               propertyId: { type: string }
+ *               userId: { type: string }
  *               paymentMethod: { type: string }
+ *               paidBy: { type: string }
+ *               paidTo: { type: string }
  *     responses:
  *       201:
  *         description: Expense recorded
@@ -116,6 +119,11 @@ router.get('/get-expense', authorizePermissions('expenses:read'), ExpenseControl
  *               description: { type: string }
  *               amount: { type: number }
  *               category: { type: string }
+ *               date: { type: string, format: date-time }
+ *               uploadBillImageUrl: { type: string }
+ *               paymentMethod: { type: string }
+ *               paidBy: { type: string }
+ *               paidTo: { type: string }
  *               status: { type: string, enum: [pending, approved, rejected] }
  *     responses:
  *       200:

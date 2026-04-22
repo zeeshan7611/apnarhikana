@@ -25,7 +25,7 @@ const router = Router();
  *         application/json:
  *           schema:
  *             type: object
- *             required: [tenantAllocationId, amount, month, paymentMethod]
+ *             required: [tenantAllocationId, amount, month, paymentMethod, createdById]
  *             properties:
  *               tenantAllocationId: { type: string }
  *               tenantId:           { type: string }
@@ -34,6 +34,7 @@ const router = Router();
  *               month:              { type: string, description: "Format: YYYY-MM" }
  *               paymentMethod:      { type: string, enum: ["cash", "upi", "bank_transfer", "cheque"] }
  *               notes:              { type: string }
+ *               createdById:        { type: string }
  *     responses:
  *       201:
  *         description: Payment recorded
@@ -66,6 +67,9 @@ router.post('/collect-rent', authorizePermissions('payments:write'), PaymentCont
  *         name: month
  *         schema: { type: string }
  *         description: "Format: YYYY-MM"
+ *       - in: query
+ *         name: createdById
+ *         schema: { type: string }
  *     responses:
  *       200:
  *         description: List of payments
@@ -107,7 +111,7 @@ router.get('/get-payment', authorizePermissions('payments:read'), PaymentControl
  * @swagger
  * /api/payments/update-payment:
  *   put:
- *     summary: Update payment status
+ *     summary: Update payment details
  *     tags: [Payments]
  *     security:
  *       - bearerAuth: []
@@ -123,6 +127,8 @@ router.get('/get-payment', authorizePermissions('payments:read'), PaymentControl
  *               status:        { type: string, enum: ["pending", "paid", "failed", "partial"] }
  *               paymentMethod: { type: string, enum: ["cash", "upi", "bank_transfer", "cheque"] }
  *               notes:         { type: string }
+ *               amount:        { type: number }
+ *               paidAt:        { type: string, format: date-time }
  *     responses:
  *       200:
  *         description: Payment updated

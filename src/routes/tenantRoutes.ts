@@ -30,10 +30,11 @@ const router = Router();
  *               fullName: { type: string }
  *               phoneNumber: { type: string }
  *               email: { type: string }
- *               joiningDate: { type: string, format: date }
+ *               joiningDate: { type: string, format: date-time }
  *               alternateNumber: { type: string }
  *               emergencyContactNumber: { type: string }
  *               homeContactNumber: { type: string }
+ *               createdById: { type: string }
  *     responses:
  *       201:
  *         description: Tenant created
@@ -108,6 +109,7 @@ router.get('/get-tenant', authorizePermissions('tenants:read'), TenantController
  *               fullName: { type: string }
  *               phoneNumber: { type: string }
  *               email: { type: string }
+ *               joiningDate: { type: string, format: date-time }
  *               alternateNumber: { type: string }
  *               emergencyContactNumber: { type: string }
  *               homeContactNumber: { type: string }
