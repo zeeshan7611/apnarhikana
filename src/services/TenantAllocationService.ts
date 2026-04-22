@@ -172,7 +172,6 @@ export default class TenantAllocationService {
         vacantBeds: [vacantBed],
       });
     }
-  }
 
     // Convert map to array and sort by room.keyNumber
     const result = Array.from(rooms.values()).sort((a, b) => {
