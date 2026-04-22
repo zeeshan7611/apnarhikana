@@ -3,6 +3,11 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface ITenantAllocation extends Document {
   tenantId: mongoose.Types.ObjectId;
   inventoryAllocationId: mongoose.Types.ObjectId;
+  propertyId: mongoose.Types.ObjectId;
+  floorId: mongoose.Types.ObjectId;
+  roomId: mongoose.Types.ObjectId;
+  bedId: mongoose.Types.ObjectId;
+  roomCategoryId: mongoose.Types.ObjectId;
   rentAmount: number;
   depositAmount: number;
   startDate: Date;
@@ -15,6 +20,15 @@ export interface ITenantAllocation extends Document {
 const TenantAllocationSchema: Schema = new Schema({
   tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true },
   inventoryAllocationId: { type: Schema.Types.ObjectId, ref: 'PropertyInventoryAllocation', required: true },
+  propertyId: {
+    type: Schema.Types.ObjectId,
+    ref: "Property",
+    required: true,
+  },
+  floorId: { type: Schema.Types.ObjectId, ref: "Floor", required: true },
+  roomId: { type: Schema.Types.ObjectId, ref: "Room", required: true },
+  bedId: { type: Schema.Types.ObjectId, ref: "Bed", required: true },
+  roomCategoryId: { type: Schema.Types.ObjectId, ref: "RoomCategory", required: true },
   rentAmount: { type: Number, required: true },
   depositAmount: { type: Number, required: true },
   startDate: { type: Date, required: true },

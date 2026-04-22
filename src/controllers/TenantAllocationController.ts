@@ -14,6 +14,30 @@ export default class TenantAllocationController {
     }
   }
 
+  static async createCompleteAllocation(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user.id;
+      const result = await TenantAllocationService.createCompleteAllocation(
+        req.body,
+        userId
+      );
+
+      res.status(201).json({ success: true, data: result });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async getVacantInventory(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyId } = req.query;
+      const data = await TenantAllocationService.getVacantInventory(propertyId as string);
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   static async getAll(req: Request, res: Response, next: NextFunction) {
     try {
       const allocations = await TenantAllocationService.getAllAllocations();
