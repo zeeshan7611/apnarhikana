@@ -5,6 +5,7 @@ export interface IPropertyUser extends Document {
   passwordHash: string;
   name: string;
   roleIds: mongoose.Types.ObjectId[];
+  propertyId?: mongoose.Types.ObjectId[];
   phoneNumber?: string;
   education?: string;
   designation?: string;
@@ -37,7 +38,7 @@ const PropertyUserSchema: Schema = new Schema({
   },
   isActive: { type: Boolean, default: true },
   roleIds: [{ type: Schema.Types.ObjectId, ref: 'Role', default: [] }],
-  passwordHash: { type: String }, 
+  propertyId: [{ type: Schema.Types.ObjectId, ref: 'Property', index: true }],
   jwtAccessToken: { type: String },
   notficationToken: { type: String },
 }, {

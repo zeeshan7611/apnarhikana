@@ -19,12 +19,6 @@ const router = Router();
  *     tags: [RBAC]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: propertyId
- *         schema:
- *           type: string
- *         description: Optional property filter
  *     responses:
  *       200:
  *         description: List of roles
@@ -95,10 +89,9 @@ router.get('/get-role', authorizePermissions('users:read'), RbacController.getRo
  *         application/json:
  *           schema:
  *             type: object
- *             required: [name, propertyId]
+ *             required: [name]
  *             properties:
  *               name: { type: string }
- *               propertyId: { type: string }
  *               description: { type: string }
  *               permissionIds: { type: array, items: { type: string } }
  *     responses:
@@ -129,7 +122,6 @@ router.post('/create-role', authorizePermissions('users:write'), RbacController.
  *             properties:
  *               id: { type: string }
  *               name: { type: string }
- *               propertyId: { type: string }
  *               description: { type: string }
  *               permissionIds: { type: array, items: { type: string } }
  *     responses:
@@ -208,12 +200,14 @@ router.post('/assign-role-to-user', authorizePermissions('users:roles:update'), 
  *         application/json:
  *           schema:
  *             type: object
- *             required: [featureId, action, roleId]
+ *             required: [featureId, actions, roleId]
  *             properties:
  *               featureId:
  *                 type: string
- *               action:
- *                 type: string
+ *               actions:
+ *                 type: array
+ *                 items:
+ *                   type: string
  *               roleId:
  *                 type: string
  *     responses:

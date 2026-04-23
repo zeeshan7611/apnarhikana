@@ -58,6 +58,7 @@ router.use(jwtAuth);
  *               email: { type: string }
  *               password: { type: string }
  *               roleIds: { type: array, items: { type: string } }
+ *               propertyId: { type: array, items: { type: string } }
  *               phoneNumber: { type: string }
  *               education: { type: string }
  *               designation: { type: string }
@@ -144,6 +145,7 @@ router.get("/get-property-user", authorizePermissions("users:read"), Controller.
  *               email: { type: string }
  *               password: { type: string }
  *               roleIds: { type: array, items: { type: string } }
+ *               propertyId: { type: array, items: { type: string } }
  *               phoneNumber: { type: string }
  *               education: { type: string }
  *               designation: { type: string }

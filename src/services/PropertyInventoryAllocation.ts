@@ -71,7 +71,7 @@ export default class PropertyInventoryAllocationService {
       const bedCount = category.bedCount;
 
       // 2. Fetch beds (no global restriction)
-      const beds = await Bed.find({ isActive: true }).limit(bedCount);
+      const beds = await Bed.find({ isActive: true }).sort({ keyNumber: 1 }).limit(bedCount);
 
       if (beds.length < bedCount) continue;
 
@@ -79,6 +79,8 @@ export default class PropertyInventoryAllocationService {
 
         // 3. Only prevent duplicate (roomId + bedId)
         const exists = await PropertyInventoryAllocation.findOne({
+          propertyId: item.propertyId,
+          floorId: item.floorId,
           roomId: item.roomId,
           bedId: bed._id,
           status: "active"
@@ -128,7 +130,7 @@ export default class PropertyInventoryAllocationService {
       .populate("roomId")
       .populate("bedId")
       .populate("roomCategoryId");
-    
+
     return this.sortAllocations(allocations);
   }
 
@@ -143,7 +145,7 @@ export default class PropertyInventoryAllocationService {
       .populate("roomId")
       .populate("bedId")
       .populate("roomCategoryId");
-    
+
     return this.sortAllocations(allocations);
   }
 
@@ -157,7 +159,7 @@ export default class PropertyInventoryAllocationService {
       .populate("roomId")
       .populate("bedId")
       .populate("roomCategoryId");
-    
+
     return this.sortAllocations(allocations);
   }
 

@@ -9,6 +9,7 @@ export default class PropertyUserService {
     email: string;
     password: string;
     roleIds?: string[];
+    propertyId?: string[];
     phoneNumber?: string;
     education?: string;
     designation?: string;
@@ -32,13 +33,15 @@ export default class PropertyUserService {
       ...data,
       passwordHash: hashedPassword,
       roleIds: data.roleIds || [],
+      propertyId: data.propertyId || [],
     });
   }
 
-  // ✅ Get all users (with roles)
+  // ✅ Get all users (with roles and properties)
   static async getAllUsers(): Promise<IPropertyUser[]> {
     return PropertyUser.find()
       .populate("roleIds")
+      .populate("propertyId", "name id") // Assuming Property has name
       .select("-passwordHash")
       .sort({ createdAt: -1 });
   }
@@ -47,6 +50,7 @@ export default class PropertyUserService {
   static async getUserById(id: string): Promise<IPropertyUser> {
     const user = await PropertyUser.findById(id)
       .populate("roleIds")
+      .populate("propertyId", "name id")
       .select("-passwordHash");
     if (!user) {
       throw new Error("User not found");
@@ -62,6 +66,7 @@ export default class PropertyUserService {
       email: string;
       password: string;
       roleIds: string[];
+      propertyId: string[];
       phoneNumber: string;
       education: string;
       designation: string;
@@ -87,6 +92,7 @@ export default class PropertyUserService {
       new: true,
     })
       .populate("roleIds")
+      .populate("propertyId", "name id")
       .select("-passwordHash");
 
     if (!user) {
@@ -105,12 +111,12 @@ export default class PropertyUserService {
     return user;
   }
 
-  // ✅ Login (for auth)
   static async login(email: string, password: string) {
     const user = await PropertyUser
       .findOne({ email })
       .select("+passwordHash")
-      .populate("roleIds");
+      .populate("roleIds")
+      .populate("propertyId", "name id");
 
     if (!user || !user.passwordHash) {
       throw new Error("Invalid credentials");
@@ -124,7 +130,8 @@ export default class PropertyUserService {
     const token = generateToken({
       id: user._id,
       email: user.email,
-      roles: user.roleIds
+      roles: user.roleIds,
+      properties: user.propertyId
     });
 
     const { passwordHash, ...userObj } = user.toObject();

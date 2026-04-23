@@ -4,8 +4,7 @@ import RbacService from '../services/RbacService';
 export default class RbacController {
   static async getAllRoles(req: Request, res: Response, next: NextFunction) {
     try {
-      const { propertyId } = req.query;
-      const roles = await RbacService.getAllRoles(propertyId as string);
+      const roles = await RbacService.getAllRoles();
       res.json({ success: true, data: roles });
     } catch (err) {
       next(err);
@@ -81,8 +80,8 @@ export default class RbacController {
 
   static async bindPermissionToRole(req: Request, res: Response, next: NextFunction) {
     try {
-      const { featureId, action, roleId } = req.body;
-      const role = await RbacService.bindPermissionToRole(featureId, action, roleId);
+      const { featureId, actions, roleId } = req.body;
+      const role = await RbacService.bindPermissionToRole(featureId, actions, roleId);
       res.json({ success: true, data: role });
     } catch (err) {
       next(err);

@@ -4,60 +4,40 @@ import User from '../models/PropertyUser';
 import Feature from '../models/Feature';
 
 const DEFAULT_PERMISSIONS = [
-  { name: 'properties:read', feature: 'properties', action: 'read' },
-  { name: 'properties:write', feature: 'properties', action: 'write' },
-  { name: 'floors:read', feature: 'floors', action: 'read' },
-  { name: 'floors:write', feature: 'floors', action: 'write' },
-  { name: 'rooms:read', feature: 'rooms', action: 'read' },
-  { name: 'rooms:write', feature: 'rooms', action: 'write' },
-  { name: 'rooms:delete', feature: 'rooms', action: 'delete' },
-  { name: 'beds:read', feature: 'beds', action: 'read' },
-  { name: 'beds:write', feature: 'beds', action: 'write' },
-  { name: 'allocations:read', feature: 'allocations', action: 'read' },
-  { name: 'allocations:write', feature: 'allocations', action: 'write' },
-  { name: 'users:read', feature: 'users', action: 'read' },
-  { name: 'users:write', feature: 'users', action: 'write' },
-  { name: 'users:delete', feature: 'users', action: 'delete' },
-  { name: 'users:roles:update', feature: 'users', action: 'roles:update' },
-  { name: 'tenants:read', feature: 'tenants', action: 'read' },
-  { name: 'tenants:write', feature: 'tenants', action: 'write' },
-  { name: 'tenants:delete', feature: 'tenants', action: 'delete' },
-  { name: 'expenses:read', feature: 'expenses', action: 'read' },
-  { name: 'expenses:write', feature: 'expenses', action: 'write' },
-  { name: 'expenses:delete', feature: 'expenses', action: 'delete' },
-  { name: 'complaints:read', feature: 'complaints', action: 'read' },
-  { name: 'complaints:write', feature: 'complaints', action: 'write' },
-  { name: 'complaints:delete', feature: 'complaints', action: 'delete' },
-  { name: 'announcements:read', feature: 'announcements', action: 'read' },
-  { name: 'announcements:write', feature: 'announcements', action: 'write' },
+  { name: 'Properties Admin', feature: 'properties', actions: ['read', 'write', 'update', 'delete'] },
+  { name: 'Properties Viewer', feature: 'properties', actions: ['read'] },
+  { name: 'Floors Admin', feature: 'floors', actions: ['read', 'write', 'update', 'delete'] },
+  { name: 'Floors Viewer', feature: 'floors', actions: ['read'] },
+  { name: 'Rooms Admin', feature: 'rooms', actions: ['read', 'write', 'update', 'delete'] },
+  { name: 'Rooms Viewer', feature: 'rooms', actions: ['read'] },
+  { name: 'Beds Admin', feature: 'beds', actions: ['read', 'write', 'update', 'delete'] },
+  { name: 'Beds Viewer', feature: 'beds', actions: ['read'] },
+  { name: 'Allocations Admin', feature: 'allocations', actions: ['read', 'write', 'update', 'delete'] },
+  { name: 'Allocations Viewer', feature: 'allocations', actions: ['read'] },
+  { name: 'Users Admin', feature: 'users', actions: ['read', 'write', 'update', 'delete'] },
+  { name: 'Users Viewer', feature: 'users', actions: ['read'] },
+  { name: 'Tenants Admin', feature: 'tenants', actions: ['read', 'write', 'update', 'delete'] },
+  { name: 'Tenants Viewer', feature: 'tenants', actions: ['read'] },
+  { name: 'Expenses Admin', feature: 'expenses', actions: ['read', 'write', 'update', 'delete'] },
+  { name: 'Expenses Viewer', feature: 'expenses', actions: ['read'] },
+  { name: 'Complaints Admin', feature: 'complaints', actions: ['read', 'write', 'update', 'delete'] },
+  { name: 'Complaints Viewer', feature: 'complaints', actions: ['read'] },
+  { name: 'Announcements Admin', feature: 'announcements', actions: ['read', 'write', 'update', 'delete'] },
+  { name: 'Announcements Viewer', feature: 'announcements', actions: ['read'] },
 ];
 
 export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
-  admin: DEFAULT_PERMISSIONS.map((p) => p.name),
-  manager: [
-    'properties:read',
-    'properties:write',
-    'floors:read',
-    'floors:write',
-    'rooms:read',
-    'rooms:write',
-    'rooms:delete',
-    'beds:read',
-    'beds:write',
-    'allocations:read',
-    'allocations:write',
-    'users:read',
-    'users:write',
-    'tenants:read',
-    'tenants:write',
-    'expenses:read',
-    'expenses:write',
-    'complaints:read',
-    'complaints:write',
-    'announcements:read',
-    'announcements:write',
+  admin: [
+    'Properties Admin', 'Floors Admin', 'Rooms Admin', 'Beds Admin', 
+    'Allocations Admin', 'Users Admin', 'Tenants Admin', 
+    'Expenses Admin', 'Complaints Admin', 'Announcements Admin'
   ],
-  user: ['properties:read', 'floors:read', 'rooms:read', 'beds:read', 'allocations:read'],
+  manager: [
+    'Properties Viewer', 'Floors Admin', 'Rooms Admin', 'Beds Admin',
+    'Allocations Admin', 'Users Admin', 'Tenants Admin',
+    'Expenses Admin', 'Complaints Admin', 'Announcements Admin'
+  ],
+  user: ['Properties Viewer', 'Floors Viewer', 'Rooms Viewer', 'Beds Viewer', 'Allocations Viewer'],
 };
 
 class RbacService {
@@ -81,7 +61,7 @@ class RbacService {
       DEFAULT_PERMISSIONS.map((p) =>
         Permission.findOneAndUpdate(
           { name: p.name },
-          { name: p.name, featureId: featureMap.get(p.feature), action: p.action },
+          { name: p.name, featureId: featureMap.get(p.feature), actions: p.actions },
           { upsert: true, new: true },
         ),
       ),
@@ -116,23 +96,31 @@ class RbacService {
   async getUserPermissions(userId: string): Promise<string[]> {
     const user = await User.findById(userId).populate({
       path: 'roleIds',
-      populate: { path: 'permissionIds', model: 'Permission' },
+      populate: { 
+        path: 'permissionIds', 
+        model: 'Permission',
+        populate: { path: 'featureId', model: 'Feature' }
+      },
     });
 
     if (!user) return [];
 
     const permissionNames = new Set<string>();
     (user.roleIds as any[]).forEach((role: any) => {
-      (role.permissionIds || []).forEach((permission: any) => permissionNames.add(permission.name));
+      (role.permissionIds || []).forEach((permission: any) => {
+        if (permission.featureId && permission.actions) {
+          permission.actions.forEach((action: string) => {
+            permissionNames.add(`${permission.featureId.key}:${action}`);
+          });
+        }
+      });
     });
     return Array.from(permissionNames);
   }
 
   // Management Methods
-  async getAllRoles(propertyId?: string) {
-    const filter: any = {};
-    if (propertyId) filter.propertyId = propertyId;
-    return Role.find(filter).populate({
+  async getAllRoles() {
+    return Role.find().populate({
       path: 'permissionIds',
       populate: { path: 'featureId' },
     });
@@ -149,11 +137,11 @@ class RbacService {
     return Permission.find().populate('featureId');
   }
 
-  async createRole(data: { name: string; propertyId?: string; description?: string; permissionIds?: string[] }) {
+  async createRole(data: { name: string; description?: string; permissionIds?: string[] }) {
     return Role.create(data);
   }
 
-  async updateRole(id: string, data: { name?: string; propertyId?: string; description?: string; permissionIds?: string[] }) {
+  async updateRole(id: string, data: { name?: string; description?: string; permissionIds?: string[] }) {
     return Role.findByIdAndUpdate(id, data, { new: true }).populate('permissionIds');
   }
 
@@ -165,19 +153,19 @@ class RbacService {
     return User.findByIdAndUpdate(userId, { roleIds }, { new: true }).populate('roleIds');
   }
 
-  async bindPermissionToRole(featureId: string, action: string, roleId: string) {
+  async bindPermissionToRole(featureId: string, actions: string[], roleId: string) {
     // 1. Find or create the permission
     const feature = await Feature.findById(featureId);
     if (!feature) throw new Error('Feature not found');
 
-    const permissionName = `${feature.key}:${action}`;
+    const permissionName = `${feature.key} [${[...actions].sort().join(',')}]`;
     let permission = await Permission.findOne({ name: permissionName });
 
     if (!permission) {
       permission = await Permission.create({
         name: permissionName,
         featureId,
-        action,
+        actions,
       });
     }
 
