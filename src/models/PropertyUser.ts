@@ -32,6 +32,7 @@ const PropertyUserSchema: Schema = new Schema({
   designation: { type: String },
   joiningDate: { type: Date },
   monthlySalary: { type: Number },
+  passwordHash : {type:String},
   kycDocument: {
     adharCard: { type: String },
     panCard: { type: String },
