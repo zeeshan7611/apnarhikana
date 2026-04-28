@@ -11,6 +11,7 @@ export interface IPropertyUser extends Document {
   designation?: string;
   joiningDate?: Date;
   monthlySalary?: number;
+  password?: string;
   kycDocument?: {
     adharCard?: string;
     panCard?: string;
@@ -32,7 +33,6 @@ const PropertyUserSchema: Schema = new Schema({
   designation: { type: String },
   joiningDate: { type: Date },
   monthlySalary: { type: Number },
-  passwordHash : {type:String},
   kycDocument: {
     adharCard: { type: String },
     panCard: { type: String },
