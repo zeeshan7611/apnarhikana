@@ -199,11 +199,11 @@ const swaggerDefinition = {
         type: 'object',
         properties: {
           id: { type: 'string' },
-          featureId: { type: 'string' },
-          action: { type: 'string' },
+          moduleId: { type: 'string' },
+          actions: { type: 'array', items: { type: 'string' } },
         },
       },
-      Feature: {
+      Module: {
         type: 'object',
         properties: {
           id: { type: 'string' },

@@ -80,8 +80,8 @@ export default class RbacController {
 
   static async bindPermissionToRole(req: Request, res: Response, next: NextFunction) {
     try {
-      const { featureId, actions, roleId } = req.body;
-      const role = await RbacService.bindPermissionToRole(featureId, actions, roleId);
+      const { moduleId, actions, roleId } = req.body;
+      const role = await RbacService.bindPermissionToRole(moduleId, actions, roleId);
       res.json({ success: true, data: role });
     } catch (err) {
       next(err);

@@ -1,12 +1,12 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export interface IFeature extends Document {
+export interface IModule extends Document {
   name: string;
   description?: string;
   key: string; // e.g., 'properties', 'users'
 }
 
-const FeatureSchema: Schema = new Schema({
+const ModuleSchema: Schema = new Schema({
   name: { type: String, required: true, unique: true },
   description: { type: String },
   key: { type: String, required: true, unique: true, index: true },
@@ -14,4 +14,4 @@ const FeatureSchema: Schema = new Schema({
   timestamps: true,
 });
 
-export default mongoose.model<IFeature>('Feature', FeatureSchema);
+export default mongoose.model<IModule>('Module', ModuleSchema);

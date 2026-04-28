@@ -10,7 +10,7 @@ import bedRoutes from './routes/bedRoutes';
 import allocationRoutes from './routes/propertInventoryAllocationRoutes';
 import authRoutes from './routes/authRoutes';
 import rbacRoutes from './routes/rbacRoutes';
-import featureRoutes from './routes/featureRoutes';
+import moduleRoutes from './routes/moduleRoutes';
 import tenantRoutes from './routes/tenantRoutes';
 import tenantAllocationRoutes from './routes/tenantAllocationRoutes';
 import expenseRoutes from './routes/expenseRoutes';
@@ -52,8 +52,8 @@ app.use('/api/property-users', propertyUserRoutes);
 // RBAC routes (Protected)
 app.use('/api/rbac', jwtAuth, rbacRoutes);
 
-// Feature routes (Protected)
-app.use('/api/features', jwtAuth, featureRoutes);
+// Module routes (Protected)
+app.use('/api/modules', jwtAuth, moduleRoutes);
 
 // Tenant routes (Protected)
 app.use('/api/tenants', jwtAuth, tenantRoutes);

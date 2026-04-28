@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import FeatureController from '../controllers/FeatureController';
+import ModuleController from '../controllers/ModuleController';
 import { authorizePermissions } from '../middleware/jwtAuth';
 
 const router = Router();
@@ -7,36 +7,36 @@ const router = Router();
 /**
  * @swagger
  * tags:
- *   name: Features
- *   description: Feature management
+ *   name: Modules
+ *   description: Module management
  */
 
 /**
  * @swagger
- * /api/features/get-features:
+ * /api/modules/get-modules:
  *   get:
- *     summary: Get all features
- *     tags: [Features]
+ *     summary: Get all modules
+ *     tags: [Modules]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: List of features
+ *         description: List of modules
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Feature'
+ *                 $ref: '#/components/schemas/Module'
  */
-router.get('/get-features', authorizePermissions('users:read'), FeatureController.getAllFeatures);
+router.get('/get-modules', authorizePermissions('users:read'), ModuleController.getAllModules);
 
 /**
  * @swagger
- * /api/features/create-feature:
+ * /api/modules/create-module:
  *   post:
- *     summary: Create a new feature
- *     tags: [Features]
+ *     summary: Create a new module
+ *     tags: [Modules]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -52,20 +52,20 @@ router.get('/get-features', authorizePermissions('users:read'), FeatureControlle
  *               description: { type: string }
  *     responses:
  *       201:
- *         description: Feature created
+ *         description: Module created
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Feature'
+ *               $ref: '#/components/schemas/Module'
  */
-router.post('/create-feature', authorizePermissions('users:write'), FeatureController.createFeature);
+router.post('/create-module', authorizePermissions('users:write'), ModuleController.createModule);
 
 /**
  * @swagger
- * /api/features/update-feature:
+ * /api/modules/update-module:
  *   put:
- *     summary: Update feature details
- *     tags: [Features]
+ *     summary: Update module details
+ *     tags: [Modules]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -82,20 +82,20 @@ router.post('/create-feature', authorizePermissions('users:write'), FeatureContr
  *               description: { type: string }
  *     responses:
  *       200:
- *         description: Feature updated
+ *         description: Module updated
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Feature'
+ *               $ref: '#/components/schemas/Module'
  */
-router.put('/update-feature', authorizePermissions('users:write'), FeatureController.updateFeature);
+router.put('/update-module', authorizePermissions('users:write'), ModuleController.updateModule);
 
 /**
  * @swagger
- * /api/features/delete-feature:
+ * /api/modules/delete-module:
  *   delete:
- *     summary: Delete a feature
- *     tags: [Features]
+ *     summary: Delete a module
+ *     tags: [Modules]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -110,8 +110,8 @@ router.put('/update-feature', authorizePermissions('users:write'), FeatureContro
  *                 type: string
  *     responses:
  *       200:
- *         description: Feature deleted
+ *         description: Module deleted
  */
-router.delete('/delete-feature', authorizePermissions('users:write'), FeatureController.deleteFeature);
+router.delete('/delete-module', authorizePermissions('users:write'), ModuleController.deleteModule);
 
 export default router;

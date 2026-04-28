@@ -89,11 +89,17 @@ router.get('/get-role', authorizePermissions('users:read'), RbacController.getRo
  *         application/json:
  *           schema:
  *             type: object
- *             required: [name]
+ *             required: [roleName]
  *             properties:
- *               name: { type: string }
+ *               roleName: { type: string }
  *               description: { type: string }
- *               permissionIds: { type: array, items: { type: string } }
+ *               modulePermission: 
+ *                 type: array
+ *                 items: 
+ *                   type: object
+ *                   properties:
+ *                     moduleId: { type: string }
+ *                     actions: { type: array, items: { type: string } }
  *     responses:
  *       201:
  *         description: Role created
@@ -121,9 +127,15 @@ router.post('/create-role', authorizePermissions('users:write'), RbacController.
  *             required: [id]
  *             properties:
  *               id: { type: string }
- *               name: { type: string }
+ *               roleName: { type: string }
  *               description: { type: string }
- *               permissionIds: { type: array, items: { type: string } }
+ *               modulePermission: 
+ *                 type: array
+ *                 items: 
+ *                   type: object
+ *                   properties:
+ *                     moduleId: { type: string }
+ *                     actions: { type: array, items: { type: string } }
  *     responses:
  *       200:
  *         description: Role updated
@@ -190,7 +202,7 @@ router.post('/assign-role-to-user', authorizePermissions('users:roles:update'), 
  * @swagger
  * /api/rbac/bind-permission-to-role:
  *   post:
- *     summary: Bind a permission (feature + action) to a role
+ *     summary: Bind a permission (module + action) to a role
  *     tags: [RBAC]
  *     security:
  *       - bearerAuth: []
@@ -200,9 +212,9 @@ router.post('/assign-role-to-user', authorizePermissions('users:roles:update'), 
  *         application/json:
  *           schema:
  *             type: object
- *             required: [featureId, actions, roleId]
+ *             required: [moduleId, actions, roleId]
  *             properties:
- *               featureId:
+ *               moduleId:
  *                 type: string
  *               actions:
  *                 type: array

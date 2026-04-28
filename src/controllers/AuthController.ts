@@ -33,7 +33,7 @@ export default class AuthController {
     try {
       await RbacService.ensureDefaults();
       const { email, password } = req.body;
-      const user = await User.findOne({ email });
+      const user = await User.findOne({ email }).select('+passwordHash');
       if (!user) return res.status(400).json({ error: 'Invalid credentials' });
       const valid = await bcrypt.compare(password, user.passwordHash);
       if (!valid) return res.status(400).json({ error: 'Invalid credentials' });

@@ -26,6 +26,7 @@ export interface IPropertyUser extends Document {
 const PropertyUserSchema: Schema = new Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
+  passwordHash: { type: String, required: true, select: false },
   phoneNumber: { type: String },
   education: { type: String },
   designation: { type: String },
