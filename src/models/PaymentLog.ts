@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IPaymentLog extends Document {
   rentLedgerId: mongoose.Types.ObjectId;
   paymentTransactionId?: mongoose.Types.ObjectId;
-  action: 'ledger_created' | 'payment_recorded' | 'late_fee_applied' | 'status_changed' | 'ledger_locked' | 'note_added';
+  action: 'ledger_created' | 'payment_recorded' | 'late_fee_applied' | 'status_changed' | 'ledger_locked' | 'note_added' | 'extra_charge_added' | 'extra_charge_removed';
   previousStatus?: string;
   newStatus?: string;
   description: string;
@@ -17,7 +17,7 @@ const PaymentLogSchema: Schema = new Schema({
   paymentTransactionId: { type: Schema.Types.ObjectId, ref: 'PaymentTransaction' },
   action: {
     type: String,
-    enum: ['ledger_created', 'payment_recorded', 'late_fee_applied', 'status_changed', 'ledger_locked', 'note_added'],
+    enum: ['ledger_created', 'payment_recorded', 'late_fee_applied', 'status_changed', 'ledger_locked', 'note_added', 'extra_charge_added', 'extra_charge_removed'],
     required: true,
   },
   previousStatus: { type: String },

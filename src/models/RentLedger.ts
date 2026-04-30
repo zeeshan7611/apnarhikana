@@ -8,6 +8,7 @@ export interface IRentLedger extends Document {
   rentAmount: number;
   lateFee: number;
   totalAmount: number;
+  extraChargesAmount: number;
   paidAmount: number;
   pendingAmount: number;
   dueDate: Date;
@@ -25,6 +26,7 @@ const RentLedgerSchema: Schema = new Schema({
   rentAmount:         { type: Number, required: true },
   lateFee:            { type: Number, default: 0 },
   totalAmount:        { type: Number, required: true },
+  extraChargesAmount: { type: Number, default: 0 },
   paidAmount:         { type: Number, default: 0 },
   pendingAmount:      { type: Number, default: 0 },
   dueDate:            { type: Date,   required: true },

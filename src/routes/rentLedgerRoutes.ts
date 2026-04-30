@@ -173,6 +173,60 @@ router.post('/reject-payment', authorizePermissions('payments:write'), Controlle
  */
 router.post('/apply-late-fee', authorizePermissions('payments:write'), Controller.applyLateFee);
 
+// ─── ADD EXTRA CHARGE ────────────────────────────────────────────────────────
+/**
+ * @swagger
+ * /api/rent-ledger/add-extra-charge:
+ *   post:
+ *     summary: Add an extra charge (electricity, water, etc.) to a ledger
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [rentLedgerId, chargeType, amount, description, performedById]
+ *             properties:
+ *               rentLedgerId: { type: string }
+ *               chargeType:   { type: string, enum: [electricity, water, maintenance, other] }
+ *               amount:       { type: number }
+ *               description:  { type: string }
+ *               metadata:     { type: object, description: "Optional units, rates, etc." }
+ *               performedById: { type: string }
+ *     responses:
+ *       201:
+ *         description: Extra charge added successfully
+ */
+router.post('/add-extra-charge', authorizePermissions('payments:write'), Controller.addExtraCharge);
+
+// ─── REMOVE EXTRA CHARGE ─────────────────────────────────────────────────────
+/**
+ * @swagger
+ * /api/rent-ledger/remove-extra-charge:
+ *   post:
+ *     summary: Remove an extra charge from a ledger
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [chargeId, performedById]
+ *             properties:
+ *               chargeId:      { type: string }
+ *               performedById: { type: string }
+ *     responses:
+ *       200:
+ *         description: Extra charge removed
+ */
+router.post('/remove-extra-charge', authorizePermissions('payments:write'), Controller.removeExtraCharge);
+
 // ─── MARK OVERDUE ────────────────────────────────────────────────────────────
 
 /**
@@ -296,6 +350,26 @@ router.get('/get-transactions', authorizePermissions('payments:read'), Controlle
  *         description: rentLedgerId is required
  */
 router.get('/get-logs', authorizePermissions('payments:read'), Controller.getLogs);
+
+// ─── GET EXTRA CHARGES ───────────────────────────────────────────────────────
+/**
+ * @swagger
+ * /api/rent-ledger/get-extra-charges:
+ *   get:
+ *     summary: Get all extra charges for a ledger
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: rentLedgerId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: List of extra charges
+ */
+router.get('/get-extra-charges', authorizePermissions('payments:read'), Controller.getExtraCharges);
 
 // ─── GENERATE MONTHLY LEDGERS ─────────────────────────────────────────────────
 

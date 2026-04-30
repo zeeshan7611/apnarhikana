@@ -33,6 +33,27 @@ export default class RentLedgerController {
     }
   }
 
+  // POST /add-extra-charge
+  static async addExtraCharge(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await RentLedgerService.addExtraCharge(req.body);
+      res.status(201).json({ success: true, data: result });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // POST /remove-extra-charge
+  static async removeExtraCharge(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { chargeId, performedById } = req.body;
+      const result = await RentLedgerService.removeExtraCharge(chargeId, performedById);
+      res.json({ success: true, data: result });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   // POST /mark-overdue
   static async markOverdue(req: Request, res: Response, next: NextFunction) {
     try {
@@ -122,6 +143,20 @@ export default class RentLedgerController {
       }
       const logs = await RentLedgerService.getLogs(rentLedgerId as string);
       res.json({ success: true, data: logs });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // GET /get-extra-charges
+  static async getExtraCharges(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { rentLedgerId } = req.query;
+      if (!rentLedgerId) {
+        return res.status(400).json({ success: false, message: 'rentLedgerId is required' });
+      }
+      const charges = await RentLedgerService.getExtraCharges(rentLedgerId as string);
+      res.json({ success: true, data: charges });
     } catch (err) {
       next(err);
     }

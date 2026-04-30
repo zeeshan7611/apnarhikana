@@ -206,7 +206,7 @@ export default class RentLedgerService {
     if (ledger.isLocked) throw new Error('Ledger is locked');
 
     ledger.lateFee += data.lateFee;
-    ledger.totalAmount = ledger.rentAmount + ledger.lateFee;
+    ledger.totalAmount += data.lateFee;
     await ledger.save();
 
     await PaymentLog.create({
@@ -214,6 +214,93 @@ export default class RentLedgerService {
       action: 'late_fee_applied',
       description: `Late fee of ${data.lateFee} applied. New total: ${ledger.totalAmount}`,
       performedById: data.performedById,
+    });
+
+    return ledger;
+  }
+
+  // ─── 3a. Add Extra Charge ──────────────────────────────────────────────────────
+  static async addExtraCharge(data: {
+    rentLedgerId: string;
+    chargeType: 'electricity' | 'water' | 'maintenance' | 'other';
+    amount: number;
+    description: string;
+    metadata?: any;
+    performedById: string;
+  }): Promise<{ ledger: IRentLedger; extraCharge: any }> {
+    const ExtraCharge = (await import('../models/ExtraCharge')).default;
+    
+    const ledger = await RentLedger.findById(data.rentLedgerId);
+    if (!ledger) throw new Error('Rent ledger not found');
+    if (ledger.isLocked) throw new Error('Ledger is locked and cannot accept new charges');
+
+    const extraCharge = await ExtraCharge.create({
+      rentLedgerId: ledger._id,
+      tenantId: ledger.tenantId,
+      propertyId: ledger.propertyId,
+      chargeType: data.chargeType,
+      amount: data.amount,
+      description: data.description,
+      metadata: data.metadata,
+      createdById: data.performedById,
+    });
+
+    ledger.extraChargesAmount += data.amount;
+    ledger.totalAmount += data.amount;
+
+    const previousStatus = ledger.status;
+    if (ledger.paidAmount < ledger.totalAmount && ledger.paidAmount > 0) {
+      ledger.status = 'partial';
+    } else if (ledger.paidAmount === 0 && ledger.status !== 'overdue') {
+      ledger.status = 'pending';
+    }
+
+    await ledger.save();
+
+    await PaymentLog.create({
+      rentLedgerId: ledger._id,
+      action: 'extra_charge_added',
+      previousStatus,
+      newStatus: ledger.status,
+      description: `Extra charge added: ${data.chargeType} - ${data.amount}. Total now: ${ledger.totalAmount}`,
+      performedById: new mongoose.Types.ObjectId(data.performedById),
+    });
+
+    return { ledger, extraCharge };
+  }
+
+  // ─── 3b. Remove Extra Charge ───────────────────────────────────────────────────
+  static async removeExtraCharge(chargeId: string, performedById: string): Promise<IRentLedger> {
+    const ExtraCharge = (await import('../models/ExtraCharge')).default;
+    const charge = await ExtraCharge.findById(chargeId);
+    if (!charge) throw new Error('Extra charge not found');
+
+    const ledger = await RentLedger.findById(charge.rentLedgerId);
+    if (!ledger) throw new Error('Rent ledger not found');
+    if (ledger.isLocked) throw new Error('Ledger is locked');
+
+    ledger.extraChargesAmount -= charge.amount;
+    ledger.totalAmount -= charge.amount;
+
+    const previousStatus = ledger.status;
+    if (ledger.paidAmount >= ledger.totalAmount) {
+      ledger.paidAmount = ledger.totalAmount;
+      ledger.status = 'paid';
+      ledger.isLocked = true;
+    } else if (ledger.paidAmount > 0) {
+      ledger.status = 'partial';
+    }
+
+    await ledger.save();
+    await ExtraCharge.findByIdAndDelete(chargeId);
+
+    await PaymentLog.create({
+      rentLedgerId: ledger._id,
+      action: 'extra_charge_removed',
+      previousStatus,
+      newStatus: ledger.status,
+      description: `Extra charge removed: ${charge.chargeType} - ${charge.amount}. Total now: ${ledger.totalAmount}`,
+      performedById: new mongoose.Types.ObjectId(performedById),
     });
 
     return ledger;
@@ -283,6 +370,14 @@ export default class RentLedgerService {
   static async getLogs(rentLedgerId: string) {
     return PaymentLog.find({ rentLedgerId })
       .populate('performedById', 'name email')
+      .sort({ createdAt: -1 });
+  }
+
+  // ─── 8a. Get Extra Charges for a Ledger ──────────────────────────────────────
+  static async getExtraCharges(rentLedgerId: string) {
+    const ExtraCharge = (await import('../models/ExtraCharge')).default;
+    return ExtraCharge.find({ rentLedgerId })
+      .populate('createdById', 'name email')
       .sort({ createdAt: -1 });
   }
 
