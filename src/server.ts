@@ -18,6 +18,7 @@ import complaintRoutes from './routes/complaintRoutes';
 import announcementRoutes from './routes/announcementRoutes';
 import roomCategoryRoutes from './routes/roomCategoryRoutes';
 import paymentRoutes from './routes/paymentRoutes';
+import rentLedgerRoutes from './routes/rentLedgerRoutes';
 
 import { jwtAuth } from './middleware/jwtAuth';
 import RbacService from './services/RbacService';
@@ -73,6 +74,9 @@ app.use('/api/announcements', jwtAuth, announcementRoutes);
 // Room Category routes (Protected)
 app.use('/api/room-categories', jwtAuth, roomCategoryRoutes);
 app.use('/api/payments', jwtAuth, paymentRoutes);
+
+// Rent Ledger routes (Protected)
+app.use('/api/rent-ledger', jwtAuth, rentLedgerRoutes);
 
 
 // Connect to DB and start server

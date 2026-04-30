@@ -111,6 +111,15 @@ export default class PropertyUserService {
     return user;
   }
 
+  // ✅ Get users by propertyId
+  static async getUsersByPropertyId(propertyId: string): Promise<IPropertyUser[]> {
+    return PropertyUser.find({ propertyId: propertyId })
+      .populate("roleIds")
+      .populate("propertyId", "name id")
+      .select("-passwordHash")
+      .sort({ createdAt: -1 });
+  }
+
   static async login(email: string, password: string) {
     const user = await PropertyUser
       .findOne({ email })

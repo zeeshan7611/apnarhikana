@@ -1,6 +1,7 @@
 import Tenant, { ITenant } from '../models/Tenant';
 import TenantAllocation, { ITenantAllocation } from '../models/TenantAllocation';
 import PropertyInventoryAllocation, { IPropertyInventoryAllocation } from '../models/PropertyInventoryAllocation';
+import RentLedgerService from './RentLedgerService';
 
 type TenantAllocationCreateInput = {
   tenantId: string;
@@ -232,6 +233,30 @@ export default class TenantAllocationService {
         notes: input.notes,
         createdById,
       });
+
+      // ✅ Auto-create RentLedger for the first month
+      const startDate = new Date(input.startDate || input.joiningDate);
+      const month = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
+      const dueDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 5); // 5th of next month
+
+      try {
+        await RentLedgerService.createLedger({
+          tenantId:           tenant._id.toString(),
+          propertyId:         inventoryAllocation.propertyId._id.toString(),
+          tenantAllocationId: allocation._id.toString(),
+          month,
+          rentAmount:         input.rentAmount,
+          dueDate,
+          createdById,
+        });
+      } catch (ledgerErr: any) {
+        // Ignore duplicate ledger (tenant moved in same month as existing ledger)
+        if (!ledgerErr.code || ledgerErr.code !== 11000) {
+          await Tenant.findByIdAndDelete(tenant._id);
+          await TenantAllocation.findByIdAndDelete(allocation._id);
+          throw ledgerErr;
+        }
+      }
 
       return { tenant, allocation, inventoryAllocation };
     } catch (error) {

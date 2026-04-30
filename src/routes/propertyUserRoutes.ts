@@ -193,4 +193,38 @@ router.put("/update-property-user", authorizePermissions("users:write"), Control
  */
 router.delete("/delete-property-user", authorizePermissions("users:delete"), Controller.deleteUser);
 
+/**
+ * @swagger
+ * /api/property-users/get-users-by-property:
+ *   get:
+ *     summary: Get all property users by propertyId
+ *     tags: [PropertyUsers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: propertyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the property to fetch users for
+ *     responses:
+ *       200:
+ *         description: List of users belonging to the given property
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/PropertyUser'
+ *       400:
+ *         description: propertyId is required
+ */
+router.get("/get-users-by-property", authorizePermissions("users:read"), Controller.getUsersByPropertyId);
+
 export default router;

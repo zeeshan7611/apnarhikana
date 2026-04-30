@@ -59,6 +59,20 @@ export default class PropertyUserController {
     }
   }
 
+  // ✅ Get users by propertyId
+  static async getUsersByPropertyId(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyId } = req.query;
+      if (!propertyId) {
+        return res.status(400).json({ success: false, message: "propertyId is required" });
+      }
+      const users = await PropertyUserService.getUsersByPropertyId(propertyId as string);
+      res.json({ success: true, data: users });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // 🔐 Login API
   static async login(req: Request, res: Response, next: NextFunction) {
     try {
