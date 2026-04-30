@@ -404,10 +404,17 @@ export default class RentLedgerService {
     let skipped = 0;
 
     for (const alloc of activeAllocations) {
+      // ✅ Check if allocation started in or before this month
+      const startMonth = `${alloc.startDate.getFullYear()}-${String(alloc.startDate.getMonth() + 1).padStart(2, '0')}`;
+      if (startMonth > month) {
+        skipped++;
+        continue;
+      }
+
       try {
         await RentLedger.create({
           tenantId: alloc.tenantId,
-          propertyId: (alloc as any).propertyId || (alloc as any).inventoryAllocationId,
+          propertyId: alloc.propertyId,
           tenantAllocationId: alloc._id,
           month,
           rentAmount: alloc.rentAmount,
@@ -439,6 +446,83 @@ export default class RentLedgerService {
     }
 
     return { created, skipped };
+  }
+
+  // ─── 9a. Generate Initial Ledgers (on allocation) ───────────────────────────
+  // Creates ledgers for all months from joining date to current month.
+  static async generateInitialLedgers(
+    allocationId: string,
+    createdById: string
+  ): Promise<number> {
+    const TenantAllocation = (await import('../models/TenantAllocation')).default;
+    const alloc = await TenantAllocation.findById(allocationId);
+    if (!alloc) throw new Error('Tenant allocation not found');
+
+    const startDate = new Date(alloc.startDate);
+    const now = new Date();
+
+    // Start month (YYYY-MM-01)
+    let current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+    
+    // End month (current month, or startDate month if joining in future)
+    const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = current > currentMonth ? current : currentMonth;
+
+    let createdCount = 0;
+
+    while (current <= end) {
+      const monthStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
+      const dueDate = new Date(current.getFullYear(), current.getMonth() + 1, 5);
+
+      try {
+        const ledger = await RentLedger.create({
+          tenantId: alloc.tenantId,
+          propertyId: alloc.propertyId,
+          tenantAllocationId: alloc._id,
+          month: monthStr,
+          rentAmount: alloc.rentAmount,
+          lateFee: 0,
+          totalAmount: alloc.rentAmount,
+          paidAmount: 0,
+          pendingAmount: 0,
+          dueDate,
+          status: 'pending',
+          isLocked: false,
+        });
+
+        await PaymentLog.create({
+          rentLedgerId: ledger._id,
+          action: 'ledger_created',
+          newStatus: 'pending',
+          description: `Initial ledger generated for month ${monthStr}`,
+          performedById: new mongoose.Types.ObjectId(createdById),
+        });
+
+        createdCount++;
+      } catch (err: any) {
+        if (err.code !== 11000) throw err;
+      }
+
+      // Move to next month
+      current.setMonth(current.getMonth() + 1);
+    }
+
+    return createdCount;
+  }
+
+  // ─── 9b. Sync All Ledgers (bulk check) ──────────────────────────────────────
+  // Checks all active allocations and generates missing ledgers from joining date.
+  static async syncAllLedgers(performedById: string): Promise<{ totalAllocations: number; ledgersCreated: number }> {
+    const TenantAllocation = (await import('../models/TenantAllocation')).default;
+    const activeAllocations = await TenantAllocation.find({ status: 'active' });
+
+    let ledgersCreated = 0;
+    for (const alloc of activeAllocations) {
+      const created = await this.generateInitialLedgers(alloc._id.toString(), performedById);
+      ledgersCreated += created;
+    }
+
+    return { totalAllocations: activeAllocations.length, ledgersCreated };
   }
 
   // ─── 10. Cancel Pending Ledgers on Tenant Termination ────────────────────────

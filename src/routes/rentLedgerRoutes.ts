@@ -410,6 +410,44 @@ router.get('/get-extra-charges', authorizePermissions('payments:read'), Controll
  */
 router.post('/generate-monthly-ledgers', authorizePermissions('payments:write'), Controller.generateMonthlyLedgers);
 
+// ─── SYNC ALL LEDGERS ──────────────────────────────────────────────────────────
+
+/**
+ * @swagger
+ * /api/rent-ledger/sync-all-ledgers:
+ *   post:
+ *     summary: "Sync missing ledgers for all active tenants from their joining date to current month"
+ *     description: "Ensures no tenant is missing historical or current month ledgers. Safe to call multiple times."
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [performedById]
+ *             properties:
+ *               performedById: { type: string, description: "ID of the property user triggering this" }
+ *     responses:
+ *       200:
+ *         description: Sync complete
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 message: { type: string }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalAllocations: { type: number }
+ *                     ledgersCreated:   { type: number }
+ */
+router.post('/sync-all-ledgers', authorizePermissions('payments:write'), Controller.syncAllLedgers);
+
 // ─── CANCEL TENANT LEDGERS (on termination) ───────────────────────────────────
 
 /**

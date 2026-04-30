@@ -180,6 +180,24 @@ export default class RentLedgerController {
     }
   }
 
+  // POST /sync-all-ledgers
+  static async syncAllLedgers(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { performedById } = req.body;
+      if (!performedById) {
+        return res.status(400).json({ success: false, message: 'performedById is required' });
+      }
+      const result = await RentLedgerService.syncAllLedgers(performedById);
+      res.json({
+        success: true,
+        message: `Ledger synchronization complete. ${result.ledgersCreated} new ledgers created for ${result.totalAllocations} active allocations.`,
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   // POST /cancel-tenant-ledgers
   static async cancelTenantLedgers(req: Request, res: Response, next: NextFunction) {
     try {
