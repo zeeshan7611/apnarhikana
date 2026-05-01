@@ -148,6 +148,20 @@ export default class RentLedgerController {
     }
   }
 
+  // GET /get-property-transactions
+  static async getPropertyTransactions(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyId, status } = req.query;
+      if (!propertyId) {
+        return res.status(400).json({ success: false, message: 'propertyId is required' });
+      }
+      const transactions = await RentLedgerService.getAllTransactionsByProperty(propertyId as string, status as string);
+      res.json({ success: true, data: transactions });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   // GET /get-logs
   static async getLogs(req: Request, res: Response, next: NextFunction) {
     try {

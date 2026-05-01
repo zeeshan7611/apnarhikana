@@ -6,7 +6,7 @@ export interface IPaymentTransaction extends Document {
   propertyId: mongoose.Types.ObjectId;
   amount: number;
   paymentMethod: 'cash' | 'upi' | 'bank_transfer' | 'cheque';
-  status: 'success' | 'failed' | 'pending';
+  status: 'approved' | 'rejected' | 'pending';
   referenceNumber?: string;
   utrNumber?: string;
   paymentScreenshotUrl?: string;
@@ -29,7 +29,7 @@ const PaymentTransactionSchema: Schema = new Schema({
   },
   status: {
     type: String,
-    enum: ['success', 'failed', 'pending'],
+    enum: ['approved', 'rejected', 'pending'],
     default: 'pending',
   },
   referenceNumber: { type: String },

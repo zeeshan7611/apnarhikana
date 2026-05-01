@@ -56,7 +56,7 @@ export default class RentLedgerService {
     utrNumber?: string;
     paymentScreenshotUrl?: string;
     notes?: string;
-    status?: 'pending' | 'success';
+    status?: 'pending' | 'approved';
     createdById?: string;
   }): Promise<{ ledger: IRentLedger; transaction: IPaymentTransaction }> {
     const ledger = await RentLedger.findById(data.rentLedgerId);
@@ -84,7 +84,7 @@ export default class RentLedgerService {
     // Recalculate amounts & status
     const previousStatus = ledger.status;
 
-    if (initialStatus === 'success') {
+    if (initialStatus === 'approved') {
       ledger.paidAmount += data.amount;
       if (ledger.paidAmount >= ledger.totalAmount) {
         ledger.paidAmount = ledger.totalAmount; // cap it
@@ -128,7 +128,7 @@ export default class RentLedgerService {
     const previousStatus = ledger.status;
 
     // Update Transaction
-    transaction.status = 'success';
+    transaction.status = 'approved';
     await transaction.save();
 
     // Update Ledger
@@ -173,7 +173,7 @@ export default class RentLedgerService {
     if (!ledger) throw new Error('Rent ledger not found');
 
     // Update Transaction
-    transaction.status = 'failed';
+    transaction.status = 'rejected';
     if (notes) transaction.notes = notes;
     await transaction.save();
 
@@ -369,6 +369,19 @@ export default class RentLedgerService {
   // ─── 7a. Get Pending Transactions by Property ───────────────────────────────
   static async getPendingTransactionsByProperty(propertyId: string): Promise<IPaymentTransaction[]> {
     return PaymentTransaction.find({ propertyId, status: 'pending' })
+      .populate('tenantId', 'fullName phoneNumber email')
+      .populate('rentLedgerId', 'month totalAmount paidAmount')
+      .sort({ createdAt: -1 });
+  }
+
+  // ─── 7b. Get All/Status-wise Transactions by Property ───────────────────────
+  static async getAllTransactionsByProperty(propertyId: string, status?: string): Promise<IPaymentTransaction[]> {
+    const query: any = { propertyId };
+    if (status) {
+      query.status = status;
+    }
+
+    return PaymentTransaction.find(query)
       .populate('tenantId', 'fullName phoneNumber email')
       .populate('rentLedgerId', 'month totalAmount paidAmount')
       .sort({ createdAt: -1 });
