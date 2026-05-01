@@ -328,6 +328,27 @@ router.get('/get-ledger', authorizePermissions('payments:read'), Controller.getL
  */
 router.get('/get-transactions', authorizePermissions('payments:read'), Controller.getTransactions);
 
+// ─── GET PENDING PAYMENTS BY PROPERTY ────────────────────────────────────────
+
+/**
+ * @swagger
+ * /api/rent-ledger/get-pending-payments:
+ *   get:
+ *     summary: Get all pending payment transactions for a property
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: propertyId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: List of pending payment transactions
+ */
+router.get('/get-pending-payments', authorizePermissions('payments:read'), Controller.getPendingPayments);
+
 // ─── GET AUDIT LOGS ──────────────────────────────────────────────────────────
 
 /**

@@ -134,6 +134,20 @@ export default class RentLedgerController {
     }
   }
 
+  // GET /get-pending-payments
+  static async getPendingPayments(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyId } = req.query;
+      if (!propertyId) {
+        return res.status(400).json({ success: false, message: 'propertyId is required' });
+      }
+      const transactions = await RentLedgerService.getPendingTransactionsByProperty(propertyId as string);
+      res.json({ success: true, data: transactions });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   // GET /get-logs
   static async getLogs(req: Request, res: Response, next: NextFunction) {
     try {

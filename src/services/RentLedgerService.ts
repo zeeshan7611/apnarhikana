@@ -366,6 +366,14 @@ export default class RentLedgerService {
       .sort({ createdAt: -1 });
   }
 
+  // ─── 7a. Get Pending Transactions by Property ───────────────────────────────
+  static async getPendingTransactionsByProperty(propertyId: string): Promise<IPaymentTransaction[]> {
+    return PaymentTransaction.find({ propertyId, status: 'pending' })
+      .populate('tenantId', 'fullName phoneNumber email')
+      .populate('rentLedgerId', 'month totalAmount paidAmount')
+      .sort({ createdAt: -1 });
+  }
+
   // ─── 8. Get Audit Logs for a Ledger ──────────────────────────────────────────
   static async getLogs(rentLedgerId: string) {
     return PaymentLog.find({ rentLedgerId })
