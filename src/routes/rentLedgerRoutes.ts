@@ -328,20 +328,20 @@ router.get('/get-ledger', authorizePermissions('payments:read'), Controller.getL
  */
 router.get('/get-transactions', authorizePermissions('payments:read'), Controller.getTransactions);
 
-// ─── GET PENDING PAYMENTS BY PROPERTY ────────────────────────────────────────
+// ─── GET PENDING PAYMENTS ───────────────────────────────────────────────────
 
 /**
  * @swagger
  * /api/rent-ledger/get-pending-payments:
  *   get:
- *     summary: Get all pending payment transactions for a property
+ *     summary: Get all pending payment transactions (optional property filter)
  *     tags: [RentLedger]
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: propertyId
- *         required: true
+ *         required: false
  *         schema: { type: string }
  *     responses:
  *       200:
@@ -349,20 +349,20 @@ router.get('/get-transactions', authorizePermissions('payments:read'), Controlle
  */
 router.get('/get-pending-payments', authorizePermissions('payments:read'), Controller.getPendingPayments);
 
-// ─── GET ALL/STATUS-WISE TRANSACTIONS BY PROPERTY ───────────────────────────
+// ─── GET ALL/STATUS-WISE TRANSACTIONS ────────────────────────────────────────
 
 /**
  * @swagger
  * /api/rent-ledger/get-property-transactions:
  *   get:
- *     summary: Get all payment transactions for a property (with optional status filter)
+ *     summary: Get all payment transactions (optional property and status filters)
  *     tags: [RentLedger]
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: propertyId
- *         required: true
+ *         required: false
  *         schema: { type: string }
  *       - in: query
  *         name: status

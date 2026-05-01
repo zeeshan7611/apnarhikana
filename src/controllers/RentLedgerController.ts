@@ -138,10 +138,7 @@ export default class RentLedgerController {
   static async getPendingPayments(req: Request, res: Response, next: NextFunction) {
     try {
       const { propertyId } = req.query;
-      if (!propertyId) {
-        return res.status(400).json({ success: false, message: 'propertyId is required' });
-      }
-      const transactions = await RentLedgerService.getPendingTransactionsByProperty(propertyId as string);
+      const transactions = await RentLedgerService.getPendingTransactions(propertyId as string);
       res.json({ success: true, data: transactions });
     } catch (err) {
       next(err);
@@ -152,10 +149,7 @@ export default class RentLedgerController {
   static async getPropertyTransactions(req: Request, res: Response, next: NextFunction) {
     try {
       const { propertyId, status } = req.query;
-      if (!propertyId) {
-        return res.status(400).json({ success: false, message: 'propertyId is required' });
-      }
-      const transactions = await RentLedgerService.getAllTransactionsByProperty(propertyId as string, status as string);
+      const transactions = await RentLedgerService.getAllTransactions(propertyId as string, status as string);
       res.json({ success: true, data: transactions });
     } catch (err) {
       next(err);

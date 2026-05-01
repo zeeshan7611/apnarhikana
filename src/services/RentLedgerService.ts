@@ -367,23 +367,27 @@ export default class RentLedgerService {
   }
 
   // ─── 7a. Get Pending Transactions by Property ───────────────────────────────
-  static async getPendingTransactionsByProperty(propertyId: string): Promise<IPaymentTransaction[]> {
-    return PaymentTransaction.find({ propertyId, status: 'pending' })
-      .populate('tenantId', 'fullName phoneNumber email')
-      .populate('rentLedgerId', 'month totalAmount paidAmount')
-      .sort({ createdAt: -1 });
-  }
-
-  // ─── 7b. Get All/Status-wise Transactions by Property ───────────────────────
-  static async getAllTransactionsByProperty(propertyId: string, status?: string): Promise<IPaymentTransaction[]> {
-    const query: any = { propertyId };
-    if (status) {
-      query.status = status;
-    }
+  static async getPendingTransactions(propertyId?: string): Promise<IPaymentTransaction[]> {
+    const query: any = { status: 'pending' };
+    if (propertyId) query.propertyId = propertyId;
 
     return PaymentTransaction.find(query)
       .populate('tenantId', 'fullName phoneNumber email')
       .populate('rentLedgerId', 'month totalAmount paidAmount')
+      .populate('propertyId', 'name')
+      .sort({ createdAt: -1 });
+  }
+
+  // ─── 7b. Get All/Status-wise Transactions ──────────────────────────────────
+  static async getAllTransactions(propertyId?: string, status?: string): Promise<IPaymentTransaction[]> {
+    const query: any = {};
+    if (propertyId) query.propertyId = propertyId;
+    if (status) query.status = status;
+
+    return PaymentTransaction.find(query)
+      .populate('tenantId', 'fullName phoneNumber email')
+      .populate('rentLedgerId', 'month totalAmount paidAmount')
+      .populate('propertyId', 'name')
       .sort({ createdAt: -1 });
   }
 
