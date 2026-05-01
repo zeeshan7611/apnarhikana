@@ -349,6 +349,31 @@ export default class RentLedgerService {
       .sort({ month: -1, createdAt: -1 });
   }
 
+  // ─── 5a. Get Payment History (Categorized) ─────────────────────────────────
+  static async getPaymentHistory(filters: {
+    propertyId?: string;
+    tenantId?: string;
+    category?: 'paid' | 'overdue' | 'due' | 'all';
+  }): Promise<IRentLedger[]> {
+    const query: any = {};
+    if (filters.propertyId) query.propertyId = filters.propertyId;
+    if (filters.tenantId) query.tenantId = filters.tenantId;
+
+    if (filters.category === 'paid') {
+      query.status = 'paid';
+    } else if (filters.category === 'overdue') {
+      query.status = 'overdue';
+    } else if (filters.category === 'due') {
+      query.status = { $in: ['pending', 'partial'] };
+    }
+
+    return RentLedger.find(query)
+      .populate('tenantId', 'fullName phoneNumber')
+      .populate('propertyId', 'name')
+      .populate('tenantAllocationId')
+      .sort({ month: -1, createdAt: -1 });
+  }
+
   // ─── 6. Get Single Ledger ────────────────────────────────────────────────────
   static async getLedgerById(id: string): Promise<IRentLedger> {
     const ledger = await RentLedger.findById(id)
@@ -389,6 +414,19 @@ export default class RentLedgerService {
       .populate('rentLedgerId', 'month totalAmount paidAmount')
       .populate('propertyId', 'name')
       .sort({ createdAt: -1 });
+  }
+
+  // ─── 7c. Get Recent Transactions (Dashboard) ────────────────────────────────
+  static async getRecentTransactions(limit: number = 10, status?: string): Promise<IPaymentTransaction[]> {
+    const query: any = {};
+    if (status) query.status = status;
+
+    return PaymentTransaction.find(query)
+      .populate('tenantId', 'fullName phoneNumber email')
+      .populate('rentLedgerId', 'month totalAmount paidAmount')
+      .populate('propertyId', 'name')
+      .sort({ createdAt: -1 })
+      .limit(limit);
   }
 
   // ─── 8. Get Audit Logs for a Ledger ──────────────────────────────────────────

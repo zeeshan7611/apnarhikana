@@ -109,6 +109,21 @@ export default class RentLedgerController {
     }
   }
 
+  // GET /get-payment-history
+  static async getPaymentHistory(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { tenantId, propertyId, category } = req.query;
+      const ledgers = await RentLedgerService.getPaymentHistory({
+        tenantId:   tenantId   as string,
+        propertyId: propertyId as string,
+        category:   category   as any,
+      });
+      res.json({ success: true, data: ledgers });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   // GET /get-ledger
   static async getLedgerById(req: Request, res: Response, next: NextFunction) {
     try {
@@ -150,6 +165,20 @@ export default class RentLedgerController {
     try {
       const { propertyId, status } = req.query;
       const transactions = await RentLedgerService.getAllTransactions(propertyId as string, status as string);
+      res.json({ success: true, data: transactions });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // GET /get-recent-transactions
+  static async getRecentTransactions(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { limit, status } = req.query;
+      const transactions = await RentLedgerService.getRecentTransactions(
+        limit ? parseInt(limit as string) : 10,
+        status as string
+      );
       res.json({ success: true, data: transactions });
     } catch (err) {
       next(err);

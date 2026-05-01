@@ -282,6 +282,33 @@ router.post('/mark-overdue', authorizePermissions('payments:write'), Controller.
  */
 router.get('/get-ledgers', authorizePermissions('payments:read'), Controller.getLedgers);
 
+// ─── GET PAYMENT HISTORY (CATEGORIZED) ───────────────────────────────────────
+
+/**
+ * @swagger
+ * /api/rent-ledger/get-payment-history:
+ *   get:
+ *     summary: Get rent ledgers filtered by payment category (paid, overdue, due)
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: tenantId
+ *         schema: { type: string }
+ *       - in: query
+ *         name: propertyId
+ *         schema: { type: string }
+ *       - in: query
+ *         name: category
+ *         schema: { type: string, enum: [paid, overdue, due, all] }
+ *         description: "due includes both pending and partial statuses"
+ *     responses:
+ *       200:
+ *         description: List of rent ledgers in the specified category
+ */
+router.get('/get-payment-history', authorizePermissions('payments:read'), Controller.getPaymentHistory);
+
 // ─── GET SINGLE LEDGER ───────────────────────────────────────────────────────
 
 /**
@@ -373,6 +400,31 @@ router.get('/get-pending-payments', authorizePermissions('payments:read'), Contr
  *         description: List of payment transactions
  */
 router.get('/get-property-transactions', authorizePermissions('payments:read'), Controller.getPropertyTransactions);
+
+// ─── GET RECENT TRANSACTIONS (DASHBOARD) ────────────────────────────────────
+
+/**
+ * @swagger
+ * /api/rent-ledger/get-recent-transactions:
+ *   get:
+ *     summary: Get recent payment transactions across all properties
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema: { type: integer, default: 10 }
+ *       - in: query
+ *         name: status
+ *         required: false
+ *         schema: { type: string, enum: [approved, rejected, pending] }
+ *     responses:
+ *       200:
+ *         description: List of recent transactions
+ */
+router.get('/get-recent-transactions', authorizePermissions('payments:read'), Controller.getRecentTransactions);
 
 // ─── GET AUDIT LOGS ──────────────────────────────────────────────────────────
 
