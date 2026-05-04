@@ -158,6 +158,12 @@ router.delete('/delete-floor', authorizePermissions('floors:write'), FloorContro
  *         required: true
  *         schema:
  *           type: string
+ *       - in: query
+ *         name: isGroundfloor
+ *         required: false
+ *         schema:
+ *           type: boolean
+ *         description: If true, only returns the ground floor.
  *     responses:
  *       200:
  *         description: List of floors

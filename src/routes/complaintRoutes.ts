@@ -182,4 +182,33 @@ router.put('/update-complaint', authorizePermissions('complaints:write'), Compla
  */
 router.delete('/delete-complaint', authorizePermissions('complaints:delete'), ComplaintController.delete);
 
+/**
+ * @swagger
+ * /api/complaints/get-open-complaints-count:
+ *   get:
+ *     summary: Get total count of open and in-progress complaints
+ *     tags: [Complaints]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: propertyId
+ *         required: false
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Total open complaints count
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalOpen: { type: number }
+ */
+router.get('/get-open-complaints-count', authorizePermissions('complaints:read'), ComplaintController.getOpenCount);
+
 export default router;

@@ -303,6 +303,14 @@ router.get('/get-ledgers', authorizePermissions('payments:read'), Controller.get
  *         name: category
  *         schema: { type: string, enum: [paid, overdue, due, all] }
  *         description: "due includes both pending and partial statuses"
+ *       - in: query
+ *         name: from
+ *         schema: { type: string }
+ *         description: "Start month (Format: YYYY-MM)"
+ *       - in: query
+ *         name: to
+ *         schema: { type: string }
+ *         description: "End month (Format: YYYY-MM)"
  *     responses:
  *       200:
  *         description: List of rent ledgers in the specified category
@@ -584,6 +592,68 @@ router.post('/sync-all-ledgers', authorizePermissions('payments:write'), Control
  *                     cancelled: { type: number }
  */
 router.post('/cancel-tenant-ledgers', authorizePermissions('payments:write'), Controller.cancelTenantLedgers);
+
+// ─── GET REVENUE STATS ────────────────────────────────────────────────────────
+/**
+ * @swagger
+ * /api/rent-ledger/get-revenue-stats:
+ *   get:
+ *     summary: Get total approved revenue for the current month
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: propertyId
+ *         required: false
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Revenue statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalRevenue: { type: number }
+ *                     transactionCount: { type: number }
+ */
+router.get('/get-revenue-stats', authorizePermissions('payments:read'), Controller.getRevenueStats);
+
+/**
+ * @swagger
+ * /api/rent-ledger/get-pending-payment-stats:
+ *   get:
+ *     summary: Get pending transaction count, amount and total due amount
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: propertyId
+ *         required: false
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Pending payment and due statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     pendingTransactionsCount: { type: number }
+ *                     pendingTransactionsAmount: { type: number }
+ *                     totalDueAmount: { type: number }
+ */
+router.get('/get-pending-payment-stats', authorizePermissions('payments:read'), Controller.getPendingPaymentStats);
 
 export default router;
 

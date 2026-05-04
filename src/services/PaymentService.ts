@@ -1,39 +1,41 @@
-import Payment, { IPayment } from '../models/Payment';
+import RentLedgerService from './RentLedgerService';
 
 export default class PaymentService {
-  static async collectRent(data: any): Promise<IPayment> {
-    return Payment.create({
-      ...data,
-      paidAt: data.status === 'paid' ? new Date() : undefined
-    });
+  /**
+   * Collect Rent directly via Manager App
+   * Updates the RentLedger and records a pre-approved transaction
+   */
+  static async collectRent(data: {
+    tenantId: string;
+    propertyId: string;
+    month: string;           // YYYY-MM
+    amount: number;
+    paymentMethod: 'cash' | 'upi' | 'bank_transfer' | 'cheque';
+    referenceNumber?: string;
+    utrNumber?: string;
+    paymentScreenshotUrl?: string;
+    notes?: string;
+    createdById: string;
+  }) {
+    // We use RentLedgerService to ensure the ledger is updated correctly
+    return RentLedgerService.collectRent(data);
   }
 
-  static async getAllPayments(filters: any = {}): Promise<IPayment[]> {
-    const query: any = {};
-    if (filters.tenantId) query.tenantId = filters.tenantId;
-    if (filters.propertyId) query.propertyId = filters.propertyId;
-    if (filters.status) query.status = filters.status;
-    if (filters.month) query.month = filters.month;
+  static async getAllPayments(filters: any = {}) {
+    // Return all transactions via the unified RentLedger system
+    return RentLedgerService.getAllTransactions(filters.propertyId, filters.status);
+  }
 
-    return Payment.find(query)
-      .populate('tenantId', 'fullName phoneNumber')
+  static async getPaymentById(id: string) {
+    const PaymentTransaction = (await import('../models/PaymentTransaction')).default;
+    return PaymentTransaction.findById(id)
+      .populate('tenantId', 'fullName phoneNumber email')
       .populate('propertyId', 'name')
-      .populate('tenantAllocationId')
-      .sort({ createdAt: -1 });
+      .populate('rentLedgerId', 'month totalAmount paidAmount');
   }
 
-  static async getPaymentById(id: string): Promise<IPayment | null> {
-    return Payment.findById(id)
-      .populate('tenantId', 'fullName phoneNumber')
-      .populate('propertyId', 'name')
-      .populate('tenantAllocationId');
-  }
-
-  static async updatePayment(id: string, data: any): Promise<IPayment | null> {
-    const updateData = { ...data };
-    if (data.status === 'paid' && !data.paidAt) {
-      updateData.paidAt = new Date();
-    }
-    return Payment.findByIdAndUpdate(id, updateData, { new: true });
+  static async updatePayment(id: string, data: any) {
+    const PaymentTransaction = (await import('../models/PaymentTransaction')).default;
+    return PaymentTransaction.findByIdAndUpdate(id, data, { new: true });
   }
 }

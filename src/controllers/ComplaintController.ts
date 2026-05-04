@@ -74,4 +74,14 @@ export default class ComplaintController {
       next(err);
     }
   }
+
+  static async getOpenCount(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyId } = req.query;
+      const stats = await ComplaintService.getOpenComplaintCount(propertyId as string);
+      res.json({ success: true, data: stats });
+    } catch (err) {
+      next(err);
+    }
+  }
 }

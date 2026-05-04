@@ -61,11 +61,14 @@ export default class FloorController {
 
   static async getFloorsByProperty(req: Request, res: Response, next: NextFunction) {
     try {
-      const { propertyId } = req.query;
+      const { propertyId, isGroundfloor } = req.query;
       if (!propertyId) {
         return res.status(400).json({ message: "Property ID is required" });
       }
-      const floors = await FloorService.getFloorsByPropertyId(propertyId as string);
+      const floors = await FloorService.getFloorsByPropertyId(
+        propertyId as string,
+        isGroundfloor === "true"
+      );
       res.json({ success: true, data: floors });
     } catch (error) {
       next(error);

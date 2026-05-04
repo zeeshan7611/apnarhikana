@@ -25,16 +25,17 @@ const router = Router();
  *         application/json:
  *           schema:
  *             type: object
- *             required: [tenantAllocationId, amount, month, paymentMethod, createdById]
+ *             required: [tenantId, propertyId, month, amount, paymentMethod]
  *             properties:
- *               tenantAllocationId: { type: string }
  *               tenantId:           { type: string }
  *               propertyId:         { type: string }
  *               amount:             { type: number }
  *               month:              { type: string, description: "Format: YYYY-MM" }
  *               paymentMethod:      { type: string, enum: ["cash", "upi", "bank_transfer", "cheque"] }
+ *               referenceNumber:    { type: string }
+ *               utrNumber:          { type: string }
+ *               paymentScreenshotUrl: { type: string }
  *               notes:              { type: string }
- *               createdById:        { type: string }
  *     responses:
  *       201:
  *         description: Payment recorded

@@ -113,6 +113,45 @@ export default class RentLedgerService {
     return { ledger, transaction };
   }
 
+  // ─── 2x. Collect Rent (Direct via Manager) ──────────────────────────────────
+  // This is a wrapper for recordPayment specifically for the Manager App.
+  // It finds the ledger by tenant+month if rentLedgerId is not provided.
+  static async collectRent(data: {
+    tenantId: string;
+    propertyId: string;
+    month: string;           // YYYY-MM
+    amount: number;
+    paymentMethod: 'cash' | 'upi' | 'bank_transfer' | 'cheque';
+    referenceNumber?: string;
+    utrNumber?: string;
+    paymentScreenshotUrl?: string;
+    notes?: string;
+    createdById: string;
+  }): Promise<{ ledger: IRentLedger; transaction: IPaymentTransaction }> {
+    let ledger = await RentLedger.findOne({
+      tenantId: data.tenantId,
+      month: data.month,
+    });
+
+    if (!ledger) {
+      throw new Error(`No rent ledger found for tenant in ${data.month}. Please generate ledgers first.`);
+    }
+
+    return this.recordPayment({
+      rentLedgerId: ledger._id.toString(),
+      tenantId: data.tenantId,
+      propertyId: data.propertyId,
+      amount: data.amount,
+      paymentMethod: data.paymentMethod,
+      referenceNumber: data.referenceNumber,
+      utrNumber: data.utrNumber,
+      paymentScreenshotUrl: data.paymentScreenshotUrl,
+      notes: data.notes,
+      status: 'approved', // Direct collection is pre-approved
+      createdById: data.createdById,
+    });
+  }
+
   // ─── 2a. Approve a Pending Payment ──────────────────────────────────────────
   static async approvePayment(
     transactionId: string,
@@ -354,6 +393,8 @@ export default class RentLedgerService {
     propertyId?: string;
     tenantId?: string;
     category?: 'paid' | 'overdue' | 'due' | 'all';
+    from?: string;
+    to?: string;
   }): Promise<IRentLedger[]> {
     const query: any = {};
     if (filters.propertyId) query.propertyId = filters.propertyId;
@@ -365,6 +406,13 @@ export default class RentLedgerService {
       query.status = 'overdue';
     } else if (filters.category === 'due') {
       query.status = { $in: ['pending', 'partial'] };
+    }
+
+    // Apply date/month range filter if provided
+    if (filters.from || filters.to) {
+      query.month = {};
+      if (filters.from) query.month.$gte = filters.from;
+      if (filters.to) query.month.$lte = filters.to;
     }
 
     return RentLedger.find(query)
@@ -615,5 +663,81 @@ export default class RentLedgerService {
     }
 
     return ids.length;
+  }
+
+  // ─── 11. Get Current Month Revenue ──────────────────────────────────────────
+  static async getCurrentMonthRevenue(propertyId?: string): Promise<{ totalRevenue: number; transactionCount: number }> {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    const query: any = {
+      status: 'approved',
+      paidAt: { $gte: startOfMonth, $lte: endOfMonth }
+    };
+
+    if (propertyId) {
+      query.propertyId = new mongoose.Types.ObjectId(propertyId);
+    }
+
+    const stats = await PaymentTransaction.aggregate([
+      { $match: query },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$amount" },
+          transactionCount: { $sum: 1 }
+        }
+      }
+    ]);
+
+    return stats[0] || { totalRevenue: 0, transactionCount: 0 };
+  }
+
+  // ─── 12. Get Pending Payment & Due Stats ───────────────────────────────────
+  static async getPendingPaymentStats(propertyId?: string): Promise<{ 
+    pendingTransactionsCount: number; 
+    pendingTransactionsAmount: number; 
+    totalDueAmount: number;
+  }> {
+    const transactionQuery: any = { status: 'pending' };
+    const ledgerQuery: any = { status: { $in: ['pending', 'partial', 'overdue'] } };
+
+    if (propertyId) {
+      transactionQuery.propertyId = new mongoose.Types.ObjectId(propertyId);
+      ledgerQuery.propertyId = new mongoose.Types.ObjectId(propertyId);
+    }
+
+    // 1. Pending Transactions Stats
+    const transactionStats = await PaymentTransaction.aggregate([
+      { $match: transactionQuery },
+      {
+        $group: {
+          _id: null,
+          count: { $sum: 1 },
+          amount: { $sum: "$amount" }
+        }
+      }
+    ]);
+
+    // 2. Total Due Amount (TotalAmount - PaidAmount for all unpaid ledgers)
+    const ledgerStats = await RentLedger.aggregate([
+      { $match: ledgerQuery },
+      {
+        $group: {
+          _id: null,
+          due: { $sum: { $subtract: ["$totalAmount", "$paidAmount"] } }
+        }
+      }
+    ]);
+
+    const tStat = transactionStats[0] || { count: 0, amount: 0 };
+    const lStat = ledgerStats[0] || { due: 0 };
+
+    return {
+      pendingTransactionsCount: tStat.count,
+      pendingTransactionsAmount: tStat.amount,
+      totalDueAmount: lStat.due
+    };
   }
 }

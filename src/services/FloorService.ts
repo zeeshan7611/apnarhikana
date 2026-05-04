@@ -44,14 +44,23 @@ export default class FloorService {
   }
 
   // Get floors by property ID based on property's numberOfFloors
-  static async getFloorsByPropertyId(propertyId: string): Promise<IFloor[]> {
+  static async getFloorsByPropertyId(
+    propertyId: string,
+    isGroundfloor?: boolean
+  ): Promise<IFloor[]> {
     const Property = mongoose.model("Property");
     const property: any = await Property.findById(propertyId);
     if (!property) {
       throw new Error("Property not found");
     }
 
-    const floors = await Floor.find();
-    return floors.slice(0, property.numberOfFloors);
+    const floors = await Floor.find().sort({ keyNumber: 1 });
+    const slicedFloors = floors.slice(0, property.numberOfFloors);
+
+    if (isGroundfloor) {
+      return slicedFloors.filter((floor) => floor.keyNumber === 0);
+    }
+
+    return slicedFloors;
   }
 }

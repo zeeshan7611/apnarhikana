@@ -52,4 +52,11 @@ export default class ComplaintService {
       .sort({ createdAt: -1 })
       .limit(limit);
   }
+
+  static async getOpenComplaintCount(propertyId?: string): Promise<{ totalOpen: number }> {
+    const query: any = { status: { $in: ['open', 'in-progress'] } };
+    if (propertyId) query.propertyId = propertyId;
+    const count = await Complaint.countDocuments(query);
+    return { totalOpen: count };
+  }
 }

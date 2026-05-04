@@ -112,11 +112,13 @@ export default class RentLedgerController {
   // GET /get-payment-history
   static async getPaymentHistory(req: Request, res: Response, next: NextFunction) {
     try {
-      const { tenantId, propertyId, category } = req.query;
+      const { tenantId, propertyId, category, from, to } = req.query;
       const ledgers = await RentLedgerService.getPaymentHistory({
         tenantId:   tenantId   as string,
         propertyId: propertyId as string,
         category:   category   as any,
+        from:       from       as string,
+        to:         to         as string,
       });
       res.json({ success: true, data: ledgers });
     } catch (err) {
@@ -262,6 +264,28 @@ export default class RentLedgerController {
         message: `${cancelled} future pending ledger(s) cancelled for tenant`,
         data: { cancelled },
       });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // GET /get-revenue-stats
+  static async getRevenueStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyId } = req.query;
+      const stats = await RentLedgerService.getCurrentMonthRevenue(propertyId as string);
+      res.json({ success: true, data: stats });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // GET /get-pending-payment-stats
+  static async getPendingPaymentStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyId } = req.query;
+      const stats = await RentLedgerService.getPendingPaymentStats(propertyId as string);
+      res.json({ success: true, data: stats });
     } catch (err) {
       next(err);
     }
