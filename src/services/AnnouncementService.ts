@@ -44,10 +44,17 @@ export default class AnnouncementService {
     return announcement;
   }
 
-  static async getAllAnnouncements(filters: any = {}): Promise<IAnnouncement[]> {
-    return Announcement.find(filters)
-      .populate('propertyId', 'name')
-      .populate('sentBy', 'name')
-      .sort({ createdAt: -1 });
+  static async getAllAnnouncements(filters: any = {}, page: number = 1, limit: number = 10): Promise<{ data: IAnnouncement[], total: number }> {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      Announcement.find(filters)
+        .populate('propertyId', 'name')
+        .populate('sentBy', 'name')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Announcement.countDocuments(filters)
+    ]);
+    return { data, total };
   }
 }

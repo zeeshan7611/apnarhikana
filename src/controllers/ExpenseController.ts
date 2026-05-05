@@ -17,12 +17,24 @@ export default class ExpenseController {
   static async getAll(req: Request, res: Response, next: NextFunction) {
     try {
       const { propertyId, category } = req.query;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
       const filters: any = {};
       if (propertyId) filters.propertyId = propertyId;
       if (category) filters.category = category;
 
-      const expenses = await ExpenseService.getAllExpenses(filters);
-      res.json({ success: true, data: expenses });
+      const { data, total } = await ExpenseService.getAllExpenses(filters, page, limit);
+      res.json({ 
+        success: true, 
+        data,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
     } catch (err) {
       next(err);
     }

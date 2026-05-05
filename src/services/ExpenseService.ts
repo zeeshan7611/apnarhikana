@@ -5,11 +5,18 @@ export default class ExpenseService {
     return Expense.create(data);
   }
 
-  static async getAllExpenses(filters: any = {}): Promise<IExpense[]> {
-    return Expense.find(filters)
-      .populate('userId', 'name email')
-      .populate('propertyId', 'name')
-      .sort({ date: -1 });
+  static async getAllExpenses(filters: any = {}, page: number = 1, limit: number = 10): Promise<{ data: IExpense[], total: number }> {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      Expense.find(filters)
+        .populate('userId', 'name email')
+        .populate('propertyId', 'name')
+        .sort({ date: -1 })
+        .skip(skip)
+        .limit(limit),
+      Expense.countDocuments(filters)
+    ]);
+    return { data, total };
   }
 
   static async getExpenseById(id: string): Promise<IExpense | null> {

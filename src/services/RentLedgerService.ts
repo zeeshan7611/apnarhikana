@@ -374,52 +374,90 @@ export default class RentLedgerService {
     propertyId?: string;
     month?: string;
     status?: string;
-  }): Promise<IRentLedger[]> {
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: IRentLedger[], total: number }> {
     const query: any = {};
     if (filters.tenantId) query.tenantId = filters.tenantId;
     if (filters.propertyId) query.propertyId = filters.propertyId;
     if (filters.month) query.month = filters.month;
     if (filters.status) query.status = filters.status;
 
-    return RentLedger.find(query)
-      .populate('tenantId', 'fullName phoneNumber')
-      .populate('propertyId', 'name')
-      .populate('tenantAllocationId')
-      .sort({ month: -1, createdAt: -1 });
+    const page = filters.page || 1;
+    const limit = filters.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      RentLedger.find(query)
+        .populate('tenantId', 'fullName phoneNumber')
+        .populate('propertyId', 'name')
+        .populate('tenantAllocationId')
+        .sort({ month: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      RentLedger.countDocuments(query)
+    ]);
+
+    return { data, total };
   }
 
-  // ─── 5a. Get Payment History (Categorized) ─────────────────────────────────
+  // ─── 5a. Get Payment History (Categorized Transactions) ────────────────────
   static async getPaymentHistory(filters: {
     propertyId?: string;
     tenantId?: string;
-    category?: 'paid' | 'overdue' | 'due' | 'all';
+    category?: 'paid' | 'overdue' | 'due' | 'all' | 'approved' | 'rejected' | 'pending';
     from?: string;
     to?: string;
-  }): Promise<IRentLedger[]> {
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: IPaymentTransaction[], total: number }> {
     const query: any = {};
     if (filters.propertyId) query.propertyId = filters.propertyId;
     if (filters.tenantId) query.tenantId = filters.tenantId;
 
+    // Map old categories to transaction statuses
     if (filters.category === 'paid') {
-      query.status = 'paid';
-    } else if (filters.category === 'overdue') {
-      query.status = 'overdue';
+      query.status = 'approved';
     } else if (filters.category === 'due') {
-      query.status = { $in: ['pending', 'partial'] };
+      query.status = 'pending';
+    } else if (filters.category === 'overdue') {
+      // Overdue doesn't directly map to transactions, but we can look for pending transactions
+      query.status = 'pending';
+    } else if (filters.category && filters.category !== 'all') {
+      query.status = filters.category;
     }
 
-    // Apply date/month range filter if provided
+    // Apply date range filter if provided (using createdAt for transaction history)
     if (filters.from || filters.to) {
-      query.month = {};
-      if (filters.from) query.month.$gte = filters.from;
-      if (filters.to) query.month.$lte = filters.to;
+      query.createdAt = {};
+      if (filters.from) {
+        const fromDate = new Date(filters.from);
+        fromDate.setHours(0, 0, 0, 0);
+        query.createdAt.$gte = fromDate;
+      }
+      if (filters.to) {
+        const toDate = new Date(filters.to);
+        toDate.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = toDate;
+      }
     }
 
-    return RentLedger.find(query)
-      .populate('tenantId', 'fullName phoneNumber')
-      .populate('propertyId', 'name')
-      .populate('tenantAllocationId')
-      .sort({ month: -1, createdAt: -1 });
+    const page = filters.page || 1;
+    const limit = filters.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      PaymentTransaction.find(query)
+        .populate('tenantId', 'fullName phoneNumber email')
+        .populate('rentLedgerId', 'month totalAmount paidAmount rentAmount lateFee')
+        .populate('propertyId', 'name')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      PaymentTransaction.countDocuments(query)
+    ]);
+
+    return { data, total };
   }
 
   // ─── 6. Get Single Ledger ────────────────────────────────────────────────────
@@ -433,48 +471,79 @@ export default class RentLedgerService {
   }
 
   // ─── 7. Get Transactions for a Ledger ────────────────────────────────────────
-  static async getTransactions(rentLedgerId: string): Promise<IPaymentTransaction[]> {
-    return PaymentTransaction.find({ rentLedgerId })
-      .populate('createdById', 'name email')
-      .sort({ createdAt: -1 });
+  static async getTransactions(rentLedgerId: string, page: number = 1, limit: number = 10): Promise<{ data: IPaymentTransaction[], total: number }> {
+    const skip = (page - 1) * limit;
+    const query = { rentLedgerId };
+    const [data, total] = await Promise.all([
+      PaymentTransaction.find(query)
+        .populate('createdById', 'name email')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      PaymentTransaction.countDocuments(query)
+    ]);
+    return { data, total };
   }
 
   // ─── 7a. Get Pending Transactions by Property ───────────────────────────────
-  static async getPendingTransactions(propertyId?: string): Promise<IPaymentTransaction[]> {
+  static async getPendingTransactions(propertyId?: string, page: number = 1, limit: number = 10): Promise<{ data: IPaymentTransaction[], total: number }> {
     const query: any = { status: 'pending' };
     if (propertyId) query.propertyId = propertyId;
 
-    return PaymentTransaction.find(query)
-      .populate('tenantId', 'fullName phoneNumber email')
-      .populate('rentLedgerId', 'month totalAmount paidAmount')
-      .populate('propertyId', 'name')
-      .sort({ createdAt: -1 });
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      PaymentTransaction.find(query)
+        .populate('tenantId', 'fullName phoneNumber email')
+        .populate('rentLedgerId', 'month totalAmount paidAmount')
+        .populate('propertyId', 'name')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      PaymentTransaction.countDocuments(query)
+    ]);
+
+    return { data, total };
   }
 
   // ─── 7b. Get All/Status-wise Transactions ──────────────────────────────────
-  static async getAllTransactions(propertyId?: string, status?: string): Promise<IPaymentTransaction[]> {
+  static async getAllTransactions(propertyId?: string, status?: string, page: number = 1, limit: number = 10): Promise<{ data: IPaymentTransaction[], total: number }> {
     const query: any = {};
     if (propertyId) query.propertyId = propertyId;
     if (status) query.status = status;
 
-    return PaymentTransaction.find(query)
-      .populate('tenantId', 'fullName phoneNumber email')
-      .populate('rentLedgerId', 'month totalAmount paidAmount')
-      .populate('propertyId', 'name')
-      .sort({ createdAt: -1 });
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      PaymentTransaction.find(query)
+        .populate('tenantId', 'fullName phoneNumber email')
+        .populate('rentLedgerId', 'month totalAmount paidAmount')
+        .populate('propertyId', 'name')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      PaymentTransaction.countDocuments(query)
+    ]);
+
+    return { data, total };
   }
 
   // ─── 7c. Get Recent Transactions (Dashboard) ────────────────────────────────
-  static async getRecentTransactions(limit: number = 10, status?: string): Promise<IPaymentTransaction[]> {
+  static async getRecentTransactions(page: number = 1, limit: number = 10, status?: string): Promise<{ data: IPaymentTransaction[], total: number }> {
     const query: any = {};
     if (status) query.status = status;
 
-    return PaymentTransaction.find(query)
-      .populate('tenantId', 'fullName phoneNumber email')
-      .populate('rentLedgerId', 'month totalAmount paidAmount')
-      .populate('propertyId', 'name')
-      .sort({ createdAt: -1 })
-      .limit(limit);
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      PaymentTransaction.find(query)
+        .populate('tenantId', 'fullName phoneNumber email')
+        .populate('rentLedgerId', 'month totalAmount paidAmount')
+        .populate('propertyId', 'name')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      PaymentTransaction.countDocuments(query)
+    ]);
+
+    return { data, total };
   }
 
   // ─── 8. Get Audit Logs for a Ledger ──────────────────────────────────────────

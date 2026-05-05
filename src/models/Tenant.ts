@@ -8,6 +8,8 @@ export interface ITenant extends Document {
   alternateNumber?: string;
   emergencyContactNumber: string;
   homeContactNumber?: string;
+  otp?: string;
+  otpExpiry?: Date;
   createdById: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -21,6 +23,8 @@ const TenantSchema: Schema = new Schema({
   alternateNumber: { type: String },
   emergencyContactNumber: { type: String, required: true },
   homeContactNumber: { type: String },
+  otp: { type: String },
+  otpExpiry: { type: Date },
   createdById: { type: Schema.Types.ObjectId, ref: 'PropertyUser', required: true },
 }, {
   timestamps: true,

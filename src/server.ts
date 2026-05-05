@@ -19,6 +19,7 @@ import announcementRoutes from './routes/announcementRoutes';
 import roomCategoryRoutes from './routes/roomCategoryRoutes';
 import paymentRoutes from './routes/paymentRoutes';
 import rentLedgerRoutes from './routes/rentLedgerRoutes';
+import tenantAppRoutes from './routes/tenantAppRoutes';
 
 import { jwtAuth } from './middleware/jwtAuth';
 import RbacService from './services/RbacService';
@@ -77,6 +78,9 @@ app.use('/api/payments', jwtAuth, paymentRoutes);
 
 // Rent Ledger routes (Protected)
 app.use('/api/rent-ledger', jwtAuth, rentLedgerRoutes);
+
+// Tenant App routes (Internal Auth)
+app.use('/api/tenant-app', tenantAppRoutes);
 
 
 // Connect to DB and start server

@@ -288,7 +288,8 @@ router.get('/get-ledgers', authorizePermissions('payments:read'), Controller.get
  * @swagger
  * /api/rent-ledger/get-payment-history:
  *   get:
- *     summary: Get rent ledgers filtered by payment category (paid, overdue, due)
+ *     summary: Get payment transactions filtered by category or status
+ *     description: Returns actual payment records from PaymentTransaction model.
  *     tags: [RentLedger]
  *     security:
  *       - bearerAuth: []
@@ -301,19 +302,25 @@ router.get('/get-ledgers', authorizePermissions('payments:read'), Controller.get
  *         schema: { type: string }
  *       - in: query
  *         name: category
- *         schema: { type: string, enum: [paid, overdue, due, all] }
- *         description: "due includes both pending and partial statuses"
+ *         schema: { type: string, enum: [paid, overdue, due, approved, rejected, pending, all] }
+ *         description: "Mapping: paid -> approved, due -> pending. Or use transaction status directly."
  *       - in: query
  *         name: from
  *         schema: { type: string }
- *         description: "Start month (Format: YYYY-MM)"
+ *         description: "Start date (Format: YYYY-MM-DD)"
  *       - in: query
  *         name: to
  *         schema: { type: string }
- *         description: "End month (Format: YYYY-MM)"
+ *         description: "End date (Format: YYYY-MM-DD)"
  *     responses:
  *       200:
- *         description: List of rent ledgers in the specified category
+ *         description: List of payment transactions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/PaymentTransaction'
  */
 router.get('/get-payment-history', authorizePermissions('payments:read'), Controller.getPaymentHistory);
 

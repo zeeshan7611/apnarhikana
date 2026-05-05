@@ -16,9 +16,14 @@ export default class FloorService {
     return Floor.create(data);
   }
 
-  // Get all floors
-  static async getAllFloors(): Promise<IFloor[]> {
-    return Floor.find().sort({ keyNumber: 1 });
+  // Get all floors with pagination
+  static async getAllFloors(page: number = 1, limit: number = 10): Promise<{ data: IFloor[], total: number }> {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      Floor.find().sort({ keyNumber: 1 }).skip(skip).limit(limit),
+      Floor.countDocuments()
+    ]);
+    return { data, total };
   }
 
   // Get floor by ID
@@ -43,10 +48,9 @@ export default class FloorService {
     return Floor.findByIdAndDelete(id);
   }
 
-  // Get floors by property ID based on property's numberOfFloors
+  // Get floors by property ID based on property's numberOfFloors and isGroundfloor flag
   static async getFloorsByPropertyId(
-    propertyId: string,
-    isGroundfloor?: boolean
+    propertyId: string
   ): Promise<IFloor[]> {
     const Property = mongoose.model("Property");
     const property: any = await Property.findById(propertyId);
@@ -55,11 +59,9 @@ export default class FloorService {
     }
 
     const floors = await Floor.find().sort({ keyNumber: 1 });
-    const slicedFloors = floors.slice(0, property.numberOfFloors);
+    const slicedFloors = property.isGroundfloor ? floors.slice(0, property.numberOfFloors) : floors.slice(1, property.numberOfFloors + 1);
 
-    if (isGroundfloor) {
-      return slicedFloors.filter((floor) => floor.keyNumber === 0);
-    }
+
 
     return slicedFloors;
   }

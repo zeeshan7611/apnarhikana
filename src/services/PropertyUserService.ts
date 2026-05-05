@@ -37,13 +37,20 @@ export default class PropertyUserService {
     });
   }
 
-  // ✅ Get all users (with roles and properties)
-  static async getAllUsers(): Promise<IPropertyUser[]> {
-    return PropertyUser.find()
-      .populate("roleIds")
-      .populate("propertyId", "name id") // Assuming Property has name
-      .select("-passwordHash")
-      .sort({ createdAt: -1 });
+  // ✅ Get all users (with roles and properties) with pagination
+  static async getAllUsers(page: number = 1, limit: number = 10): Promise<{ data: IPropertyUser[], total: number }> {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      PropertyUser.find()
+        .populate("roleIds")
+        .populate("propertyId", "name id")
+        .select("-passwordHash")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      PropertyUser.countDocuments()
+    ]);
+    return { data, total };
   }
 
   // ✅ Get user by ID

@@ -13,8 +13,21 @@ export default class PropertyController {
 
   static async getAllProperties(req: Request, res: Response, next: NextFunction) {
     try {
-      const properties = await PropertyService.getAllProperties();
-      res.json({ success: true, data: properties });
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const { data, total } = await PropertyService.getAllProperties(page, limit);
+      
+      res.json({ 
+        success: true, 
+        data,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
     } catch (error) {
       next(error);
     }
@@ -72,10 +85,39 @@ export default class PropertyController {
     }
   }
 
+  static async getBulkOccupancy(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyIds } = req.body;
+      if (!propertyIds || !Array.isArray(propertyIds)) {
+        return res.status(400).json({ message: "propertyIds array is required" });
+      }
+      const stats = await PropertyService.getBulkOccupancyStats(propertyIds);
+      res.json({ success: true, data: stats });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getPropertyNames(req: Request, res: Response, next: NextFunction) {
     try {
       const properties = await PropertyService.getPropertyNames();
       res.json({ success: true, data: properties });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateSupportDetails(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyId, contacts } = req.body;
+      if (!propertyId) {
+        return res.status(400).json({ success: false, message: 'propertyId is required' });
+      }
+      const property = await PropertyService.updateSupportDetails(propertyId, contacts);
+      if (!property) {
+        return res.status(404).json({ success: false, message: 'Property not found' });
+      }
+      res.json({ success: true, data: property });
     } catch (error) {
       next(error);
     }

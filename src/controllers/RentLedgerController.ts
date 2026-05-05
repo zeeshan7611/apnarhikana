@@ -97,13 +97,27 @@ export default class RentLedgerController {
   static async getLedgers(req: Request, res: Response, next: NextFunction) {
     try {
       const { tenantId, propertyId, month, status } = req.query;
-      const ledgers = await RentLedgerService.getLedgers({
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const { data, total } = await RentLedgerService.getLedgers({
         tenantId:   tenantId   as string,
         propertyId: propertyId as string,
         month:      month      as string,
         status:     status     as string,
+        page,
+        limit
       });
-      res.json({ success: true, data: ledgers });
+      res.json({ 
+        success: true, 
+        data,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
     } catch (err) {
       next(err);
     }
@@ -113,14 +127,28 @@ export default class RentLedgerController {
   static async getPaymentHistory(req: Request, res: Response, next: NextFunction) {
     try {
       const { tenantId, propertyId, category, from, to } = req.query;
-      const ledgers = await RentLedgerService.getPaymentHistory({
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const { data, total } = await RentLedgerService.getPaymentHistory({
         tenantId:   tenantId   as string,
         propertyId: propertyId as string,
         category:   category   as any,
         from:       from       as string,
         to:         to         as string,
+        page,
+        limit
       });
-      res.json({ success: true, data: ledgers });
+      res.json({ 
+        success: true, 
+        data,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
     } catch (err) {
       next(err);
     }
@@ -141,11 +169,23 @@ export default class RentLedgerController {
   static async getTransactions(req: Request, res: Response, next: NextFunction) {
     try {
       const { rentLedgerId } = req.query;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
       if (!rentLedgerId) {
         return res.status(400).json({ success: false, message: 'rentLedgerId is required' });
       }
-      const transactions = await RentLedgerService.getTransactions(rentLedgerId as string);
-      res.json({ success: true, data: transactions });
+      const { data, total } = await RentLedgerService.getTransactions(rentLedgerId as string, page, limit);
+      res.json({ 
+        success: true, 
+        data,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
     } catch (err) {
       next(err);
     }
@@ -155,8 +195,20 @@ export default class RentLedgerController {
   static async getPendingPayments(req: Request, res: Response, next: NextFunction) {
     try {
       const { propertyId } = req.query;
-      const transactions = await RentLedgerService.getPendingTransactions(propertyId as string);
-      res.json({ success: true, data: transactions });
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const { data, total } = await RentLedgerService.getPendingTransactions(propertyId as string, page, limit);
+      res.json({ 
+        success: true, 
+        data,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
     } catch (err) {
       next(err);
     }
@@ -166,8 +218,20 @@ export default class RentLedgerController {
   static async getPropertyTransactions(req: Request, res: Response, next: NextFunction) {
     try {
       const { propertyId, status } = req.query;
-      const transactions = await RentLedgerService.getAllTransactions(propertyId as string, status as string);
-      res.json({ success: true, data: transactions });
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const { data, total } = await RentLedgerService.getAllTransactions(propertyId as string, status as string, page, limit);
+      res.json({ 
+        success: true, 
+        data,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
     } catch (err) {
       next(err);
     }
@@ -176,12 +240,25 @@ export default class RentLedgerController {
   // GET /get-recent-transactions
   static async getRecentTransactions(req: Request, res: Response, next: NextFunction) {
     try {
-      const { limit, status } = req.query;
-      const transactions = await RentLedgerService.getRecentTransactions(
-        limit ? parseInt(limit as string) : 10,
+      const { status } = req.query;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const { data, total } = await RentLedgerService.getRecentTransactions(
+        page,
+        limit,
         status as string
       );
-      res.json({ success: true, data: transactions });
+      res.json({ 
+        success: true, 
+        data,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
     } catch (err) {
       next(err);
     }

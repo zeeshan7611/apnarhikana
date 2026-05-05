@@ -10,7 +10,14 @@ export default class PropertyService {
     location: string;
     numberOfFloors: number;
     numberOfRooms: number;
+    isGroundfloor?: boolean;
     description?: string;
+    contacts?: {
+      managerPhone: string;
+      caretakerPhone: string;
+      emergencyPhone: string;
+      supportEmail: string;
+    };
   }): Promise<IProperty> {
     const existing = await Property.findOne({ name: data.name });
     if (existing) {
@@ -20,9 +27,14 @@ export default class PropertyService {
     return Property.create(data);
   }
 
-  // Get all properties
-  static async getAllProperties(): Promise<IProperty[]> {
-    return Property.find().sort({ createdAt: -1 });
+  // Get all properties with pagination
+  static async getAllProperties(page: number = 1, limit: number = 10): Promise<{ data: IProperty[], total: number }> {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      Property.find().sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Property.countDocuments()
+    ]);
+    return { data, total };
   }
 
   // Get property by ID
@@ -39,7 +51,14 @@ export default class PropertyService {
       location: string;
       numberOfFloors: number;
       numberOfRooms: number;
+      isGroundfloor: boolean;
       description: string;
+      contacts: {
+        managerPhone: string;
+        caretakerPhone: string;
+        emergencyPhone: string;
+        supportEmail: string;
+      };
     }>
   ): Promise<IProperty | null> {
     return Property.findByIdAndUpdate(id, data, { new: true });
@@ -60,7 +79,7 @@ export default class PropertyService {
     const totalCapacity = totalAllocations.length;
 
     if (totalCapacity === 0) {
-      return { totalCapacity: 0, occupiedCount: 0, occupancyPercentage: 0 };
+      return { totalCapacity: 0, occupiedCount: 0, availableCount: 0, occupancyPercentage: 0 };
     }
 
     // 2. Get occupied count (active tenant allocations linked to these inventory IDs)
@@ -70,17 +89,37 @@ export default class PropertyService {
       status: "active"
     });
 
+    const availableCount = totalCapacity - occupiedCount;
     const occupancyPercentage = (occupiedCount / totalCapacity) * 100;
 
     return {
       totalCapacity,
       occupiedCount,
+      availableCount,
       occupancyPercentage: parseFloat(occupancyPercentage.toFixed(2))
     };
+  }
+
+  // Get bulk occupancy statistics for multiple property IDs
+  static async getBulkOccupancyStats(propertyIds: string[]) {
+    const results = [];
+    for (const id of propertyIds) {
+      const stats = await this.getOccupancyStats(id);
+      results.push({
+        propertyId: id,
+        ...stats
+      });
+    }
+    return results;
   }
 
   // Get property names with IDs only
   static async getPropertyNames(): Promise<{ _id: any; name: string }[]> {
     return Property.find({}, { name: 1 }).lean() as any;
+  }
+
+  // Update support details (contacts)
+  static async updateSupportDetails(id: string, contacts: any): Promise<IProperty | null> {
+    return Property.findByIdAndUpdate(id, { contacts }, { new: true });
   }
 }

@@ -13,8 +13,19 @@ export default class PropertyUserController {
 
   static async getAllUsers(req: Request, res: Response, next: NextFunction) {
     try {
-      const users = await PropertyUserService.getAllUsers();
-      res.json({ success: true, data: users });
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const { data, total } = await PropertyUserService.getAllUsers(page, limit);
+      res.json({ 
+        success: true, 
+        data,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
     } catch (err) {
       next(err);
     }

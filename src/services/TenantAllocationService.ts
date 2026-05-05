@@ -275,31 +275,45 @@ export default class TenantAllocationService {
     });
   }
 
-  static async getAllAllocations(): Promise<ITenantAllocation[]> {
-    const allocations = await TenantAllocation.find()
-      .populate('tenantId')
-      .populate({
-        path: 'inventoryAllocationId',
-        populate: ['propertyId', 'floorId', 'roomId', 'bedId', 'roomCategoryId'],
-      })
-      .populate('createdById', 'name email');
+  static async getAllAllocations(page: number = 1, limit: number = 10): Promise<{ data: ITenantAllocation[], total: number }> {
+    const skip = (page - 1) * limit;
+    const [allocations, total] = await Promise.all([
+      TenantAllocation.find()
+        .populate('tenantId')
+        .populate({
+          path: 'inventoryAllocationId',
+          populate: ['propertyId', 'floorId', 'roomId', 'bedId', 'roomCategoryId'],
+        })
+        .populate('createdById', 'name email')
+        .skip(skip)
+        .limit(limit),
+      TenantAllocation.countDocuments()
+    ]);
 
-    return this.sortTenantAllocations(allocations);
+    return { data: this.sortTenantAllocations(allocations), total };
   }
 
-  static async getByPropertyId(propertyId: string): Promise<ITenantAllocation[]> {
+  static async getByPropertyId(propertyId: string, page: number = 1, limit: number = 10): Promise<{ data: ITenantAllocation[], total: number }> {
     const inventoryAllocations = await PropertyInventoryAllocation.find({ propertyId }).select('_id');
     const inventoryIds = inventoryAllocations.map((item) => item._id);
 
-    const allocations = await TenantAllocation.find({ inventoryAllocationId: { $in: inventoryIds } })
-      .populate('tenantId')
-      .populate({
-        path: 'inventoryAllocationId',
-        populate: ['propertyId', 'floorId', 'roomId', 'bedId', 'roomCategoryId'],
-      })
-      .populate('createdById', 'name email');
+    const query = { inventoryAllocationId: { $in: inventoryIds } };
+    const skip = (page - 1) * limit;
 
-    return this.sortTenantAllocations(allocations);
+    const [allocations, total] = await Promise.all([
+      TenantAllocation.find(query)
+        .populate('tenantId')
+        .populate({
+          path: 'inventoryAllocationId',
+          populate: ['propertyId', 'floorId', 'roomId', 'bedId', 'roomCategoryId'],
+        })
+        .populate('createdById', 'name email')
+        .skip(skip)
+        .limit(limit),
+      TenantAllocation.countDocuments(query)
+    ]);
+
+    return { data: this.sortTenantAllocations(allocations), total };
   }
 
   static async getAllocationById(id: string): Promise<ITenantAllocation | null> {

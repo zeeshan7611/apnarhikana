@@ -13,8 +13,19 @@ export default class FloorController {
 
   static async getAllFloors(req: Request, res: Response, next: NextFunction) {
     try {
-      const floors = await FloorService.getAllFloors();
-      res.json({ success: true, data: floors });
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const { data, total } = await FloorService.getAllFloors(page, limit);
+      res.json({ 
+        success: true, 
+        data,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
     } catch (error) {
       next(error);
     }
@@ -61,13 +72,12 @@ export default class FloorController {
 
   static async getFloorsByProperty(req: Request, res: Response, next: NextFunction) {
     try {
-      const { propertyId, isGroundfloor } = req.query;
+      const { propertyId } = req.query;
       if (!propertyId) {
         return res.status(400).json({ message: "Property ID is required" });
       }
       const floors = await FloorService.getFloorsByPropertyId(
-        propertyId as string,
-        isGroundfloor === "true"
+        propertyId as string
       );
       res.json({ success: true, data: floors });
     } catch (error) {

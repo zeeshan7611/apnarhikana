@@ -53,6 +53,32 @@ router.get('/get-occupancy', authorizePermissions('properties:read'), PropertyCo
 
 /**
  * @swagger
+ * /api/properties/get-bulk-occupancy:
+ *   post:
+ *     summary: Get bulk occupancy statistics for multiple properties
+ *     tags: [Properties]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [propertyIds]
+ *             properties:
+ *               propertyIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       200:
+ *         description: List of occupancy statistics for each property
+ */
+router.post('/get-bulk-occupancy', authorizePermissions('properties:read'), PropertyController.getBulkOccupancy);
+
+/**
+ * @swagger
  * /api/properties/get-property-names:
  *   get:
  *     summary: Get list of property names and IDs
@@ -129,6 +155,9 @@ router.get('/:id', authorizePermissions('properties:read'), PropertyController.g
  *                 type: number
  *               numberOfRooms:
  *                 type: number
+ *               isGroundfloor:
+ *                 type: boolean
+ *                 default: true
  *               description:
  *                 type: string
  *     responses:
@@ -173,6 +202,8 @@ router.post('/', authorizePermissions('properties:write'), PropertyController.cr
  *                 type: number
  *               numberOfRooms:
  *                 type: number
+ *               isGroundfloor:
+ *                 type: boolean
  *               description:
  *                 type: string
  *     responses:
@@ -209,5 +240,36 @@ router.put('/:id', authorizePermissions('properties:write'), PropertyController.
  */
 router.delete('/delete-property', authorizePermissions('properties:write'), PropertyController.deleteProperty);
 
+
+/**
+ * @swagger
+ * /api/properties/supportdetail:
+ *   post:
+ *     summary: Update property support and contact details
+ *     tags: [Properties]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [propertyId, contacts]
+ *             properties:
+ *               propertyId:
+ *                 type: string
+ *               contacts:
+ *                 type: object
+ *                 properties:
+ *                   managerPhone:   { type: string }
+ *                   caretakerPhone: { type: string }
+ *                   emergencyPhone: { type: string }
+ *                   supportEmail:   { type: string }
+ *     responses:
+ *       200:
+ *         description: Support details updated successfully
+ */
+router.post('/supportdetail', authorizePermissions('properties:write'), PropertyController.updateSupportDetails);
 
 export default router;

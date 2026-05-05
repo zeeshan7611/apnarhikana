@@ -40,8 +40,19 @@ export default class TenantAllocationController {
 
   static async getAll(req: Request, res: Response, next: NextFunction) {
     try {
-      const allocations = await TenantAllocationService.getAllAllocations();
-      res.json({ success: true, data: allocations });
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const { data, total } = await TenantAllocationService.getAllAllocations(page, limit);
+      res.json({ 
+        success: true, 
+        data,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
     } catch (err) {
       next(err);
     }
@@ -50,8 +61,20 @@ export default class TenantAllocationController {
   static async getTenantByPropertyId(req: Request, res: Response, next: NextFunction) {
     try {
       const { propertyId } = req.query;
-      const allocations = await TenantAllocationService.getByPropertyId(propertyId as string);
-      res.json({ success: true, data: allocations });
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const { data, total } = await TenantAllocationService.getByPropertyId(propertyId as string, page, limit);
+      res.json({ 
+        success: true, 
+        data,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
     } catch (err) {
       next(err);
     }

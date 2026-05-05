@@ -14,14 +14,26 @@ export default class ComplaintController {
   static async getAll(req: Request, res: Response, next: NextFunction) {
     try {
       const { propertyId, status, priority, tenantId } = req.query;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
       const filters: any = {};
       if (propertyId) filters.propertyId = propertyId;
       if (status) filters.status = status;
       if (priority) filters.priority = priority;
       if (tenantId) filters.tenantId = tenantId;
 
-      const complaints = await ComplaintService.getAllComplaints(filters);
-      res.json({ success: true, data: complaints });
+      const { data, total } = await ComplaintService.getAllComplaints(filters, page, limit);
+      res.json({ 
+        success: true, 
+        data,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
     } catch (err) {
       next(err);
     }

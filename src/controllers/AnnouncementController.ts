@@ -17,12 +17,24 @@ export default class AnnouncementController {
   static async getAll(req: Request, res: Response, next: NextFunction) {
     try {
       const { propertyId, type } = req.query;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
       const filters: any = {};
       if (propertyId) filters.propertyId = propertyId;
       if (type) filters.type = type;
 
-      const announcements = await AnnouncementService.getAllAnnouncements(filters);
-      res.json({ success: true, data: announcements });
+      const { data, total } = await AnnouncementService.getAllAnnouncements(filters, page, limit);
+      res.json({ 
+        success: true, 
+        data,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
     } catch (err) {
       next(err);
     }

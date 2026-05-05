@@ -21,12 +21,19 @@ export default class ComplaintService {
     return Complaint.create(data);
   }
 
-  static async getAllComplaints(filters: any = {}): Promise<IComplaint[]> {
-    return Complaint.find(filters)
-      .populate('tenantId', 'fullName phoneNumber')
-      .populate('propertyId', 'name')
-      .populate('assignedTo', 'name')
-      .sort({ createdAt: -1 });
+  static async getAllComplaints(filters: any = {}, page: number = 1, limit: number = 10): Promise<{ data: IComplaint[], total: number }> {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      Complaint.find(filters)
+        .populate('tenantId', 'fullName phoneNumber')
+        .populate('propertyId', 'name')
+        .populate('assignedTo', 'name')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Complaint.countDocuments(filters)
+    ]);
+    return { data, total };
   }
 
   static async getComplaintById(id: string): Promise<IComplaint | null> {
