@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import RentLedgerService from '../services/RentLedgerService';
+import NotificationService from '../services/NotificationService';
+import RentLedger from '../models/RentLedger';
 
 export default class RentLedgerController {
 
@@ -363,6 +365,60 @@ export default class RentLedgerController {
       const { propertyId } = req.query;
       const stats = await RentLedgerService.getPendingPaymentStats(propertyId as string);
       res.json({ success: true, data: stats });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // POST /send-rent-reminder
+  static async sendRentReminder(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { ledgerId } = req.body;
+      if (!ledgerId) {
+        return res.status(400).json({ success: false, message: 'ledgerId is required' });
+      }
+
+      const ledger = await RentLedger.findById(ledgerId);
+      if (!ledger) {
+        return res.status(404).json({ success: false, message: 'Ledger not found' });
+      }
+
+      await NotificationService.sendRentReminder(
+        ledger.tenantId.toString(),
+        ledger.month,
+        ledger.totalAmount - ledger.paidAmount
+      );
+
+      res.json({ success: true, message: 'Rent reminder sent successfully' });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // POST /send-bulk-rent-reminder
+  static async sendBulkRentReminder(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { tenantIds, month } = req.body;
+      if (!tenantIds || !Array.isArray(tenantIds) || !month) {
+        return res.status(400).json({ success: false, message: 'tenantIds (array) and month are required' });
+      }
+
+      // Fetch pending amounts for these tenants in the given month
+      const ledgers = await RentLedger.find({
+        tenantId: { $in: tenantIds },
+        month,
+        status: { $in: ['pending', 'partial', 'overdue'] }
+      });
+
+      for (const ledger of ledgers) {
+        await NotificationService.sendRentReminder(
+          ledger.tenantId.toString(),
+          ledger.month,
+          ledger.totalAmount - ledger.paidAmount
+        );
+      }
+
+      res.json({ success: true, message: `Reminders sent to ${ledgers.length} tenants` });
     } catch (err) {
       next(err);
     }

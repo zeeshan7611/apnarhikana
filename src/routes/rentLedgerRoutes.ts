@@ -662,5 +662,52 @@ router.get('/get-revenue-stats', authorizePermissions('payments:read'), Controll
  */
 router.get('/get-pending-payment-stats', authorizePermissions('payments:read'), Controller.getPendingPaymentStats);
 
+/**
+ * @swagger
+ * /api/rent-ledger/send-rent-reminder:
+ *   post:
+ *     summary: Send a rent reminder push notification to a tenant
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [ledgerId]
+ *             properties:
+ *               ledgerId: { type: string, description: "ID of the rent ledger to remind about" }
+ *     responses:
+ *       200:
+ *         description: Rent reminder sent successfully
+ */
+router.post('/send-rent-reminder', authorizePermissions('payments:write'), Controller.sendRentReminder);
+
+/**
+ * @swagger
+ * /api/rent-ledger/send-bulk-rent-reminder:
+ *   post:
+ *     summary: Send rent reminders to multiple tenants at once
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [tenantIds, month]
+ *             properties:
+ *               tenantIds: { type: array, items: { type: string }, description: "Array of tenant IDs" }
+ *               month: { type: string, example: "2025-05" }
+ *     responses:
+ *       200:
+ *         description: Reminders sent successfully
+ */
+router.post('/send-bulk-rent-reminder', authorizePermissions('payments:write'), Controller.sendBulkRentReminder);
+
 export default router;
 

@@ -3,6 +3,10 @@ import TenantAllocation, { ITenantAllocation } from '../models/TenantAllocation'
 import RentLedger, { IRentLedger } from '../models/RentLedger';
 import Complaint, { IComplaint } from '../models/Complaint';
 import Announcement, { IAnnouncement } from '../models/Announcement';
+import PaymentTransaction from '../models/PaymentTransaction';
+import Property from '../models/Property';
+import Notification, { INotification } from '../models/Notification';
+import ExtraCharge from '../models/ExtraCharge';
 import { generateToken } from '../middleware/jwtAuth';
 
 export default class TenantAppService {
@@ -49,12 +53,22 @@ export default class TenantAppService {
     return { tenant, allocation, token };
   }
 
-  // ✅ 3. Get Upcoming/Current Month Rent Detail
-  static async getRentDetail(tenantId: string): Promise<IRentLedger | null> {
-    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-    return RentLedger.findOne({ tenantId, month: currentMonth })
-      .populate('propertyId', 'name contacts')
-      .sort({ createdAt: -1 });
+  // ✅ 3. Get Pending Rent Details (Multiple months if due)
+  static async getRentDetail(tenantId: string): Promise<{ ledgers: any[]; extraCharges: any[] }> {
+    const ledgers = await RentLedger.find({ 
+      tenantId, 
+      status: { $in: ['pending', 'partial', 'overdue'] } 
+    })
+    .populate('propertyId', 'name contacts')
+    .sort({ month: 1 });
+
+    const ledgerIds = ledgers.map(l => l._id);
+    const extraCharges = await ExtraCharge.find({ rentLedgerId: { $in: ledgerIds } });
+
+    return {
+      ledgers,
+      extraCharges
+    };
   }
 
   // ✅ 4. Create Complaint (delegates to Complaint model)
@@ -99,5 +113,59 @@ export default class TenantAppService {
       .populate('sentBy', 'name')
       .sort({ createdAt: -1 })
       .limit(10);
+  }
+
+  // ✅ 7. Get Complaints (Tenant Wise with Pagination)
+  static async getComplaints(tenantId: string, page: number = 1, limit: number = 10): Promise<{ complaints: IComplaint[]; total: number }> {
+    const skip = (page - 1) * limit;
+    const [complaints, total] = await Promise.all([
+      Complaint.find({ tenantId }).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Complaint.countDocuments({ tenantId })
+    ]);
+    return { complaints, total };
+  }
+
+  // ✅ 8. Get Payment Transaction History (Tenant Wise with Pagination)
+  static async getTransactionHistory(tenantId: string, page: number = 1, limit: number = 10): Promise<{ transactions: any[]; total: number }> {
+    const skip = (page - 1) * limit;
+    const [transactions, total] = await Promise.all([
+      PaymentTransaction.find({ tenantId }).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      PaymentTransaction.countDocuments({ tenantId })
+    ]);
+    return { transactions, total };
+  }
+
+  // ✅ 9. Get Property Contact Details
+  static async getPropertyContactDetails(propertyId: string): Promise<any> {
+    const property = await Property.findById(propertyId).select('contacts name address');
+    if (!property) throw new Error('Property not found');
+    return property;
+  }
+
+  // ✅ 10. Get Notifications (Tenant Wise with Pagination)
+  static async getNotifications(tenantId: string, page: number = 1, limit: number = 10): Promise<{ notifications: INotification[]; total: number }> {
+    const skip = (page - 1) * limit;
+    
+    // Get active allocation to check property-wide notifications
+    const allocation = await TenantAllocation.findOne({ tenantId, status: 'active' });
+    
+    const query = {
+      $or: [
+        { tenantId },
+        { propertyId: allocation?.propertyId },
+        { tenantId: { $exists: false }, propertyId: { $exists: false } } // Global notifications
+      ]
+    };
+
+    const [notifications, total] = await Promise.all([
+      Notification.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Notification.countDocuments(query)
+    ]);
+    return { notifications, total };
+  }
+
+  // ✅ 11. Mark Notification as Read
+  static async markNotificationAsRead(notificationId: string): Promise<INotification | null> {
+    return Notification.findByIdAndUpdate(notificationId, { isRead: true }, { new: true });
   }
 }

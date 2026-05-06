@@ -1,6 +1,5 @@
 import Announcement, { IAnnouncement } from '../models/Announcement';
-import OneSignalService from './OneSignalService';
-import Tenant from '../models/Tenant';
+import NotificationService, { NotificationType } from './NotificationService';
 import TenantAllocation from '../models/TenantAllocation';
 
 export default class AnnouncementService {
@@ -32,13 +31,23 @@ export default class AnnouncementService {
       targetTenantIds = allocations.filter(a => a.inventoryAllocationId).map(a => a.tenantId.toString());
     }
 
-    // Send via OneSignal if targets exist
+    // Send via NotificationService if targets exist
     if (targetTenantIds.length > 0) {
-      await OneSignalService.sendNotification({
-        headings: { en: announcement.title },
-        contents: { en: announcement.message },
-        include_external_user_ids: targetTenantIds
-      });
+      await NotificationService.notifyMultipleTenants(
+        targetTenantIds,
+        announcement.title,
+        announcement.message,
+        NotificationType.ANNOUNCEMENT,
+        { announcementId: announcement._id }
+      );
+    } else if (!data.tenantId && !data.roomId && !data.floorId && !data.propertyId) {
+      // If no filters provided, send to all (Global announcement)
+      await NotificationService.notifyAll(
+        announcement.title,
+        announcement.message,
+        NotificationType.ANNOUNCEMENT,
+        { announcementId: announcement._id }
+      );
     }
 
     return announcement;

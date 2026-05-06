@@ -118,4 +118,17 @@ export default class TenantAllocationController {
       next(error);
     }
   }
+
+  static async initiateExit(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { allocationId, exitDate } = req.body;
+      if (!allocationId || !exitDate) {
+        return res.status(400).json({ message: "allocationId and exitDate are required" });
+      }
+      const allocation = await TenantAllocationService.initiateExit(allocationId, exitDate);
+      res.json({ success: true, data: allocation, message: "Exit initiated successfully" });
+    } catch (err) {
+      next(err);
+    }
+  }
 }

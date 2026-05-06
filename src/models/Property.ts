@@ -8,6 +8,7 @@ export interface IProperty extends Document {
   numberOfRooms: number;
   isGroundfloor: boolean;
   description?: string;
+  amenities?: string[];
   contacts?: {
     managerPhone: string;
     caretakerPhone: string;
@@ -26,6 +27,7 @@ const PropertySchema: Schema = new Schema({
   numberOfRooms: { type: Number, required: true },
   isGroundfloor: { type: Boolean, default: true },
   description: { type: String },
+  amenities: { type: [String], default: [] },
   contacts: {
     managerPhone: { type: String },
     caretakerPhone: { type: String },

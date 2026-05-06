@@ -160,6 +160,10 @@ router.get('/:id', authorizePermissions('properties:read'), PropertyController.g
  *                 default: true
  *               description:
  *                 type: string
+ *               amenities:
+ *                 type: array
+ *                 items:
+ *                   type: string
  *     responses:
  *       201:
  *         description: Property created successfully
@@ -206,6 +210,10 @@ router.post('/', authorizePermissions('properties:write'), PropertyController.cr
  *                 type: boolean
  *               description:
  *                 type: string
+ *               amenities:
+ *                 type: array
+ *                 items:
+ *                   type: string
  *     responses:
  *       200:
  *         description: Property updated successfully

@@ -38,4 +38,40 @@ export default class OneSignalService {
       return null;
     }
   }
+
+  static async sendToUsers(userIds: string[], title: string, message: string, data: any = {}) {
+    return this.sendNotification({
+      headings: { en: title },
+      contents: { en: message },
+      include_external_user_ids: userIds,
+      ...data,
+    });
+  }
+
+  static async sendToAll(title: string, message: string, data: any = {}) {
+    return this.sendNotification({
+      headings: { en: title },
+      contents: { en: message },
+      included_segments: ['All'],
+      ...data,
+    });
+  }
+
+  static async sendByTag(tagName: string, tagValue: string, title: string, message: string, data: any = {}) {
+    return this.sendNotification({
+      headings: { en: title },
+      contents: { en: message },
+      filters: [{ field: 'tag', key: tagName, relation: '=', value: tagValue }],
+      ...data,
+    });
+  }
+
+  static async sendToPlayerIds(playerIds: string[], title: string, message: string, data: any = {}) {
+    return this.sendNotification({
+      headings: { en: title },
+      contents: { en: message },
+      include_player_ids: playerIds,
+      ...data,
+    });
+  }
 }

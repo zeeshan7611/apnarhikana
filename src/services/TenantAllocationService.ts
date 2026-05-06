@@ -333,4 +333,15 @@ export default class TenantAllocationService {
   static async deleteAllocation(id: string): Promise<ITenantAllocation | null> {
     return TenantAllocation.findByIdAndDelete(id);
   }
+
+  // ✅ Initiate Exit (Update endDate)
+  static async initiateExit(id: string, exitDate: Date | string): Promise<ITenantAllocation | null> {
+    const allocation = await TenantAllocation.findById(id);
+    if (!allocation) throw new Error('Allocation not found');
+
+    allocation.endDate = new Date(exitDate);
+    // If exitDate is in the past or today, we might want to change status, 
+    // but the request only specifies updating endDate.
+    return allocation.save();
+  }
 }

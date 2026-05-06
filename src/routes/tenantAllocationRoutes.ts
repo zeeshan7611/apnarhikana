@@ -257,4 +257,28 @@ router.put('/update-allocation', authorizePermissions('allocations:write'), Tena
  */
 router.delete('/delete-allocation', authorizePermissions('allocations:delete'), TenantAllocationController.delete);
 
+/**
+ * @swagger
+ * /api/tenant-allocations/initiate-exit:
+ *   post:
+ *     summary: Initiate move out for a tenant (Sets exit date)
+ *     tags: [TenantAllocations]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [allocationId, exitDate]
+ *             properties:
+ *               allocationId: { type: string }
+ *               exitDate: { type: string, format: date }
+ *     responses:
+ *       200:
+ *         description: Exit initiated successfully
+ */
+router.post('/initiate-exit', authorizePermissions('allocations:write'), TenantAllocationController.initiateExit);
+
 export default router;

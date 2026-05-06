@@ -125,4 +125,105 @@ router.get('/allocation', jwtAuth, Controller.getAllocation);
  */
 router.get('/announcements', jwtAuth, Controller.getAnnouncements);
 
+/**
+ * @swagger
+ * /api/tenant-app/complaints:
+ *   get:
+ *     summary: Get complaints (tenant wise with pagination)
+ *     tags: [TenantApp]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 10 }
+ *     responses:
+ *       200:
+ *         description: List of complaints
+ */
+router.get('/complaints', jwtAuth, Controller.getComplaints);
+
+/**
+ * @swagger
+ * /api/tenant-app/transactions:
+ *   get:
+ *     summary: Get payment transaction history (tenant wise with pagination)
+ *     tags: [TenantApp]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 10 }
+ *     responses:
+ *       200:
+ *         description: Transaction history
+ */
+router.get('/transactions', jwtAuth, Controller.getTransactions);
+
+/**
+ * @swagger
+ * /api/tenant-app/property-contacts/{propertyId}:
+ *   get:
+ *     summary: Get property contact details property wise
+ *     tags: [TenantApp]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: propertyId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Property contact details
+ */
+router.get('/property-contacts/:propertyId', jwtAuth, Controller.getPropertyContacts);
+
+/**
+ * @swagger
+ * /api/tenant-app/notifications:
+ *   get:
+ *     summary: Get notifications for tenant (paginated)
+ *     tags: [TenantApp]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 10 }
+ *     responses:
+ *       200:
+ *         description: List of notifications
+ */
+router.get('/notifications', jwtAuth, Controller.getNotifications);
+
+/**
+ * @swagger
+ * /api/tenant-app/notifications/{id}/read:
+ *   patch:
+ *     summary: Mark a notification as read
+ *     tags: [TenantApp]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Notification updated
+ */
+router.patch('/notifications/:id/read', jwtAuth, Controller.markNotificationRead);
+
 export default router;

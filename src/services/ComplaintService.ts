@@ -1,5 +1,6 @@
 import Complaint, { IComplaint } from '../models/Complaint';
 import TenantAllocation from '../models/TenantAllocation';
+import NotificationService, { NotificationType } from './NotificationService';
 
 export default class ComplaintService {
   static async createComplaint(data: any): Promise<IComplaint> {
@@ -18,7 +19,20 @@ export default class ComplaintService {
       }
     }
     
-    return Complaint.create(data);
+    const complaint = await Complaint.create(data);
+
+    // Notify tenant
+    if (complaint.tenantId) {
+      await NotificationService.notifyTenant(
+        complaint.tenantId.toString(),
+        'Complaint Created',
+        `Your complaint "${complaint.title}" has been registered.`,
+        NotificationType.COMPLAINT,
+        { complaintId: complaint._id }
+      );
+    }
+
+    return complaint;
   }
 
   static async getAllComplaints(filters: any = {}, page: number = 1, limit: number = 10): Promise<{ data: IComplaint[], total: number }> {
@@ -44,7 +58,19 @@ export default class ComplaintService {
   }
 
   static async updateComplaint(id: string, data: any): Promise<IComplaint | null> {
-    return Complaint.findByIdAndUpdate(id, data, { new: true });
+    const complaint = await Complaint.findByIdAndUpdate(id, data, { new: true });
+    
+    if (complaint && data.status && complaint.tenantId) {
+      await NotificationService.notifyTenant(
+        complaint.tenantId.toString(),
+        'Complaint Update',
+        `Status of your complaint "${complaint.title}" has been updated to ${complaint.status}.`,
+        NotificationType.COMPLAINT,
+        { complaintId: complaint._id, status: complaint.status }
+      );
+    }
+
+    return complaint;
   }
 
   static async deleteComplaint(id: string): Promise<IComplaint | null> {

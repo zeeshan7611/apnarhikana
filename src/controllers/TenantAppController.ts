@@ -71,4 +71,65 @@ export default class TenantAppController {
       next(err);
     }
   }
+
+  // GET /complaints
+  static async getComplaints(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tenantId = (req as any).user.id;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const data = await TenantAppService.getComplaints(tenantId, page, limit);
+      res.json({ success: true, ...data });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // GET /transactions
+  static async getTransactions(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tenantId = (req as any).user.id;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const data = await TenantAppService.getTransactionHistory(tenantId, page, limit);
+      res.json({ success: true, ...data });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // GET /property-contacts/:propertyId
+  static async getPropertyContacts(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyId } = req.params;
+      const data = await TenantAppService.getPropertyContactDetails(propertyId);
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // GET /notifications
+  static async getNotifications(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tenantId = (req as any).user.id;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const data = await TenantAppService.getNotifications(tenantId, page, limit);
+      res.json({ success: true, ...data });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // PATCH /notifications/:id/read
+  static async markNotificationRead(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const data = await TenantAppService.markNotificationAsRead(id);
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  }
 }
