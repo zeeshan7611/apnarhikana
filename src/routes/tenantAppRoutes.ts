@@ -125,32 +125,41 @@ router.get('/allocation', jwtAuth, Controller.getAllocation);
  */
 router.get('/announcements', jwtAuth, Controller.getAnnouncements);
 
-/**
- * @swagger
- * /api/tenant-app/complaints:
- *   get:
- *     summary: Get complaints (tenant wise with pagination)
- *     tags: [TenantApp]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: page
- *         schema: { type: integer, default: 1 }
- *       - in: query
- *         name: limit
- *         schema: { type: integer, default: 10 }
- *     responses:
- *       200:
- *         description: List of complaints
- */
+  /**
+   * @swagger
+   * /api/tenant-app/complaints:
+   *   get:
+   *     summary: Get complaints (tenant wise with pagination and filters)
+   *     tags: [TenantApp]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: page
+   *         schema: { type: integer, default: 1 }
+   *       - in: query
+   *         name: limit
+   *         schema: { type: integer, default: 10 }
+   *       - in: query
+   *         name: status
+   *         schema: { type: string, enum: [open, in-progress, resolved, closed] }
+   *       - in: query
+   *         name: category
+   *         schema: { type: string }
+   *       - in: query
+   *         name: priority
+   *         schema: { type: string, enum: [low, medium, high, urgent] }
+   *     responses:
+   *       200:
+   *         description: List of complaints
+   */
 router.get('/complaints', jwtAuth, Controller.getComplaints);
 
 /**
  * @swagger
  * /api/tenant-app/transactions:
  *   get:
- *     summary: Get payment transaction history (tenant wise with pagination)
+ *     summary: Get payment transaction history (tenant wise with pagination and filters)
  *     tags: [TenantApp]
  *     security:
  *       - bearerAuth: []
@@ -161,6 +170,9 @@ router.get('/complaints', jwtAuth, Controller.getComplaints);
  *       - in: query
  *         name: limit
  *         schema: { type: integer, default: 10 }
+ *       - in: query
+ *         name: status
+ *         schema: { type: string, enum: [approved, rejected, pending] }
  *     responses:
  *       200:
  *         description: Transaction history

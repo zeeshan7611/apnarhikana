@@ -116,21 +116,40 @@ export default class TenantAppService {
   }
 
   // ✅ 7. Get Complaints (Tenant Wise with Pagination)
-  static async getComplaints(tenantId: string, page: number = 1, limit: number = 10): Promise<{ complaints: IComplaint[]; total: number }> {
+  static async getComplaints(
+    tenantId: string, 
+    page: number = 1, 
+    limit: number = 10,
+    filters: { status?: string; category?: string; priority?: string } = {}
+  ): Promise<{ complaints: IComplaint[]; total: number }> {
     const skip = (page - 1) * limit;
+    
+    const query: any = { tenantId };
+    if (filters.status) query.status = filters.status;
+    if (filters.category) query.category = filters.category;
+    if (filters.priority) query.priority = filters.priority;
+
     const [complaints, total] = await Promise.all([
-      Complaint.find({ tenantId }).sort({ createdAt: -1 }).skip(skip).limit(limit),
-      Complaint.countDocuments({ tenantId })
+      Complaint.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Complaint.countDocuments(query)
     ]);
     return { complaints, total };
   }
 
   // ✅ 8. Get Payment Transaction History (Tenant Wise with Pagination)
-  static async getTransactionHistory(tenantId: string, page: number = 1, limit: number = 10): Promise<{ transactions: any[]; total: number }> {
+  static async getTransactionHistory(
+    tenantId: string, 
+    page: number = 1, 
+    limit: number = 10,
+    status?: string
+  ): Promise<{ transactions: any[]; total: number }> {
     const skip = (page - 1) * limit;
+    const query: any = { tenantId };
+    if (status) query.status = status;
+
     const [transactions, total] = await Promise.all([
-      PaymentTransaction.find({ tenantId }).sort({ createdAt: -1 }).skip(skip).limit(limit),
-      PaymentTransaction.countDocuments({ tenantId })
+      PaymentTransaction.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      PaymentTransaction.countDocuments(query)
     ]);
     return { transactions, total };
   }

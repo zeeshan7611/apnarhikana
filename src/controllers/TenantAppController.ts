@@ -78,7 +78,13 @@ export default class TenantAppController {
       const tenantId = (req as any).user.id;
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
-      const data = await TenantAppService.getComplaints(tenantId, page, limit);
+      const { status, category, priority } = req.query;
+
+      const data = await TenantAppService.getComplaints(tenantId, page, limit, {
+        status: status as string,
+        category: category as string,
+        priority: priority as string,
+      });
       res.json({ success: true, ...data });
     } catch (err) {
       next(err);
@@ -91,7 +97,9 @@ export default class TenantAppController {
       const tenantId = (req as any).user.id;
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
-      const data = await TenantAppService.getTransactionHistory(tenantId, page, limit);
+      const status = req.query.status as string;
+
+      const data = await TenantAppService.getTransactionHistory(tenantId, page, limit, status);
       res.json({ success: true, ...data });
     } catch (err) {
       next(err);
