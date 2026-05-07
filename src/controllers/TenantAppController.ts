@@ -266,4 +266,41 @@ export default class TenantAppController {
       next(err);
     }
   }
+
+  // POST /accept-agreement
+  static async acceptAgreement(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tenantId = (req as any).user.id;
+      const { version } = req.body;
+      if (!version) return res.status(400).json({ message: 'Agreement version is required' });
+
+      const data = await TenantAppService.acceptAgreement(tenantId, version);
+      res.json({ success: true, message: 'Agreement accepted successfully', data });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // POST /kyc
+  static async updateKYC(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tenantId = (req as any).user.id;
+      const { adharCard, panCard, otherDocument } = req.body;
+      const data = await TenantAppService.updateKYC(tenantId, { adharCard, panCard, otherDocument });
+      res.json({ success: true, message: 'KYC documents submitted successfully', data });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // GET /wifi
+  static async getWiFi(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tenantId = (req as any).user.id;
+      const data = await TenantAppService.getWiFiForTenant(tenantId);
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  }
 }

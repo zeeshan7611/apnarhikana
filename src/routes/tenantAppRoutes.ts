@@ -325,4 +325,58 @@ router.patch('/notifications/:id/read', jwtAuth, Controller.markNotificationRead
  */
 router.patch('/update-onesignal-id', jwtAuth, Controller.updateOneSignalId);
 
+/**
+ * @swagger
+ * /api/tenant-app/accept-agreement:
+ *   post:
+ *     summary: Accept Rental Agreement
+ *     description: Marks the tenant as having accepted the agreement and records the version.
+ *     tags: [TenantApp]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [version]
+ *             properties:
+ *               version: { type: string, example: "v1.0" }
+ */
+router.post('/accept-agreement', jwtAuth, Controller.acceptAgreement);
+
+/**
+ * @swagger
+ * /api/tenant-app/kyc:
+ *   post:
+ *     summary: Submit KYC documents
+ *     description: Allows tenants to upload Aadhar, PAN, and other document URLs for verification.
+ *     tags: [TenantApp]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               adharCard: { type: string, description: "URL of uploaded Aadhar Card" }
+ *               panCard: { type: string, description: "URL of uploaded PAN Card" }
+ *               otherDocument: { type: string, description: "URL of any other identification" }
+ */
+router.post('/kyc', jwtAuth, Controller.updateKYC);
+
+/**
+ * @swagger
+ * /api/tenant-app/wifi:
+ *   get:
+ *     summary: Get WiFi credentials for my floor
+ *     tags: [TenantApp]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get('/wifi', jwtAuth, Controller.getWiFi);
+
 export default router;

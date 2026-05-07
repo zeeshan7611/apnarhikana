@@ -292,4 +292,49 @@ export default class TenantAppService {
       createdById: data.propertyUserId
     });
   }
+
+  // ✅ 15. Accept Agreement
+  static async acceptAgreement(tenantId: string, version: string): Promise<any> {
+    const Tenant = (await import('../models/Tenant')).default;
+    return Tenant.findByIdAndUpdate(
+      tenantId,
+      {
+        isAgreementAccepted: true,
+        agreementAcceptedAt: new Date(),
+        agreementVersion: version
+      },
+      { new: true }
+    );
+  }
+  // ✅ 16. Update KYC Details
+  static async updateKYC(tenantId: string, kycData: { adharCard?: string; panCard?: string; otherDocument?: string }): Promise<any> {
+    const Tenant = (await import('../models/Tenant')).default;
+    return Tenant.findByIdAndUpdate(
+      tenantId,
+      {
+        $set: {
+          'kyc.adharCard': kycData.adharCard,
+          'kyc.panCard': kycData.panCard,
+          'kyc.otherDocument': kycData.otherDocument,
+          'kyc.status': 'pending' // Reset to pending on update
+        }
+      },
+      { new: true }
+    );
+  }
+
+  // ✅ 17. Get WiFi for Tenant
+  static async getWiFiForTenant(tenantId: string): Promise<any> {
+    const TenantAllocation = (await import('../models/TenantAllocation')).default;
+    const allocation = await TenantAllocation.findOne({ tenantId, status: 'active' })
+      .populate('inventoryAllocationId');
+    
+    if (!allocation || !allocation.inventoryAllocationId) {
+      throw new Error('No active allocation found');
+    }
+
+    const invAlloc = allocation.inventoryAllocationId as any;
+    const WiFi = (await import('../models/WiFi')).default;
+    return WiFi.findOne({ floorId: invAlloc.floorId, isActive: true });
+  }
 }
