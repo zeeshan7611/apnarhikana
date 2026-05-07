@@ -238,4 +238,27 @@ router.get('/notifications', jwtAuth, Controller.getNotifications);
  */
 router.patch('/notifications/:id/read', jwtAuth, Controller.markNotificationRead);
 
+/**
+ * @swagger
+ * /api/tenant-app/update-onesignal-id:
+ *   patch:
+ *     summary: Update OneSignal ID for push notifications
+ *     tags: [TenantApp]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [oneSignalId]
+ *             properties:
+ *               oneSignalId: { type: string }
+ *     responses:
+ *       200:
+ *         description: OneSignal ID updated
+ */
+router.patch('/update-onesignal-id', jwtAuth, Controller.updateOneSignalId);
+
 export default router;

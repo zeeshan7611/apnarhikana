@@ -140,4 +140,18 @@ export default class TenantAppController {
       next(err);
     }
   }
+
+  // PATCH /update-onesignal-id
+  static async updateOneSignalId(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tenantId = (req as any).user.id;
+      const { oneSignalId } = req.body;
+      if (!oneSignalId) return res.status(400).json({ message: 'oneSignalId is required' });
+
+      const data = await TenantAppService.updateOneSignalId(tenantId, oneSignalId);
+      res.json({ success: true, message: 'OneSignal ID updated successfully', data });
+    } catch (err) {
+      next(err);
+    }
+  }
 }

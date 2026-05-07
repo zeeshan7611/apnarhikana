@@ -3,10 +3,9 @@ import TenantAllocation, { ITenantAllocation } from '../models/TenantAllocation'
 import RentLedger, { IRentLedger } from '../models/RentLedger';
 import Complaint, { IComplaint } from '../models/Complaint';
 import Announcement, { IAnnouncement } from '../models/Announcement';
-import PaymentTransaction from '../models/PaymentTransaction';
+import Payment from '../models/Payment';
 import Property from '../models/Property';
 import Notification, { INotification } from '../models/Notification';
-import ExtraCharge from '../models/ExtraCharge';
 import { generateToken } from '../middleware/jwtAuth';
 
 export default class TenantAppService {
@@ -62,8 +61,8 @@ export default class TenantAppService {
     .populate('propertyId', 'name contacts')
     .sort({ month: 1 });
 
-    const ledgerIds = ledgers.map(l => l._id);
-    const extraCharges = await ExtraCharge.find({ rentLedgerId: { $in: ledgerIds } });
+    // Extract extra charges from ledgers
+    const extraCharges = ledgers.flatMap(l => l.extraCharges);
 
     return {
       ledgers,
@@ -148,8 +147,8 @@ export default class TenantAppService {
     if (status) query.status = status;
 
     const [transactions, total] = await Promise.all([
-      PaymentTransaction.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
-      PaymentTransaction.countDocuments(query)
+      Payment.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Payment.countDocuments(query)
     ]);
     return { transactions, total };
   }
@@ -186,5 +185,10 @@ export default class TenantAppService {
   // ✅ 11. Mark Notification as Read
   static async markNotificationAsRead(notificationId: string): Promise<INotification | null> {
     return Notification.findByIdAndUpdate(notificationId, { isRead: true }, { new: true });
+  }
+
+  // ✅ 12. Update OneSignal ID
+  static async updateOneSignalId(tenantId: string, oneSignalId: string): Promise<ITenant | null> {
+    return Tenant.findByIdAndUpdate(tenantId, { oneSignalId }, { new: true });
   }
 }

@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@clerk/clerk-sdk-node": "^4.13.14",
+    "@onesignal/node-onesignal": "^5.5.0",
     "axios": "^1.15.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",

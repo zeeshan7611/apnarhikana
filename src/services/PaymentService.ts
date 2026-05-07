@@ -23,19 +23,19 @@ export default class PaymentService {
 
   static async getAllPayments(filters: any = {}) {
     // Return all transactions via the unified RentLedger system
-    return RentLedgerService.getAllTransactions(filters.propertyId, filters.status);
+    return RentLedgerService.getAllPayments(filters.propertyId, filters.status);
   }
 
   static async getPaymentById(id: string) {
-    const PaymentTransaction = (await import('../models/PaymentTransaction')).default;
-    return PaymentTransaction.findById(id)
+    const Payment = (await import('../models/Payment')).default;
+    return Payment.findById(id)
       .populate('tenantId', 'fullName phoneNumber email')
       .populate('propertyId', 'name')
       .populate('rentLedgerId', 'month totalAmount paidAmount');
   }
 
   static async updatePayment(id: string, data: any) {
-    const PaymentTransaction = (await import('../models/PaymentTransaction')).default;
-    return PaymentTransaction.findByIdAndUpdate(id, data, { new: true });
+    const Payment = (await import('../models/Payment')).default;
+    return Payment.findByIdAndUpdate(id, data, { new: true });
   }
 }

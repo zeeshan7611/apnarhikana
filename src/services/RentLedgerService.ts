@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
-import RentLedger, { IRentLedger } from '../models/RentLedger';
-import PaymentTransaction, { IPaymentTransaction } from '../models/PaymentTransaction';
-import PaymentLog from '../models/PaymentLog';
+import RentLedger, { IRentLedger, IPaymentLogItem, IExtraChargeItem } from '../models/RentLedger';
+import Payment, { IPayment } from '../models/Payment';
 
 export default class RentLedgerService {
 
@@ -32,14 +31,11 @@ export default class RentLedgerService {
       dueDate: data.dueDate,
       status: 'pending',
       isLocked: false,
-    });
-
-    await PaymentLog.create({
-      rentLedgerId: ledger._id,
-      action: 'ledger_created',
-      newStatus: 'pending',
-      description: `Ledger created for month ${data.month}. Rent: ${data.rentAmount}, Late fee: ${lateFee}`,
-      performedById: data.createdById,
+      logs: [{
+        action: 'ledger_created',
+        description: `Ledger created for month ${data.month}. Rent: ${data.rentAmount}, Late fee: ${lateFee}`,
+        performedById: data.createdById,
+      }]
     });
 
     return ledger;
@@ -58,19 +54,21 @@ export default class RentLedgerService {
     notes?: string;
     status?: 'pending' | 'approved';
     createdById?: string;
-  }): Promise<{ ledger: IRentLedger; transaction: IPaymentTransaction }> {
+  }): Promise<{ ledger: IRentLedger; payment: IPayment }> {
     const ledger = await RentLedger.findById(data.rentLedgerId);
     if (!ledger) throw new Error('Rent ledger not found');
     if (ledger.isLocked) throw new Error('Ledger is locked and cannot accept new payments');
 
     const initialStatus = data.status || 'pending';
 
-    // Create transaction
-    const transaction = await PaymentTransaction.create({
+    // Create payment record
+    const payment = await Payment.create({
       rentLedgerId: ledger._id,
+      tenantAllocationId: ledger.tenantAllocationId,
       tenantId: data.tenantId,
       propertyId: data.propertyId,
       amount: data.amount,
+      month: ledger.month,
       paymentMethod: data.paymentMethod,
       referenceNumber: data.referenceNumber,
       utrNumber: data.utrNumber,
@@ -97,25 +95,20 @@ export default class RentLedgerService {
       ledger.pendingAmount += data.amount;
     }
 
-    await ledger.save();
-
-    // Audit log
-    await PaymentLog.create({
-      rentLedgerId: ledger._id,
-      paymentTransactionId: transaction._id,
+    // Add Log
+    ledger.logs.push({
       action: 'payment_recorded',
-      previousStatus,
-      newStatus: ledger.status,
       description: `Payment of ${data.amount} recorded via ${data.paymentMethod} with status ${initialStatus}. Paid so far: ${ledger.paidAmount}/${ledger.totalAmount}, Pending: ${ledger.pendingAmount}`,
-      performedById: data?.createdById,
+      performedById: data?.createdById as any,
+      createdAt: new Date()
     });
 
-    return { ledger, transaction };
+    await ledger.save();
+
+    return { ledger, payment };
   }
 
   // ─── 2x. Collect Rent (Direct via Manager) ──────────────────────────────────
-  // This is a wrapper for recordPayment specifically for the Manager App.
-  // It finds the ledger by tenant+month if rentLedgerId is not provided.
   static async collectRent(data: {
     tenantId: string;
     propertyId: string;
@@ -127,7 +120,7 @@ export default class RentLedgerService {
     paymentScreenshotUrl?: string;
     notes?: string;
     createdById: string;
-  }): Promise<{ ledger: IRentLedger; transaction: IPaymentTransaction }> {
+  }): Promise<{ ledger: IRentLedger; payment: IPayment }> {
     let ledger = await RentLedger.findOne({
       tenantId: data.tenantId,
       month: data.month,
@@ -154,25 +147,25 @@ export default class RentLedgerService {
 
   // ─── 2a. Approve a Pending Payment ──────────────────────────────────────────
   static async approvePayment(
-    transactionId: string,
+    paymentId: string,
     performedById: string
-  ): Promise<{ ledger: IRentLedger; transaction: IPaymentTransaction }> {
-    const transaction = await PaymentTransaction.findById(transactionId);
-    if (!transaction) throw new Error('Payment transaction not found');
-    if (transaction.status !== 'pending') throw new Error('Only pending transactions can be approved');
+  ): Promise<{ ledger: IRentLedger; payment: IPayment }> {
+    const payment = await Payment.findById(paymentId);
+    if (!payment) throw new Error('Payment not found');
+    if (payment.status !== 'pending') throw new Error('Only pending payments can be approved');
 
-    const ledger = await RentLedger.findById(transaction.rentLedgerId);
+    const ledger = await RentLedger.findById(payment.rentLedgerId);
     if (!ledger) throw new Error('Rent ledger not found');
 
     const previousStatus = ledger.status;
 
-    // Update Transaction
-    transaction.status = 'approved';
-    await transaction.save();
+    // Update Payment
+    payment.status = 'approved';
+    await payment.save();
 
     // Update Ledger
-    ledger.pendingAmount = Math.max(0, ledger.pendingAmount - transaction.amount);
-    ledger.paidAmount += transaction.amount;
+    ledger.pendingAmount = Math.max(0, ledger.pendingAmount - payment.amount);
+    ledger.paidAmount += payment.amount;
 
     if (ledger.paidAmount >= ledger.totalAmount) {
       ledger.paidAmount = ledger.totalAmount; // cap
@@ -182,56 +175,51 @@ export default class RentLedgerService {
       ledger.status = 'partial';
     }
 
-    await ledger.save();
-
-    // Audit Log
-    await PaymentLog.create({
-      rentLedgerId: ledger._id,
-      paymentTransactionId: transaction._id,
+    // Add Log
+    ledger.logs.push({
       action: 'status_changed',
-      previousStatus,
-      newStatus: ledger.status,
-      description: `Payment transaction of ${transaction.amount} approved. Paid so far: ${ledger.paidAmount}/${ledger.totalAmount}`,
-      performedById: new mongoose.Types.ObjectId(performedById),
+      description: `Payment of ${payment.amount} approved. Paid so far: ${ledger.paidAmount}/${ledger.totalAmount}`,
+      performedById: performedById as any,
+      createdAt: new Date()
     });
 
-    return { ledger, transaction };
+    await ledger.save();
+
+    return { ledger, payment };
   }
 
   // ─── 2b. Reject a Pending Payment ───────────────────────────────────────────
   static async rejectPayment(
-    transactionId: string,
+    paymentId: string,
     performedById: string,
     notes?: string
-  ): Promise<{ ledger: IRentLedger; transaction: IPaymentTransaction }> {
-    const transaction = await PaymentTransaction.findById(transactionId);
-    if (!transaction) throw new Error('Payment transaction not found');
-    if (transaction.status !== 'pending') throw new Error('Only pending transactions can be rejected');
+  ): Promise<{ ledger: IRentLedger; payment: IPayment }> {
+    const payment = await Payment.findById(paymentId);
+    if (!payment) throw new Error('Payment not found');
+    if (payment.status !== 'pending') throw new Error('Only pending payments can be rejected');
 
-    const ledger = await RentLedger.findById(transaction.rentLedgerId);
+    const ledger = await RentLedger.findById(payment.rentLedgerId);
     if (!ledger) throw new Error('Rent ledger not found');
 
-    // Update Transaction
-    transaction.status = 'rejected';
-    if (notes) transaction.notes = notes;
-    await transaction.save();
+    // Update Payment
+    payment.status = 'rejected';
+    if (notes) payment.notes = notes;
+    await payment.save();
 
     // Update Ledger
-    ledger.pendingAmount = Math.max(0, ledger.pendingAmount - transaction.amount);
-    await ledger.save();
-
-    // Audit Log
-    await PaymentLog.create({
-      rentLedgerId: ledger._id,
-      paymentTransactionId: transaction._id,
+    ledger.pendingAmount = Math.max(0, ledger.pendingAmount - payment.amount);
+    
+    // Add Log
+    ledger.logs.push({
       action: 'status_changed',
-      previousStatus: ledger.status,
-      newStatus: ledger.status,
-      description: `Payment transaction of ${transaction.amount} rejected. ${notes ? 'Reason: ' + notes : ''}`,
-      performedById: new mongoose.Types.ObjectId(performedById),
+      description: `Payment of ${payment.amount} rejected. ${notes ? 'Reason: ' + notes : ''}`,
+      performedById: performedById as any,
+      createdAt: new Date()
     });
 
-    return { ledger, transaction };
+    await ledger.save();
+
+    return { ledger, payment };
   }
 
   // ─── 3. Apply Late Fee ──────────────────────────────────────────────────────
@@ -246,15 +234,15 @@ export default class RentLedgerService {
 
     ledger.lateFee += data.lateFee;
     ledger.totalAmount += data.lateFee;
-    await ledger.save();
 
-    await PaymentLog.create({
-      rentLedgerId: ledger._id,
+    ledger.logs.push({
       action: 'late_fee_applied',
       description: `Late fee of ${data.lateFee} applied. New total: ${ledger.totalAmount}`,
-      performedById: data.performedById,
+      performedById: data.performedById as any,
+      createdAt: new Date()
     });
 
+    await ledger.save();
     return ledger;
   }
 
@@ -266,24 +254,20 @@ export default class RentLedgerService {
     description: string;
     metadata?: any;
     performedById: string;
-  }): Promise<{ ledger: IRentLedger; extraCharge: any }> {
-    const ExtraCharge = (await import('../models/ExtraCharge')).default;
-    
+  }): Promise<{ ledger: IRentLedger; extraCharge: IExtraChargeItem }> {
     const ledger = await RentLedger.findById(data.rentLedgerId);
     if (!ledger) throw new Error('Rent ledger not found');
     if (ledger.isLocked) throw new Error('Ledger is locked and cannot accept new charges');
 
-    const extraCharge = await ExtraCharge.create({
-      rentLedgerId: ledger._id,
-      tenantId: ledger.tenantId,
-      propertyId: ledger.propertyId,
+    const extraCharge: IExtraChargeItem = {
       chargeType: data.chargeType,
       amount: data.amount,
       description: data.description,
       metadata: data.metadata,
-      createdById: data.performedById,
-    });
+      createdAt: new Date()
+    };
 
+    ledger.extraCharges.push(extraCharge);
     ledger.extraChargesAmount += data.amount;
     ledger.totalAmount += data.amount;
 
@@ -294,34 +278,35 @@ export default class RentLedgerService {
       ledger.status = 'pending';
     }
 
-    await ledger.save();
-
-    await PaymentLog.create({
-      rentLedgerId: ledger._id,
+    ledger.logs.push({
       action: 'extra_charge_added',
-      previousStatus,
-      newStatus: ledger.status,
       description: `Extra charge added: ${data.chargeType} - ${data.amount}. Total now: ${ledger.totalAmount}`,
-      performedById: new mongoose.Types.ObjectId(data.performedById),
+      performedById: data.performedById as any,
+      createdAt: new Date()
     });
+
+    await ledger.save();
 
     return { ledger, extraCharge };
   }
 
   // ─── 3b. Remove Extra Charge ───────────────────────────────────────────────────
-  static async removeExtraCharge(chargeId: string, performedById: string): Promise<IRentLedger> {
-    const ExtraCharge = (await import('../models/ExtraCharge')).default;
-    const charge = await ExtraCharge.findById(chargeId);
-    if (!charge) throw new Error('Extra charge not found');
-
-    const ledger = await RentLedger.findById(charge.rentLedgerId);
+  // Note: Since extra charges are embedded, we use their index or we'd need an _id for them.
+  // Mongoose automatically adds _id to subdocuments.
+  static async removeExtraCharge(rentLedgerId: string, chargeId: string, performedById: string): Promise<IRentLedger> {
+    const ledger = await RentLedger.findById(rentLedgerId);
     if (!ledger) throw new Error('Rent ledger not found');
     if (ledger.isLocked) throw new Error('Ledger is locked');
 
+    const chargeIndex = (ledger.extraCharges as any).findIndex((c: any) => c._id.toString() === chargeId);
+    if (chargeIndex === -1) throw new Error('Extra charge not found');
+
+    const charge = ledger.extraCharges[chargeIndex];
     ledger.extraChargesAmount -= charge.amount;
     ledger.totalAmount -= charge.amount;
 
-    const previousStatus = ledger.status;
+    ledger.extraCharges.splice(chargeIndex, 1);
+
     if (ledger.paidAmount >= ledger.totalAmount) {
       ledger.paidAmount = ledger.totalAmount;
       ledger.status = 'paid';
@@ -330,42 +315,42 @@ export default class RentLedgerService {
       ledger.status = 'partial';
     }
 
-    await ledger.save();
-    await ExtraCharge.findByIdAndDelete(chargeId);
-
-    await PaymentLog.create({
-      rentLedgerId: ledger._id,
+    ledger.logs.push({
       action: 'extra_charge_removed',
-      previousStatus,
-      newStatus: ledger.status,
       description: `Extra charge removed: ${charge.chargeType} - ${charge.amount}. Total now: ${ledger.totalAmount}`,
-      performedById: new mongoose.Types.ObjectId(performedById),
+      performedById: performedById as any,
+      createdAt: new Date()
     });
 
+    await ledger.save();
     return ledger;
   }
 
   // ─── 4. Mark Overdue (bulk — call via cron or manually) ─────────────────────
   static async markOverdue(performedById: string): Promise<number> {
     const now = new Date();
-    const result = await RentLedger.updateMany(
-      { status: { $in: ['pending', 'partial'] }, dueDate: { $lt: now }, isLocked: false },
-      { $set: { status: 'overdue' } }
-    );
+    
+    // Find ledgers that should be overdue
+    const ledgers = await RentLedger.find({ 
+      status: { $in: ['pending', 'partial'] }, 
+      dueDate: { $lt: now }, 
+      isLocked: false 
+    });
 
-    // Bulk log — find updated ledgers for audit
-    const overdueLedgers = await RentLedger.find({ status: 'overdue', dueDate: { $lt: now } });
-    const logs = overdueLedgers.map((l) => ({
-      rentLedgerId: l._id,
-      action: 'status_changed',
-      previousStatus: 'pending/partial',
-      newStatus: 'overdue',
-      description: `Auto-marked overdue. Due date was ${l.dueDate.toISOString()}`,
-      performedById: new mongoose.Types.ObjectId(performedById),
-    }));
-    if (logs.length) await PaymentLog.insertMany(logs);
+    if (ledgers.length === 0) return 0;
 
-    return result.modifiedCount;
+    for (const ledger of ledgers) {
+      ledger.status = 'overdue';
+      ledger.logs.push({
+        action: 'status_changed',
+        description: `Auto-marked overdue. Due date was ${ledger.dueDate.toISOString()}`,
+        performedById: performedById as any,
+        createdAt: new Date()
+      });
+      await ledger.save();
+    }
+
+    return ledgers.length;
   }
 
   // ─── 5. Get Ledgers (filtered) ───────────────────────────────────────────────
@@ -410,36 +395,25 @@ export default class RentLedgerService {
     to?: string;
     page?: number;
     limit?: number;
-  }): Promise<{ data: IPaymentTransaction[], total: number }> {
+  }): Promise<{ data: IPayment[], total: number }> {
     const query: any = {};
     if (filters.propertyId) query.propertyId = filters.propertyId;
     if (filters.tenantId) query.tenantId = filters.tenantId;
 
-    // Map old categories to transaction statuses
-    if (filters.category === 'paid') {
+    // Map categories to payment statuses
+    if (filters.category === 'paid' || filters.category === 'approved') {
       query.status = 'approved';
-    } else if (filters.category === 'due') {
+    } else if (filters.category === 'due' || filters.category === 'pending') {
       query.status = 'pending';
-    } else if (filters.category === 'overdue') {
-      // Overdue doesn't directly map to transactions, but we can look for pending transactions
-      query.status = 'pending';
-    } else if (filters.category && filters.category !== 'all') {
-      query.status = filters.category;
+    } else if (filters.category === 'rejected') {
+      query.status = 'rejected';
     }
 
-    // Apply date range filter if provided (using createdAt for transaction history)
+    // Apply date range filter
     if (filters.from || filters.to) {
       query.createdAt = {};
-      if (filters.from) {
-        const fromDate = new Date(filters.from);
-        fromDate.setHours(0, 0, 0, 0);
-        query.createdAt.$gte = fromDate;
-      }
-      if (filters.to) {
-        const toDate = new Date(filters.to);
-        toDate.setHours(23, 59, 59, 999);
-        query.createdAt.$lte = toDate;
-      }
+      if (filters.from) query.createdAt.$gte = new Date(filters.from);
+      if (filters.to) query.createdAt.$lte = new Date(filters.to);
     }
 
     const page = filters.page || 1;
@@ -447,14 +421,14 @@ export default class RentLedgerService {
     const skip = (page - 1) * limit;
 
     const [data, total] = await Promise.all([
-      PaymentTransaction.find(query)
+      Payment.find(query)
         .populate('tenantId', 'fullName phoneNumber email')
         .populate('rentLedgerId', 'month totalAmount paidAmount rentAmount lateFee')
         .populate('propertyId', 'name')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
-      PaymentTransaction.countDocuments(query)
+      Payment.countDocuments(query)
     ]);
 
     return { data, total };
@@ -470,77 +444,77 @@ export default class RentLedgerService {
     return ledger;
   }
 
-  // ─── 7. Get Transactions for a Ledger ────────────────────────────────────────
-  static async getTransactions(rentLedgerId: string, page: number = 1, limit: number = 10): Promise<{ data: IPaymentTransaction[], total: number }> {
+  // ─── 7. Get Payments for a Ledger ────────────────────────────────────────
+  static async getPayments(rentLedgerId: string, page: number = 1, limit: number = 10): Promise<{ data: IPayment[], total: number }> {
     const skip = (page - 1) * limit;
     const query = { rentLedgerId };
     const [data, total] = await Promise.all([
-      PaymentTransaction.find(query)
+      Payment.find(query)
         .populate('createdById', 'name email')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
-      PaymentTransaction.countDocuments(query)
+      Payment.countDocuments(query)
     ]);
     return { data, total };
   }
 
-  // ─── 7a. Get Pending Transactions by Property ───────────────────────────────
-  static async getPendingTransactions(propertyId?: string, page: number = 1, limit: number = 10): Promise<{ data: IPaymentTransaction[], total: number }> {
+  // ─── 7a. Get Pending Payments by Property ───────────────────────────────
+  static async getPendingPayments(propertyId?: string, page: number = 1, limit: number = 10): Promise<{ data: IPayment[], total: number }> {
     const query: any = { status: 'pending' };
     if (propertyId) query.propertyId = propertyId;
 
     const skip = (page - 1) * limit;
     const [data, total] = await Promise.all([
-      PaymentTransaction.find(query)
+      Payment.find(query)
         .populate('tenantId', 'fullName phoneNumber email')
         .populate('rentLedgerId', 'month totalAmount paidAmount')
         .populate('propertyId', 'name')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
-      PaymentTransaction.countDocuments(query)
+      Payment.countDocuments(query)
     ]);
 
     return { data, total };
   }
 
-  // ─── 7b. Get All/Status-wise Transactions ──────────────────────────────────
-  static async getAllTransactions(propertyId?: string, status?: string, page: number = 1, limit: number = 10): Promise<{ data: IPaymentTransaction[], total: number }> {
+  // ─── 7b. Get All/Status-wise Payments ──────────────────────────────────
+  static async getAllPayments(propertyId?: string, status?: string, page: number = 1, limit: number = 10): Promise<{ data: IPayment[], total: number }> {
     const query: any = {};
     if (propertyId) query.propertyId = propertyId;
     if (status) query.status = status;
 
     const skip = (page - 1) * limit;
     const [data, total] = await Promise.all([
-      PaymentTransaction.find(query)
+      Payment.find(query)
         .populate('tenantId', 'fullName phoneNumber email')
         .populate('rentLedgerId', 'month totalAmount paidAmount')
         .populate('propertyId', 'name')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
-      PaymentTransaction.countDocuments(query)
+      Payment.countDocuments(query)
     ]);
 
     return { data, total };
   }
 
-  // ─── 7c. Get Recent Transactions (Dashboard) ────────────────────────────────
-  static async getRecentTransactions(page: number = 1, limit: number = 10, status?: string): Promise<{ data: IPaymentTransaction[], total: number }> {
+  // ─── 7c. Get Recent Payments (Dashboard) ────────────────────────────────
+  static async getRecentPayments(page: number = 1, limit: number = 10, status?: string): Promise<{ data: IPayment[], total: number }> {
     const query: any = {};
     if (status) query.status = status;
 
     const skip = (page - 1) * limit;
     const [data, total] = await Promise.all([
-      PaymentTransaction.find(query)
+      Payment.find(query)
         .populate('tenantId', 'fullName phoneNumber email')
         .populate('rentLedgerId', 'month totalAmount paidAmount')
         .populate('propertyId', 'name')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
-      PaymentTransaction.countDocuments(query)
+      Payment.countDocuments(query)
     ]);
 
     return { data, total };
@@ -548,17 +522,15 @@ export default class RentLedgerService {
 
   // ─── 8. Get Audit Logs for a Ledger ──────────────────────────────────────────
   static async getLogs(rentLedgerId: string) {
-    return PaymentLog.find({ rentLedgerId })
-      .populate('performedById', 'name email')
-      .sort({ createdAt: -1 });
+    const ledger = await RentLedger.findById(rentLedgerId)
+      .populate('logs.performedById', 'name email');
+    return ledger ? ledger.logs : [];
   }
 
   // ─── 8a. Get Extra Charges for a Ledger ──────────────────────────────────────
   static async getExtraCharges(rentLedgerId: string) {
-    const ExtraCharge = (await import('../models/ExtraCharge')).default;
-    return ExtraCharge.find({ rentLedgerId })
-      .populate('createdById', 'name email')
-      .sort({ createdAt: -1 });
+    const ledger = await RentLedger.findById(rentLedgerId);
+    return ledger ? ledger.extraCharges : [];
   }
 
   // ─── 9. Generate Next Month Ledgers (monthly cron / manual trigger) ───────────
@@ -605,14 +577,11 @@ export default class RentLedgerService {
           dueDate,
           status: 'pending',
           isLocked: false,
-        });
-
-        await PaymentLog.create({
-          rentLedgerId: (await RentLedger.findOne({ tenantId: alloc.tenantId, month }))!._id,
-          action: 'ledger_created',
-          newStatus: 'pending',
-          description: `Monthly ledger auto-generated for ${month}`,
-          performedById: new mongoose.Types.ObjectId(performedById),
+          logs: [{
+            action: 'ledger_created',
+            description: `Monthly ledger auto-generated for ${month}`,
+            performedById: performedById as any,
+          }]
         });
 
         created++;
@@ -629,7 +598,6 @@ export default class RentLedgerService {
   }
 
   // ─── 9a. Generate Initial Ledgers (on allocation) ───────────────────────────
-  // Creates ledgers for all months from joining date to current month.
   static async generateInitialLedgers(
     allocationId: string,
     createdById: string
@@ -641,10 +609,7 @@ export default class RentLedgerService {
     const startDate = new Date(alloc.startDate);
     const now = new Date();
 
-    // Start month (YYYY-MM-01)
     let current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
-    
-    // End month (current month, or startDate month if joining in future)
     const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const end = current > currentMonth ? current : currentMonth;
 
@@ -655,7 +620,7 @@ export default class RentLedgerService {
       const dueDate = new Date(current.getFullYear(), current.getMonth() + 1, 5);
 
       try {
-        const ledger = await RentLedger.create({
+        await RentLedger.create({
           tenantId: alloc.tenantId,
           propertyId: alloc.propertyId,
           tenantAllocationId: alloc._id,
@@ -668,14 +633,11 @@ export default class RentLedgerService {
           dueDate,
           status: 'pending',
           isLocked: false,
-        });
-
-        await PaymentLog.create({
-          rentLedgerId: ledger._id,
-          action: 'ledger_created',
-          newStatus: 'pending',
-          description: `Initial ledger generated for month ${monthStr}`,
-          performedById: new mongoose.Types.ObjectId(createdById),
+          logs: [{
+            action: 'ledger_created',
+            description: `Initial ledger generated for month ${monthStr}`,
+            performedById: createdById as any,
+          }]
         });
 
         createdCount++;
@@ -683,7 +645,6 @@ export default class RentLedgerService {
         if (err.code !== 11000) throw err;
       }
 
-      // Move to next month
       current.setMonth(current.getMonth() + 1);
     }
 
@@ -749,7 +710,7 @@ export default class RentLedgerService {
       query.propertyId = new mongoose.Types.ObjectId(propertyId);
     }
 
-    const stats = await PaymentTransaction.aggregate([
+    const stats = await Payment.aggregate([
       { $match: query },
       {
         $group: {
@@ -778,7 +739,7 @@ export default class RentLedgerService {
     }
 
     // 1. Pending Transactions Stats
-    const transactionStats = await PaymentTransaction.aggregate([
+    const transactionStats = await Payment.aggregate([
       { $match: transactionQuery },
       {
         $group: {

@@ -48,8 +48,8 @@ export default class RentLedgerController {
   // POST /remove-extra-charge
   static async removeExtraCharge(req: Request, res: Response, next: NextFunction) {
     try {
-      const { chargeId, performedById } = req.body;
-      const result = await RentLedgerService.removeExtraCharge(chargeId, performedById);
+      const { rentLedgerId, chargeId, performedById } = req.body;
+      const result = await RentLedgerService.removeExtraCharge(rentLedgerId, chargeId, performedById);
       res.json({ success: true, data: result });
     } catch (err) {
       next(err);
@@ -177,7 +177,7 @@ export default class RentLedgerController {
       if (!rentLedgerId) {
         return res.status(400).json({ success: false, message: 'rentLedgerId is required' });
       }
-      const { data, total } = await RentLedgerService.getTransactions(rentLedgerId as string, page, limit);
+      const { data, total } = await RentLedgerService.getPayments(rentLedgerId as string, page, limit);
       res.json({ 
         success: true, 
         data,
@@ -200,7 +200,7 @@ export default class RentLedgerController {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
 
-      const { data, total } = await RentLedgerService.getPendingTransactions(propertyId as string, page, limit);
+      const { data, total } = await RentLedgerService.getPendingPayments(propertyId as string, page, limit);
       res.json({ 
         success: true, 
         data,
@@ -223,7 +223,7 @@ export default class RentLedgerController {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
 
-      const { data, total } = await RentLedgerService.getAllTransactions(propertyId as string, status as string, page, limit);
+      const { data, total } = await RentLedgerService.getAllPayments(propertyId as string, status as string, page, limit);
       res.json({ 
         success: true, 
         data,
@@ -246,7 +246,7 @@ export default class RentLedgerController {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
 
-      const { data, total } = await RentLedgerService.getRecentTransactions(
+      const { data, total } = await RentLedgerService.getRecentPayments(
         page,
         limit,
         status as string
