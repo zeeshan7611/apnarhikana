@@ -16,8 +16,9 @@ const swaggerDefinition = {
     },
   ],
   tags: [
-    { name: 'Payments',    description: 'Rent collection and payment tracking' },
-    { name: 'RentLedger', description: 'Monthly rent billing, payments, late fees and audit trail' },
+    { name: 'RentLedger', description: 'Monthly rent billing, payments, and extra charges' },
+    { name: 'TenantApp', description: 'APIs for Tenant Mobile Application' },
+    { name: 'Auth', description: 'User authentication and role management' },
   ],
   components: {
     securitySchemes: {
@@ -170,24 +171,6 @@ const swaggerDefinition = {
           updatedAt: { type: 'string', format: 'date-time' },
         },
       },
-      Payment: {
-        type: 'object',
-        properties: {
-          id: { type: 'string' },
-          tenantAllocationId: { type: 'string' },
-          tenantId: { type: 'string' },
-          propertyId: { type: 'string' },
-          amount: { type: 'number' },
-          month: { type: 'string', description: 'Format: YYYY-MM' },
-          paymentMethod: { type: 'string', enum: ['cash', 'upi', 'bank_transfer', 'cheque'] },
-          status: { type: 'string', enum: ['pending', 'paid', 'failed', 'partial'] },
-          paidAt: { type: 'string', format: 'date-time' },
-          notes: { type: 'string' },
-          createdById: { type: 'string' },
-          createdAt: { type: 'string', format: 'date-time' },
-          updatedAt: { type: 'string', format: 'date-time' },
-        },
-      },
       Role: {
         type: 'object',
         properties: {
@@ -264,11 +247,25 @@ const swaggerDefinition = {
           tenantAllocationId: { type: 'string' },
           month:              { type: 'string', description: 'Format: YYYY-MM', example: '2025-05' },
           rentAmount:         { type: 'number' },
-          lateFee:            { type: 'number' },
+          extraChargesAmount: { type: 'number' },
+          extraCharges: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                title: { type: 'string' },
+                type: { type: 'string', enum: ['electricity', 'water', 'maintenance', 'other'] },
+                amount: { type: 'number' },
+                description: { type: 'string' },
+                createdAt: { type: 'string', format: 'date-time' }
+              }
+            }
+          },
           totalAmount:        { type: 'number' },
           paidAmount:         { type: 'number' },
+          pendingAmount:      { type: 'number' },
           dueDate:            { type: 'string', format: 'date-time' },
-          status:             { type: 'string', enum: ['pending', 'partial', 'paid', 'overdue'] },
+          status:             { type: 'string', enum: ['pending', 'partial', 'paid', 'overdue', 'due'] },
           isLocked:           { type: 'boolean' },
           createdAt:          { type: 'string', format: 'date-time' },
           updatedAt:          { type: 'string', format: 'date-time' },
@@ -283,28 +280,14 @@ const swaggerDefinition = {
           propertyId:           { type: 'string' },
           amount:               { type: 'number' },
           paymentMethod:        { type: 'string', enum: ['cash', 'upi', 'bank_transfer', 'cheque'] },
-          status:               { type: 'string', enum: ['success', 'failed', 'pending'] },
+          status:               { type: 'string', enum: ['pending', 'partial', 'paid', 'overdue', 'due'] },
+          paymentType:          { type: 'string', enum: ['rent', 'deposit'] },
           referenceNumber:      { type: 'string' },
           utrNumber:            { type: 'string', description: 'UTR number for UPI / bank transfers' },
           paymentScreenshotUrl: { type: 'string', description: 'URL of uploaded payment screenshot' },
           notes:                { type: 'string' },
           paidAt:               { type: 'string', format: 'date-time' },
           createdById:          { type: 'string' },
-          createdAt:            { type: 'string', format: 'date-time' },
-          updatedAt:            { type: 'string', format: 'date-time' },
-        },
-      },
-      PaymentLog: {
-        type: 'object',
-        properties: {
-          id:                   { type: 'string' },
-          rentLedgerId:         { type: 'string' },
-          paymentTransactionId: { type: 'string' },
-          action:               { type: 'string', enum: ['ledger_created', 'payment_recorded', 'late_fee_applied', 'status_changed', 'ledger_locked', 'note_added'] },
-          previousStatus:       { type: 'string' },
-          newStatus:            { type: 'string' },
-          description:          { type: 'string' },
-          performedById:        { type: 'string' },
           createdAt:            { type: 'string', format: 'date-time' },
           updatedAt:            { type: 'string', format: 'date-time' },
         },

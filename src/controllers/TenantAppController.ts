@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import TenantAppService from '../services/TenantAppService';
+import RentLedger from '../models/RentLedger';
 
 export default class TenantAppController {
   // POST /send-otp
@@ -34,6 +35,71 @@ export default class TenantAppController {
       const tenantId = (req as any).user.id;
       const data = await TenantAppService.getRentDetail(tenantId);
       res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // GET /rent-detail/:id
+  static async getRentLedgerDetail(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tenantId = (req as any).user.id;
+      const { id } = req.params;
+      const data = await TenantAppService.getRentLedgerById(tenantId, id);
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // POST /pay-rent (SmePay Gateway Integration)
+  static async payRent(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tenantId = (req as any).user.id;
+      const { rentLedgerId, amount, paymentType } = req.body;
+
+      if (!rentLedgerId || !amount) {
+        return res.status(400).json({ success: false, message: 'rentLedgerId and amount are required' });
+      }
+
+      // 1. Verify Ledger and Tenant
+      const ledger = await RentLedger.findOne({ _id: rentLedgerId, tenantId });
+      if (!ledger) return res.status(404).json({ success: false, message: 'Rent ledger not found or access denied' });
+
+      // 2. Get Tenant Details for SmePay
+      const Tenant = (await import('../models/Tenant')).default;
+      const tenant = await Tenant.findById(tenantId);
+      if (!tenant) throw new Error('Tenant details not found');
+
+      // 3. Create Pending Transaction in our DB
+      const RentLedgerService = (await import('../services/RentLedgerService')).default;
+      const { transaction } = await RentLedgerService.recordPayment({
+        rentLedgerId,
+        tenantId,
+        propertyId: ledger.propertyId.toString(),
+        amount,
+        paymentMethod: 'upi', 
+        paymentType: paymentType || 'rent',
+        status: 'pending'
+      });
+
+      // 4. Create SmePay Order
+      const SmePayService = (await import('../services/SmePayService')).default;
+      const smePayOrder = await SmePayService.createOrder({
+        transactionId: (transaction as any)._id.toString(),
+        amount: amount,
+        customerName: tenant.fullName,
+        customerPhone: tenant.phoneNumber,
+        customerEmail: tenant.email || '',
+        notes: `Rent payment for ${ledger.month}`
+      });
+
+      res.status(201).json({ 
+        success: true, 
+        message: 'Payment link generated',
+        paymentUrl: smePayOrder.paymentUrl,
+        transactionId: smePayOrder.transactionId
+      });
     } catch (err) {
       next(err);
     }
@@ -106,6 +172,18 @@ export default class TenantAppController {
     }
   }
 
+  // GET /transaction-detail/:id
+  static async getTransactionDetail(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tenantId = (req as any).user.id;
+      const { id } = req.params;
+      const data = await TenantAppService.getTransactionById(tenantId, id);
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   // GET /property-contacts/:propertyId
   static async getPropertyContacts(req: Request, res: Response, next: NextFunction) {
     try {
@@ -150,6 +228,40 @@ export default class TenantAppController {
 
       const data = await TenantAppService.updateOneSignalId(tenantId, oneSignalId);
       res.json({ success: true, message: 'OneSignal ID updated successfully', data });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // POST /initiate-cash-payment
+  static async initiateCashPayment(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyUserId } = req.body;
+      if (!propertyUserId) return res.status(400).json({ message: 'propertyUserId is required' });
+      const result = await TenantAppService.initiateCashPayment(propertyUserId);
+      res.json({ success: true, ...result });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // POST /verify-cash-payment
+  static async verifyCashPayment(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tenantId = (req as any).user.id;
+      const { propertyUserId, otp, rentLedgerId, amount, notes } = req.body;
+      if (!propertyUserId || !otp || !rentLedgerId || !amount) {
+        return res.status(400).json({ message: 'propertyUserId, otp, rentLedgerId, and amount are required' });
+      }
+      const result = await TenantAppService.verifyCashPayment({
+        tenantId,
+        propertyUserId,
+        otp,
+        rentLedgerId,
+        amount,
+        notes
+      });
+      res.json({ success: true, data: result });
     } catch (err) {
       next(err);
     }

@@ -25,11 +25,15 @@ export default class RentLedgerController {
     }
   }
 
-  // POST /apply-late-fee
-  static async applyLateFee(req: Request, res: Response, next: NextFunction) {
+  // POST /collect-rent
+  static async collectRent(req: Request, res: Response, next: NextFunction) {
     try {
-      const ledger = await RentLedgerService.applyLateFee(req.body);
-      res.json({ success: true, data: ledger });
+      const result = await RentLedgerService.collectRent({
+        ...req.body,
+        createdById: (req as any).user.id,
+        status: 'paid' // Direct collection is always pre-approved (marked as paid)
+      });
+      res.status(201).json({ success: true, data: result });
     } catch (err) {
       next(err);
     }
@@ -38,7 +42,15 @@ export default class RentLedgerController {
   // POST /add-extra-charge
   static async addExtraCharge(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await RentLedgerService.addExtraCharge(req.body);
+      const { rentLedgerId, title, type, amount, description, performedById } = req.body;
+      const result = await RentLedgerService.addExtraCharge({
+        rentLedgerId,
+        title,
+        type,
+        amount,
+        description,
+        performedById
+      });
       res.status(201).json({ success: true, data: result });
     } catch (err) {
       next(err);
@@ -48,20 +60,9 @@ export default class RentLedgerController {
   // POST /remove-extra-charge
   static async removeExtraCharge(req: Request, res: Response, next: NextFunction) {
     try {
-      const { rentLedgerId, chargeId, performedById } = req.body;
-      const result = await RentLedgerService.removeExtraCharge(rentLedgerId, chargeId, performedById);
+      const { rentLedgerId, chargeId } = req.body;
+      const result = await RentLedgerService.removeExtraCharge(rentLedgerId, chargeId);
       res.json({ success: true, data: result });
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  // POST /mark-overdue
-  static async markOverdue(req: Request, res: Response, next: NextFunction) {
-    try {
-      const { performedById } = req.body;
-      const count = await RentLedgerService.markOverdue(performedById);
-      res.json({ success: true, message: `${count} ledger(s) marked as overdue` });
     } catch (err) {
       next(err);
     }
@@ -70,11 +71,11 @@ export default class RentLedgerController {
   // POST /approve-payment
   static async approvePayment(req: Request, res: Response, next: NextFunction) {
     try {
-      const { transactionId, performedById } = req.body;
-      if (!transactionId || !performedById) {
-        return res.status(400).json({ success: false, message: 'transactionId and performedById are required' });
+      const { transactionId } = req.body;
+      if (!transactionId) {
+        return res.status(400).json({ success: false, message: 'transactionId is required' });
       }
-      const result = await RentLedgerService.approvePayment(transactionId, performedById);
+      const result = await RentLedgerService.approvePayment(transactionId);
       res.json({ success: true, data: result });
     } catch (err) {
       next(err);
@@ -84,11 +85,22 @@ export default class RentLedgerController {
   // POST /reject-payment
   static async rejectPayment(req: Request, res: Response, next: NextFunction) {
     try {
-      const { transactionId, performedById, notes } = req.body;
-      if (!transactionId || !performedById) {
-        return res.status(400).json({ success: false, message: 'transactionId and performedById are required' });
+      const { transactionId } = req.body;
+      if (!transactionId) {
+        return res.status(400).json({ success: false, message: 'transactionId is required' });
       }
-      const result = await RentLedgerService.rejectPayment(transactionId, performedById, notes);
+      const result = await RentLedgerService.rejectPayment(transactionId);
+      res.json({ success: true, data: result });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // POST /complete-payment
+  static async completePayment(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { transactionId } = req.body;
+      const result = await RentLedgerService.completePayment(transactionId);
       res.json({ success: true, data: result });
     } catch (err) {
       next(err);
@@ -103,15 +115,15 @@ export default class RentLedgerController {
       const limit = parseInt(req.query.limit as string) || 10;
 
       const { data, total } = await RentLedgerService.getLedgers({
-        tenantId:   tenantId   as string,
+        tenantId: tenantId as string,
         propertyId: propertyId as string,
-        month:      month      as string,
-        status:     status     as string,
+        month: month as string,
+        status: status as string,
         page,
         limit
       });
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         data,
         pagination: {
           total,
@@ -128,21 +140,21 @@ export default class RentLedgerController {
   // GET /get-payment-history
   static async getPaymentHistory(req: Request, res: Response, next: NextFunction) {
     try {
-      const { tenantId, propertyId, category, from, to } = req.query;
+      const { tenantId, propertyId, status, from, to } = req.query;
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
 
       const { data, total } = await RentLedgerService.getPaymentHistory({
-        tenantId:   tenantId   as string,
+        tenantId: tenantId as string,
         propertyId: propertyId as string,
-        category:   category   as any,
-        from:       from       as string,
-        to:         to         as string,
+        status: status as string,
+        from: from as string,
+        to: to as string,
         page,
         limit
       });
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         data,
         pagination: {
           total,
@@ -155,6 +167,22 @@ export default class RentLedgerController {
       next(err);
     }
   }
+
+
+  // POST /mark-overdue
+  static async markOverdue(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await RentLedger.find({ status: { $in: ['pending', 'partial'] }, dueDate: { $lt: new Date() } });
+      for (const ledger of result) {
+        await RentLedgerService.recalculateLedger(ledger._id.toString());
+      }
+      res.json({ success: true, message: `${result.length} ledger(s) checked/updated` });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+
 
   // GET /get-ledger
   static async getLedgerById(req: Request, res: Response, next: NextFunction) {
@@ -167,132 +195,7 @@ export default class RentLedgerController {
     }
   }
 
-  // GET /get-transactions
-  static async getTransactions(req: Request, res: Response, next: NextFunction) {
-    try {
-      const { rentLedgerId } = req.query;
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
 
-      if (!rentLedgerId) {
-        return res.status(400).json({ success: false, message: 'rentLedgerId is required' });
-      }
-      const { data, total } = await RentLedgerService.getPayments(rentLedgerId as string, page, limit);
-      res.json({ 
-        success: true, 
-        data,
-        pagination: {
-          total,
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit)
-        }
-      });
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  // GET /get-pending-payments
-  static async getPendingPayments(req: Request, res: Response, next: NextFunction) {
-    try {
-      const { propertyId } = req.query;
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
-
-      const { data, total } = await RentLedgerService.getPendingPayments(propertyId as string, page, limit);
-      res.json({ 
-        success: true, 
-        data,
-        pagination: {
-          total,
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit)
-        }
-      });
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  // GET /get-property-transactions
-  static async getPropertyTransactions(req: Request, res: Response, next: NextFunction) {
-    try {
-      const { propertyId, status } = req.query;
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
-
-      const { data, total } = await RentLedgerService.getAllPayments(propertyId as string, status as string, page, limit);
-      res.json({ 
-        success: true, 
-        data,
-        pagination: {
-          total,
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit)
-        }
-      });
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  // GET /get-recent-transactions
-  static async getRecentTransactions(req: Request, res: Response, next: NextFunction) {
-    try {
-      const { status } = req.query;
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
-
-      const { data, total } = await RentLedgerService.getRecentPayments(
-        page,
-        limit,
-        status as string
-      );
-      res.json({ 
-        success: true, 
-        data,
-        pagination: {
-          total,
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit)
-        }
-      });
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  // GET /get-logs
-  static async getLogs(req: Request, res: Response, next: NextFunction) {
-    try {
-      const { rentLedgerId } = req.query;
-      if (!rentLedgerId) {
-        return res.status(400).json({ success: false, message: 'rentLedgerId is required' });
-      }
-      const logs = await RentLedgerService.getLogs(rentLedgerId as string);
-      res.json({ success: true, data: logs });
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  // GET /get-extra-charges
-  static async getExtraCharges(req: Request, res: Response, next: NextFunction) {
-    try {
-      const { rentLedgerId } = req.query;
-      if (!rentLedgerId) {
-        return res.status(400).json({ success: false, message: 'rentLedgerId is required' });
-      }
-      const charges = await RentLedgerService.getExtraCharges(rentLedgerId as string);
-      res.json({ success: true, data: charges });
-    } catch (err) {
-      next(err);
-    }
-  }
 
   // POST /generate-monthly-ledgers
   static async generateMonthlyLedgers(req: Request, res: Response, next: NextFunction) {
@@ -403,7 +306,6 @@ export default class RentLedgerController {
         return res.status(400).json({ success: false, message: 'tenantIds (array) and month are required' });
       }
 
-      // Fetch pending amounts for these tenants in the given month
       const ledgers = await RentLedger.find({
         tenantId: { $in: tenantIds },
         month,
@@ -419,6 +321,18 @@ export default class RentLedgerController {
       }
 
       res.json({ success: true, message: `Reminders sent to ${ledgers.length} tenants` });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // GET /get-transaction
+  static async getTransaction(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.query;
+      if (!id) return res.status(400).json({ success: false, message: 'id is required' });
+      const transaction = await RentLedgerService.getTransactionById(id as string);
+      res.json({ success: true, data: transaction });
     } catch (err) {
       next(err);
     }

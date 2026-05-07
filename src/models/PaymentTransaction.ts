@@ -6,7 +6,8 @@ export interface IPaymentTransaction extends Document {
   propertyId: mongoose.Types.ObjectId;
   amount: number;
   paymentMethod: 'cash' | 'upi' | 'bank_transfer' | 'cheque';
-  status: 'approved' | 'rejected' | 'pending';
+  status: 'pending' | 'partial' | 'paid' | 'overdue' | 'due';
+  paymentType: 'rent';
   referenceNumber?: string;
   utrNumber?: string;
   paymentScreenshotUrl?: string;
@@ -29,14 +30,21 @@ const PaymentTransactionSchema: Schema = new Schema({
   },
   status: {
     type: String,
-    enum: ['approved', 'rejected', 'pending'],
+    enum: ['pending', 'partial', 'paid', 'overdue', 'due'],
     default: 'pending',
+  },
+  paymentType: {
+    type: String,
+    enum: ['rent', 'deposit'],
+    default: 'rent',
+    required: true
   },
   referenceNumber: { type: String },
   utrNumber: { type: String },
   paymentScreenshotUrl: { type: String },
   notes: { type: String },
   paidAt: { type: Date, default: Date.now },
+  createdById: { type: Schema.Types.ObjectId, ref: 'PropertyUser' },
 }, { timestamps: true });
 
 export default mongoose.model<IPaymentTransaction>('PaymentTransaction', PaymentTransactionSchema);

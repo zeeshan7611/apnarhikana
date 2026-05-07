@@ -20,6 +20,8 @@ export interface IPropertyUser extends Document {
   isActive: boolean;
   jwtAccessToken?: string;
   notficationToken?: string;
+  otp?: string;
+  otpExpiry?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,6 +45,8 @@ const PropertyUserSchema: Schema = new Schema({
   propertyId: [{ type: Schema.Types.ObjectId, ref: 'Property', index: true }],
   jwtAccessToken: { type: String },
   notficationToken: { type: String },
+  otp: { type: String },
+  otpExpiry: { type: Date },
 }, {
   timestamps: true,
 });

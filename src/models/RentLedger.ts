@@ -1,17 +1,10 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IExtraChargeItem {
-  chargeType: 'electricity' | 'water' | 'maintenance' | 'other';
+  title: string;
+  type: 'electricity' | 'water' | 'maintenance' | 'other';
   amount: number;
-  description: string;
-  metadata?: any;
-  createdAt: Date;
-}
-
-export interface IPaymentLogItem {
-  action: 'ledger_created' | 'payment_recorded' | 'late_fee_applied' | 'status_changed' | 'ledger_locked' | 'note_added' | 'extra_charge_added' | 'extra_charge_removed';
-  description: string;
-  performedById?: mongoose.Types.ObjectId;
+  description?: string;
   createdAt: Date;
 }
 
@@ -21,16 +14,14 @@ export interface IRentLedger extends Document {
   tenantAllocationId: mongoose.Types.ObjectId;
   month: string; // YYYY-MM
   rentAmount: number;
-  lateFee: number;
-  totalAmount: number;
-  extraChargesAmount: number;
   extraCharges: IExtraChargeItem[];
+  extraChargesAmount: number;
+  totalAmount: number;
   paidAmount: number;
   pendingAmount: number;
   dueDate: Date;
   status: 'pending' | 'partial' | 'paid' | 'overdue' | 'due';
   isLocked: boolean;
-  logs: IPaymentLogItem[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,16 +32,15 @@ const RentLedgerSchema: Schema = new Schema({
   tenantAllocationId: { type: Schema.Types.ObjectId, ref: 'TenantAllocation', required: true },
   month: { type: String, required: true },        // YYYY-MM
   rentAmount: { type: Number, required: true },
-  lateFee: { type: Number, default: 0 },
-  totalAmount: { type: Number, required: true },
-  extraChargesAmount: { type: Number, default: 0 },
   extraCharges: [{
-    chargeType: { type: String, enum: ['electricity', 'water', 'maintenance', 'other'], required: true },
+    title: { type: String, required: true },
+    type: { type: String, enum: ['electricity', 'water', 'maintenance', 'other'], required: true },
     amount: { type: Number, required: true },
-    description: { type: String, required: true },
-    metadata: { type: Schema.Types.Mixed },
+    description: { type: String },
     createdAt: { type: Date, default: Date.now }
   }],
+  extraChargesAmount: { type: Number, default: 0 },
+  totalAmount: { type: Number, required: true },
   paidAmount: { type: Number, default: 0 },
   pendingAmount: { type: Number, default: 0 },
   dueDate: { type: Date, required: true },
@@ -60,12 +50,6 @@ const RentLedgerSchema: Schema = new Schema({
     default: 'pending',
   },
   isLocked: { type: Boolean, default: false },
-  logs: [{
-    action: { type: String, required: true },
-    description: { type: String, required: true },
-    performedById: { type: Schema.Types.ObjectId, ref: 'PropertyUser' },
-    createdAt: { type: Date, default: Date.now }
-  }]
 }, { timestamps: true });
 
 // Unique bill per tenant per month
