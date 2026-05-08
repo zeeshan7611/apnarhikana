@@ -12,6 +12,8 @@ const router = Router();
  *       Returns a short-lived presigned PUT URL (5 min) that the client can use
  *       to upload a file directly to Cloudflare R2 — bypassing the server.
  *       After the PUT succeeds, use the returned `publicUrl` to reference the file.
+ *       Max file size: 20 MB. Allowed types: image/jpeg, image/png, image/webp,
+ *       image/gif, image/svg+xml, application/pdf.
  *     tags:
  *       - Upload
  *     security:
@@ -29,8 +31,16 @@ const router = Router();
  *         required: true
  *         schema:
  *           type: string
+ *           enum: [image/jpeg, image/png, image/webp, image/gif, image/svg+xml, application/pdf]
  *         example: image/jpeg
- *         description: MIME type of the file (must be image/*)
+ *         description: MIME type of the file
+ *       - in: query
+ *         name: fileSize
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 2048000
+ *         description: File size in bytes (max 20971520 = 20 MB)
  *     responses:
  *       200:
  *         description: Presigned URL generated successfully
@@ -45,7 +55,7 @@ const router = Router();
  *                 key:       { type: string, description: 'R2 object key' }
  *                 expiresIn: { type: number, example: 300 }
  *       400:
- *         description: Missing or invalid query params
+ *         description: Missing/invalid params, unsupported file type, or file exceeds 20 MB
  *       401:
  *         description: Unauthorized
  *       500:
