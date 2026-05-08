@@ -10,6 +10,8 @@
     "test": "jest"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1042.0",
+    "@aws-sdk/s3-request-presigner": "^3.1042.0",
     "@clerk/clerk-sdk-node": "^4.13.14",
     "@onesignal/node-onesignal": "^5.5.0",
     "axios": "^1.15.0",
@@ -20,8 +22,10 @@
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^7.5.0",
+    "multer": "^2.1.1",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^14.0.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
@@ -30,9 +34,11 @@
     "@types/express": "^4.17.17",
     "@types/jest": "^29.5.3",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.1.0",
     "@types/node": "^20.4.5",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
+    "@types/uuid": "^10.0.0",
     "jest": "^29.6.1",
     "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
