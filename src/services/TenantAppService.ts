@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Tenant, { ITenant } from '../models/Tenant';
 import TenantAllocation, { ITenantAllocation } from '../models/TenantAllocation';
 import RentLedger, { IRentLedger } from '../models/RentLedger';
@@ -57,17 +58,17 @@ export default class TenantAppService {
     const allocation = await TenantAllocation.findOne({ tenantId, status: 'active' }).populate('propertyId');
     if (!allocation) throw new Error('No active allocation found');
 
-    const ledgers = await RentLedger.find({ 
-      tenantId, 
-      status: { $in: ['pending', 'partial', 'overdue', 'due'] } 
+    const ledgers = await RentLedger.find({
+      tenantId: new mongoose.Types.ObjectId(tenantId),
+      status: { $in: ['pending', 'partial', 'overdue', 'due'] }
     }).sort({ month: 1 });
 
     const response: any[] = [];
 
     // Helper to calculate installments
-    const getInstallments = (title: string, amount: number, type: string, ledgerId?: string) => {
-      if (amount <= 9999) return [{ title, amount, type, rentLedgerId: ledgerId }];
-      
+    const getInstallments = (title: string, amount: number, type: string, ledgerId?: string, dueDate?: Date) => {
+      if (amount <= 9999) return [{ title, amount, type, rentLedgerId: ledgerId, dueDate }];
+
       const count = Math.ceil(amount / 10000);
       const installmentAmount = Math.round(amount / count);
       const installments = [];
@@ -76,30 +77,33 @@ export default class TenantAppService {
           title: `${title} (Part ${i}/${count})`,
           amount: i === count ? amount - (installmentAmount * (count - 1)) : installmentAmount,
           type,
-          rentLedgerId: ledgerId
+          rentLedgerId: ledgerId,
+          dueDate,
+
         });
       }
       return installments;
     };
 
     // 1. Add Deposit (if applicable)
-    const depositPayments = await PaymentTransaction.find({ 
-      tenantId, 
-      paymentType: 'deposit', 
-      status: 'paid' as any 
+    const depositPayments = await PaymentTransaction.find({
+      tenantId,
+      paymentType: 'deposit',
+      status: 'paid' as any
     });
     const totalDepositPaid = depositPayments.reduce((sum, p) => sum + p.amount, 0);
     const remainingDeposit = Math.max(0, allocation.depositAmount - totalDepositPaid);
 
     if (remainingDeposit > 0) {
-      response.push(...getInstallments('Security Deposit', remainingDeposit, 'deposit'));
+      // For deposit, we use allocation startDate as the due date
+      response.push(...getInstallments('Security Deposit', remainingDeposit, 'deposit', undefined, allocation.startDate));
     }
 
     // 2. Process Ledgers
     for (const ledger of ledgers) {
       const remainingAmount = ledger.pendingAmount;
       if (remainingAmount > 0) {
-        response.push(...getInstallments(`Rent - ${ledger.month}`, remainingAmount, 'rent', ledger._id.toString()));
+        response.push(...getInstallments(`Rent - ${ledger.month}`, remainingAmount, 'rent', ledger._id.toString(), ledger.dueDate));
       }
     }
 
@@ -160,13 +164,13 @@ export default class TenantAppService {
 
   // ✅ 7. Get Complaints (Tenant Wise with Pagination)
   static async getComplaints(
-    tenantId: string, 
-    page: number = 1, 
+    tenantId: string,
+    page: number = 1,
     limit: number = 10,
     filters: { status?: string; category?: string; priority?: string } = {}
   ): Promise<{ complaints: IComplaint[]; total: number }> {
     const skip = (page - 1) * limit;
-    
+
     const query: any = { tenantId };
     if (filters.status) query.status = filters.status;
     if (filters.category) query.category = filters.category;
@@ -181,8 +185,8 @@ export default class TenantAppService {
 
   // ✅ 8. Get Payment Transaction History (Tenant Wise with Pagination)
   static async getTransactionHistory(
-    tenantId: string, 
-    page: number = 1, 
+    tenantId: string,
+    page: number = 1,
     limit: number = 10,
     status?: string
   ): Promise<{ transactions: any[]; total: number }> {
@@ -215,10 +219,10 @@ export default class TenantAppService {
   // ✅ 10. Get Notifications (Tenant Wise with Pagination)
   static async getNotifications(tenantId: string, page: number = 1, limit: number = 10): Promise<{ notifications: INotification[]; total: number }> {
     const skip = (page - 1) * limit;
-    
+
     // Get active allocation to check property-wide notifications
     const allocation = await TenantAllocation.findOne({ tenantId, status: 'active' });
-    
+
     const query = {
       $or: [
         { tenantId },
@@ -258,7 +262,7 @@ export default class TenantAppService {
 
     // Mock sending OTP
     console.log(`CASH PAYMENT OTP for manager ${user.name} (${user.phoneNumber}): ${otp}`);
-    
+
     return { message: `OTP sent to manager ${user.name}` };
   }
 
@@ -311,14 +315,24 @@ export default class TenantAppService {
     );
   }
   // ✅ 16. Update KYC Details
-  static async updateKYC(tenantId: string, kycData: { adharCard?: string; panCard?: string; otherDocument?: string }): Promise<any> {
+  static async updateKYC(tenantId: string, kycData: { 
+    adharCardFront?: string; 
+    adharCardBack?: string; 
+    panCard?: string; 
+    drivingLicenceFront?: string;
+    drivingLicenceBack?: string;
+    otherDocument?: string 
+  }): Promise<any> {
     const Tenant = (await import('../models/Tenant')).default;
     return Tenant.findByIdAndUpdate(
       tenantId,
       {
         $set: {
-          'kyc.adharCard': kycData.adharCard,
+          'kyc.adharCardFront': kycData.adharCardFront,
+          'kyc.adharCardBack': kycData.adharCardBack,
           'kyc.panCard': kycData.panCard,
+          'kyc.drivingLicenceFront': kycData.drivingLicenceFront,
+          'kyc.drivingLicenceBack': kycData.drivingLicenceBack,
           'kyc.otherDocument': kycData.otherDocument,
           'kyc.status': 'pending' // Reset to pending on update
         }
@@ -332,7 +346,7 @@ export default class TenantAppService {
     const TenantAllocation = (await import('../models/TenantAllocation')).default;
     const allocation = await TenantAllocation.findOne({ tenantId, status: 'active' })
       .populate('inventoryAllocationId');
-    
+
     if (!allocation || !allocation.inventoryAllocationId) {
       throw new Error('No active allocation found');
     }

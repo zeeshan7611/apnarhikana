@@ -15,8 +15,11 @@ export interface ITenant extends Document {
   agreementAcceptedAt?: Date;
   agreementVersion?: string;
   kyc?: {
-    adharCard?: string;
+    adharCardFront?: string;
+    adharCardBack?: string;
     panCard?: string;
+    drivingLicenceFront?: string;
+    drivingLicenceBack?: string;
     otherDocument?: string;
     status: 'pending' | 'approved' | 'rejected';
     rejectionReason?: string;
@@ -41,8 +44,11 @@ const TenantSchema: Schema = new Schema({
   agreementAcceptedAt: { type: Date },
   agreementVersion: { type: String },
   kyc: {
-    adharCard: { type: String },
+    adharCardFront: { type: String },
+    adharCardBack: { type: String },
     panCard: { type: String },
+    drivingLicenceFront: { type: String },
+    drivingLicenceBack: { type: String },
     otherDocument: { type: String },
     status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
     rejectionReason: { type: String }

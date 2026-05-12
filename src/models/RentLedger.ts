@@ -55,4 +55,25 @@ const RentLedgerSchema: Schema = new Schema({
 // Unique bill per tenant per month
 RentLedgerSchema.index({ tenantId: 1, month: 1 }, { unique: true });
 
+// Auto-calculate totals before saving
+RentLedgerSchema.pre('save', function (next) {
+  this.extraChargesAmount = this.extraCharges.reduce((sum: number, item: any) => sum + item.amount, 0);
+  this.totalAmount = this.rentAmount + this.extraChargesAmount;
+  this.pendingAmount = Math.max(0, this.totalAmount - (this.paidAmount || 0));
+
+  // Update status based on pending amount
+  const now = new Date();
+  if (this.pendingAmount <= 0) {
+    this.status = 'paid';
+  } else if (this.paidAmount > 0) {
+    this.status = 'partial';
+  } else if (this.dueDate < now) {
+    this.status = 'overdue';
+  } else {
+    this.status = 'due';
+  }
+
+  next();
+});
+
 export default mongoose.model<IRentLedger>('RentLedger', RentLedgerSchema);

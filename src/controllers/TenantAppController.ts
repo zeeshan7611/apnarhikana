@@ -393,8 +393,24 @@ export default class TenantAppController {
   static async updateKYC(req: Request, res: Response, next: NextFunction) {
     try {
       const tenantId = (req as any).user.id;
-      const { adharCard, panCard, otherDocument } = req.body;
-      const data = await TenantAppService.updateKYC(tenantId, { adharCard, panCard, otherDocument });
+      const { 
+        adharCardFront, 
+        adharCardBack, 
+        panCard, 
+        drivingLicenceFront, 
+        drivingLicenceBack, 
+        otherDocument 
+      } = req.body;
+      
+      const data = await TenantAppService.updateKYC(tenantId, { 
+        adharCardFront, 
+        adharCardBack, 
+        panCard, 
+        drivingLicenceFront, 
+        drivingLicenceBack, 
+        otherDocument 
+      });
+      
       res.json({ success: true, message: 'KYC documents submitted successfully', data });
     } catch (err) {
       next(err);

@@ -107,6 +107,7 @@ router.post('/payment-webhook', Controller.paymentWebhook);
  *                   amount: { type: number }
  *                   type: { type: string, enum: [rent, deposit, extra_charge] }
  *                   rentLedgerId: { type: string, nullable: true }
+ *                   dueDate: { type: string, format: date-time, nullable: true }
  */
 router.get('/rent-detail', jwtAuth, Controller.getRentDetail);
 
@@ -431,9 +432,12 @@ router.post('/accept-agreement', jwtAuth, Controller.acceptAgreement);
  *           schema:
  *             type: object
  *             properties:
- *               adharCard: { type: string, description: "URL of uploaded Aadhar Card" }
- *               panCard: { type: string, description: "URL of uploaded PAN Card" }
- *               otherDocument: { type: string, description: "URL of any other identification" }
+ *               adharCardFront: { type: string, description: "URL of Aadhaar Card Front image" }
+ *               adharCardBack: { type: string, description: "URL of Aadhaar Card Back image" }
+ *               panCard: { type: string, description: "URL of PAN Card image" }
+ *               drivingLicenceFront: { type: string, description: "URL of Driving License Front image" }
+ *               drivingLicenceBack: { type: string, description: "URL of Driving License Back image" }
+ *               otherDocument: { type: string, description: "URL of any other supporting document" }
  */
 router.post('/kyc', jwtAuth, Controller.updateKYC);
 
