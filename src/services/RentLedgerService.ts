@@ -118,7 +118,7 @@ export default class RentLedgerService {
 
   // ─── 4. Record Payment Transaction ──────────────────────────────────────────
   static async recordPayment(data: {
-    rentLedgerId: string;
+    rentLedgerId?: string;       // optional for deposit payments
     tenantId: string;
     propertyId: string;
     amount: number;
@@ -130,15 +130,21 @@ export default class RentLedgerService {
     status?: 'pending' | 'partial' | 'paid' | 'overdue' | 'due';
     paymentType?: 'rent' | 'deposit';
     createdById?: string;
-  }): Promise<{ ledger: IRentLedger; transaction: IPaymentTransaction }> {
-    const ledger = await RentLedger.findById(data.rentLedgerId);
-    if (!ledger) throw new Error('Rent ledger not found');
-    if (ledger.isLocked) throw new Error('Ledger is locked');
+  }): Promise<{ ledger: IRentLedger | null; transaction: IPaymentTransaction }> {
+    const isDeposit = (data.paymentType === 'deposit');
+
+    let ledger: IRentLedger | null = null;
+    if (!isDeposit) {
+      if (!data.rentLedgerId) throw new Error('rentLedgerId is required for rent payments');
+      ledger = await RentLedger.findById(data.rentLedgerId);
+      if (!ledger) throw new Error('Rent ledger not found');
+      if (ledger.isLocked) throw new Error('Ledger is locked');
+    }
 
     const status = data.status || 'pending';
 
     const transaction = await PaymentTransaction.create({
-      rentLedgerId: ledger._id,
+      ...(data.rentLedgerId ? { rentLedgerId: data.rentLedgerId } : {}),
       tenantId: data.tenantId,
       propertyId: data.propertyId,
       amount: data.amount,
@@ -153,11 +159,13 @@ export default class RentLedgerService {
       createdById: data.createdById
     });
 
-    // Recalculate ledger if payment is approved immediately
-    const updatedLedger = await this.recalculateLedger(data.rentLedgerId);
-    if (!updatedLedger) throw new Error('Failed to update ledger after recording payment');
+    // Recalculate ledger only for rent payments
+    if (!isDeposit && data.rentLedgerId) {
+      ledger = await this.recalculateLedger(data.rentLedgerId);
+      if (!ledger) throw new Error('Failed to update ledger after recording payment');
+    }
 
-    return { ledger: updatedLedger, transaction };
+    return { ledger, transaction };
   }
 
   // ─── 4a. Collect Rent (Direct) ──────────────────────────────────────────────
@@ -226,15 +234,18 @@ export default class RentLedgerService {
     return { ledger };
   }
   // ─── 6b. Complete Payment (Gateway/Webhook) ─────────────────────────────────
-  static async completePayment(transactionId: string): Promise<{ ledger: IRentLedger; transaction: IPaymentTransaction }> {
+  static async completePayment(transactionId: string): Promise<{ ledger: IRentLedger | null; transaction: IPaymentTransaction }> {
     const transaction = await PaymentTransaction.findById(transactionId);
     if (!transaction) throw new Error('Transaction not found');
     
     transaction.status = 'paid';
     await transaction.save();
 
-    const ledger = await this.recalculateLedger(transaction.rentLedgerId.toString());
-    if (!ledger) throw new Error('Ledger not found for this transaction');
+    // Only recalculate ledger for rent payments
+    let ledger: IRentLedger | null = null;
+    if (transaction.rentLedgerId) {
+      ledger = await this.recalculateLedger(transaction.rentLedgerId.toString());
+    }
 
     return { ledger, transaction };
   }

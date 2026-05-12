@@ -58,6 +58,30 @@ router.post('/send-otp', Controller.sendOTP);
  */
 router.post('/login', Controller.login);
 
+/**
+ * @swagger
+ * /api/tenant-app/payment-webhook:
+ *   post:
+ *     summary: SmePay Webhook Handler
+ *     description: Endpoint for SmePay to send payment status updates.
+ *     tags: [TenantApp]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               ref_id: { type: string }
+ *               transaction_id: { type: string }
+ *               status: { type: string, enum: [SUCCESS, FAILED, PENDING] }
+ *               amount: { type: string }
+ *     responses:
+ *       200:
+ *         description: Webhook processed
+ */
+router.post('/payment-webhook', Controller.paymentWebhook);
+
 // ─── FINANCIALS & PAYMENTS ──────────────────────────────────────────────────
 
 /**
@@ -65,13 +89,24 @@ router.post('/login', Controller.login);
  * /api/tenant-app/rent-detail:
  *   get:
  *     summary: Get current due bills
- *     description: Returns active rent and deposit items. Amounts > 9999 are auto-split into installments.
+ *     description: Returns active rent and deposit items. Amounts > 9999 are auto-split into installments. Now includes rentLedgerId for tracking.
  *     tags: [TenantApp]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: List of bill items
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   title: { type: string }
+ *                   amount: { type: number }
+ *                   type: { type: string, enum: [rent, deposit, extra_charge] }
+ *                   rentLedgerId: { type: string, nullable: true }
  */
 router.get('/rent-detail', jwtAuth, Controller.getRentDetail);
 
@@ -99,7 +134,7 @@ router.get('/rent-detail/:id', jwtAuth, Controller.getRentLedgerDetail);
  * /api/tenant-app/pay-rent:
  *   post:
  *     summary: Initiate SmePay Payment
- *     description: Generates a secure gateway URL for the specified ledger.
+ *     description: Creates an order and initiates payment to get UPI links and QR code.
  *     tags: [TenantApp]
  *     security:
  *       - bearerAuth: []
@@ -116,9 +151,43 @@ router.get('/rent-detail/:id', jwtAuth, Controller.getRentLedgerDetail);
  *               paymentType: { type: string, enum: [rent, deposit] }
  *     responses:
  *       201:
- *         description: Payment link generated
+ *         description: Payment initiated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     order_id: { type: string }
+ *                     slug: { type: string }
+ *                     payment_link: { type: string }
+ *                     qr_code: { type: string }
+ *                     transaction_id: { type: string }
  */
 router.post('/pay-rent', jwtAuth, Controller.payRent);
+
+/**
+ * @swagger
+ * /api/tenant-app/check-payment-status/{transactionId}:
+ *   get:
+ *     summary: Poll payment status
+ *     description: Returns the current status of a payment transaction. Frontend uses this to know when to close the payment screen.
+ *     tags: [TenantApp]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: transactionId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Current transaction status
+ */
+router.get('/check-payment-status/:transactionId', jwtAuth, Controller.checkPaymentStatus);
 
 /**
  * @swagger

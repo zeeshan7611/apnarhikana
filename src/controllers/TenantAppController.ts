@@ -58,50 +58,158 @@ export default class TenantAppController {
       const tenantId = (req as any).user.id;
       const { rentLedgerId, amount, paymentType } = req.body;
 
-      if (!rentLedgerId || !amount) {
-        return res.status(400).json({ success: false, message: 'rentLedgerId and amount are required' });
+      if (!amount) {
+        return res.status(400).json({ success: false, message: 'amount is required' });
       }
 
-      // 1. Verify Ledger and Tenant
-      const ledger = await RentLedger.findOne({ _id: rentLedgerId, tenantId });
-      if (!ledger) return res.status(404).json({ success: false, message: 'Rent ledger not found or access denied' });
+      const isDeposit = paymentType === 'deposit';
 
-      // 2. Get Tenant Details for SmePay
+      // For rent payments, rentLedgerId is required
+      if (!isDeposit && !rentLedgerId) {
+        return res.status(400).json({ success: false, message: 'rentLedgerId is required for rent payments' });
+      }
+
+      // 1. Get Tenant Details
       const Tenant = (await import('../models/Tenant')).default;
       const tenant = await Tenant.findById(tenantId);
       if (!tenant) throw new Error('Tenant details not found');
 
-      // 3. Create Pending Transaction in our DB
+      let propertyId: string;
+
+      if (isDeposit) {
+        // For deposit: get propertyId from active allocation (no ledger needed)
+        const TenantAllocation = (await import('../models/TenantAllocation')).default;
+        const allocation = await TenantAllocation.findOne({ tenantId, status: 'active' });
+        if (!allocation) {
+          return res.status(404).json({ success: false, message: 'No active allocation found' });
+        }
+        propertyId = allocation.propertyId.toString();
+      } else {
+        // For rent: validate ledger belongs to this tenant
+        const ledger = await RentLedger.findOne({ _id: rentLedgerId, tenantId });
+        if (!ledger) {
+          return res.status(404).json({ success: false, message: 'Rent ledger not found or access denied' });
+        }
+        propertyId = ledger.propertyId.toString();
+      }
+
+      // 2. Create Pending Transaction in our DB
       const RentLedgerService = (await import('../services/RentLedgerService')).default;
       const { transaction } = await RentLedgerService.recordPayment({
-        rentLedgerId,
+        ...(isDeposit ? {} : { rentLedgerId }),
         tenantId,
-        propertyId: ledger.propertyId.toString(),
+        propertyId,
         amount,
-        paymentMethod: 'upi', 
-        paymentType: paymentType || 'rent',
+        paymentMethod: 'upi',
+        paymentType: isDeposit ? 'deposit' : 'rent',
         status: 'pending'
       });
 
-      // 4. Create SmePay Order
+      // 3. Create SmePay Order
       const SmePayService = (await import('../services/SmePayService')).default;
-      const smePayOrder = await SmePayService.createOrder({
-        transactionId: (transaction as any)._id.toString(),
-        amount: amount,
-        customerName: tenant.fullName,
-        customerPhone: tenant.phoneNumber,
-        customerEmail: tenant.email || '',
-        notes: `Rent payment for ${ledger.month}`
+      const orderResponse = await SmePayService.createOrder({
+        order_id: (transaction as any)._id.toString(),
+        amount: amount.toString(),
+        customer_details: {
+          name: tenant.fullName,
+          mobile: tenant.phoneNumber,
+          email: tenant.email || 'buyer@example.com'
+        }
       });
 
-      res.status(201).json({ 
-        success: true, 
-        message: 'Payment link generated',
-        paymentUrl: smePayOrder.paymentUrl,
-        transactionId: smePayOrder.transactionId
+      if (!orderResponse.status) {
+        throw new Error(orderResponse.message || 'Failed to create SmePay order');
+      }
+
+      // 4. Initiate Payment to get QR/Link
+      const paymentResponse = await SmePayService.initiatePayment(orderResponse.slug);
+
+      if (!paymentResponse.status) {
+        throw new Error(paymentResponse.message || 'Failed to initiate SmePay payment');
+      }
+
+      // 5. Save Slug and Gateway Transaction ID to our DB
+      const PaymentTransaction = (await import('../models/PaymentTransaction')).default;
+      await PaymentTransaction.findByIdAndUpdate(transaction._id, {
+        smePaySlug: orderResponse.slug,
+        gatewayTransactionId: paymentResponse.transaction_id
+      });
+
+      res.status(201).json({
+        success: true,
+        message: 'Payment initiated',
+        data: {
+          order_id: orderResponse.order_id,
+          slug: orderResponse.slug,
+          payment_link: paymentResponse.payment_link,
+          qr_code: paymentResponse.qr_code,
+          intents: paymentResponse.intents,
+          transaction_id: paymentResponse.transaction_id,
+          transactionId: transaction._id  // use this to poll /check-payment-status
+        }
       });
     } catch (err) {
       next(err);
+    }
+  }
+
+  // GET /check-payment-status/:transactionId
+  static async checkPaymentStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { transactionId } = req.params;
+      const PaymentTransaction = (await import('../models/PaymentTransaction')).default;
+      const transaction = await PaymentTransaction.findById(transactionId);
+      
+      if (!transaction) return res.status(404).json({ success: false, message: 'Transaction not found' });
+
+      // If it's still pending in our DB, we can optionally check SmePay status one more time
+      if (transaction.status === 'pending' && transaction.smePaySlug) {
+        const SmePayService = (await import('../services/SmePayService')).default;
+        try {
+          const smeStatus = await SmePayService.checkStatus(transaction.smePaySlug, transaction._id.toString());
+          if (smeStatus.status && smeStatus.payment_status === 'SUCCESS') {
+            const RentLedgerService = (await import('../services/RentLedgerService')).default;
+            await RentLedgerService.completePayment(transaction._id.toString());
+            transaction.status = 'paid';
+          } else if (smeStatus.payment_status === 'FAILED' || smeStatus.payment_status === 'EXPIRED') {
+            transaction.status = 'overdue'; // or map to appropriate local status
+            await transaction.save();
+          }
+        } catch (err) {
+          console.error('Check status sync error:', err);
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        status: transaction.status,
+        message: transaction.status === 'paid' ? 'Payment confirmed' : 'Payment still pending'
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // POST /payment-webhook (Public Endpoint)
+  static async paymentWebhook(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { ref_id, status, transaction_id, amount } = req.body;
+      
+      console.log('SmePay Webhook Received:', req.body);
+
+      const RentLedgerService = (await import('../services/RentLedgerService')).default;
+      
+      if (status === 'SUCCESS') {
+        await RentLedgerService.completePayment(ref_id);
+        console.log(`Payment successful for Transaction: ${ref_id}`);
+      } else {
+        console.log(`Payment ${status} for Transaction: ${ref_id}`);
+      }
+
+      res.status(200).json({ status: true, message: 'Webhook processed' });
+    } catch (err) {
+      console.error('Webhook processing error:', err);
+      res.status(200).json({ status: false, message: 'Webhook processing failed' });
     }
   }
 

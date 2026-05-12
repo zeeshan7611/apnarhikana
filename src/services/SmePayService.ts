@@ -1,77 +1,108 @@
-import crypto from 'crypto';
 import axios from 'axios';
 
 /**
  * Service for SmePay Payment Gateway Integration
+ * Documentation provided in USER_REQUEST
  */
 export default class SmePayService {
-  private static MERCHANT_ID = process.env.SMEPAY_MERCHANT_ID || 'MOCK_MERCHANT_ID';
-  private static SALT = process.env.SMEPAY_SALT || 'MOCK_SALT';
-  private static API_URL = process.env.SMEPAY_API_URL || 'https://api.smepay.com/v1/payment/create';
+  private static CLIENT_ID = process.env.SMEPAY_CLIENT_ID || '';
+  private static AUTH_TOKEN = process.env.SMEPAY_AUTH_TOKEN || '';
+  private static BASE_URL = process.env.SMEPAY_BASE_URL || 'https://smepay.example.com'; // Fallback to a placeholder
 
-  /**
-   * Generates a secure hash for SmePay request
-   */
-  private static generateHash(data: any): string {
-    const { orderId, amount, customerPhone } = data;
-    const stringToHash = `${this.MERCHANT_ID}|${orderId}|${amount}|${customerPhone}|${this.SALT}`;
-    return crypto.createHash('sha256').update(stringToHash).digest('hex');
+  private static getHeaders() {
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${this.AUTH_TOKEN}`
+    };
   }
 
   /**
-   * Creates a payment order and returns the gateway response
+   * 1. Create Order
+   * POST {{baseUrl}}/api/external/order/create
    */
   static async createOrder(orderData: {
-    transactionId: string;
-    amount: number;
-    customerName: string;
-    customerPhone: string;
-    customerEmail: string;
-    notes?: string;
+    order_id: string;
+    amount: string;
+    customer_details: {
+      email: string;
+      mobile: string;
+      name: string;
+    };
+    callback_url?: string;
   }) {
     try {
-      const hash = this.generateHash({
-        orderId: orderData.transactionId,
+      const payload = {
+        client_id: this.CLIENT_ID,
         amount: orderData.amount,
-        customerPhone: orderData.customerPhone
+        order_id: orderData.order_id,
+        callback_url: orderData.callback_url || `${process.env.APP_URL}/api/tenant-app/payment-webhook`,
+        customer_details: orderData.customer_details
+      };
+
+      console.log('SmePay Create Order Payload:', payload);
+
+      const response = await axios.post(`${this.BASE_URL}/api/external/order/create`, payload, {
+        headers: this.getHeaders()
       });
 
-      const payload = {
-        merchant_id: this.MERCHANT_ID,
-        order_id: orderData.transactionId,
-        amount: orderData.amount,
-        customer_name: orderData.customerName,
-        customer_phone: orderData.customerPhone,
-        customer_email: orderData.customerEmail,
-        notes: orderData.notes,
-        hash: hash,
-        redirect_url: `${process.env.APP_URL}/api/tenant-app/payment-callback`
-      };
-
-      // In a real implementation, you would call the SmePay API here
-      // For now, we return a mock payment URL and the payload
-      console.log('SmePay Payload:', payload);
-      
-      return {
-        paymentUrl: `https://secure.smepay.com/pay/${orderData.transactionId}`,
-        transactionId: orderData.transactionId,
-        message: 'Order created successfully'
-      };
-    } catch (error) {
-      console.error('SmePay Order Creation Error:', error);
-      throw new Error('Failed to initiate payment with SmePay');
+      return response.data; // { status, order_id, slug, message }
+    } catch (error: any) {
+      console.error('SmePay Create Order Error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Failed to create SmePay order');
     }
   }
 
   /**
-   * Verifies the SmePay callback signature
+   * 2. Initiate Payment
+   * POST {{baseUrl}}/api/external/order/initiate
    */
-  static verifyCallback(params: any): boolean {
-    const { order_id, amount, status, received_hash } = params;
-    const expectedHash = crypto.createHash('sha256')
-      .update(`${order_id}|${amount}|${status}|${this.SALT}`)
-      .digest('hex');
-    
-    return expectedHash === received_hash;
+  static async initiatePayment(slug: string) {
+    try {
+      const payload = {
+        slug,
+        client_id: this.CLIENT_ID
+      };
+
+      const response = await axios.post(`${this.BASE_URL}/api/external/order/initiate`, payload, {
+        headers: this.getHeaders()
+      });
+
+      return response.data;
+      /*
+      {
+        status, order_id, external_reference_id, provider, payment_link, 
+        transaction_id, qr_code, payment_status, expires_at, intents, message
+      }
+      */
+    } catch (error: any) {
+      console.error('SmePay Initiate Payment Error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Failed to initiate SmePay payment');
+    }
+  }
+
+  /**
+   * 3. Check Status
+   * POST {{baseUrl}}/api/external/qr/status
+   */
+  static async checkStatus(slug: string, ref_id: string) {
+    try {
+      const payload = {
+        client_id: this.CLIENT_ID,
+        slug,
+        ref_id
+      };
+
+      const response = await axios.post(`${this.BASE_URL}/api/external/qr/status`, payload, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      return response.data;
+      /*
+      { status, order_id, payment_status, amount, provider, created_at, processed_at }
+      */
+    } catch (error: any) {
+      console.error('SmePay Check Status Error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Failed to check SmePay status');
+    }
   }
 }

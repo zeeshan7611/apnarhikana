@@ -65,8 +65,8 @@ export default class TenantAppService {
     const response: any[] = [];
 
     // Helper to calculate installments
-    const getInstallments = (title: string, amount: number, type: string) => {
-      if (amount <= 9999) return [{ title, amount, type }];
+    const getInstallments = (title: string, amount: number, type: string, ledgerId?: string) => {
+      if (amount <= 9999) return [{ title, amount, type, rentLedgerId: ledgerId }];
       
       const count = Math.ceil(amount / 10000);
       const installmentAmount = Math.round(amount / count);
@@ -75,27 +75,31 @@ export default class TenantAppService {
         installments.push({
           title: `${title} (Part ${i}/${count})`,
           amount: i === count ? amount - (installmentAmount * (count - 1)) : installmentAmount,
-          type
+          type,
+          rentLedgerId: ledgerId
         });
       }
       return installments;
     };
 
-    // 1. Add Deposit (if applicable - assuming first month or if not paid)
-    // Note: In a real system, you'd track if deposit is paid. Here we check if any deposit payment exists.
-    const depositPaid = await PaymentTransaction.exists({ tenantId, paymentType: 'deposit', status: 'paid' as any });
-    if (!depositPaid && allocation.depositAmount > 0) {
-      response.push(...getInstallments('Security Deposit', allocation.depositAmount, 'deposit'));
+    // 1. Add Deposit (if applicable)
+    const depositPayments = await PaymentTransaction.find({ 
+      tenantId, 
+      paymentType: 'deposit', 
+      status: 'paid' as any 
+    });
+    const totalDepositPaid = depositPayments.reduce((sum, p) => sum + p.amount, 0);
+    const remainingDeposit = Math.max(0, allocation.depositAmount - totalDepositPaid);
+
+    if (remainingDeposit > 0) {
+      response.push(...getInstallments('Security Deposit', remainingDeposit, 'deposit'));
     }
 
     // 2. Process Ledgers
     for (const ledger of ledgers) {
-      // Base Rent
-      response.push(...getInstallments(`Rent - ${ledger.month}`, ledger.rentAmount, 'rent'));
-      
-      // Extra Charges
-      for (const charge of ledger.extraCharges) {
-        response.push(...getInstallments(`${charge.title}`, charge.amount, 'extra_charge'));
+      const remainingAmount = ledger.pendingAmount;
+      if (remainingAmount > 0) {
+        response.push(...getInstallments(`Rent - ${ledger.month}`, remainingAmount, 'rent', ledger._id.toString()));
       }
     }
 
