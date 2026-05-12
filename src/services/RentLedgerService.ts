@@ -181,7 +181,7 @@ export default class RentLedgerService {
     notes?: string;
     createdById: string;
     status?: 'pending' | 'partial' | 'paid' | 'overdue' | 'due';
-  }): Promise<{ ledger: IRentLedger; transaction: IPaymentTransaction }> {
+  }): Promise<{ ledger: IRentLedger | null; transaction: IPaymentTransaction }> {
     const ledger = await RentLedger.findOne({ 
       tenantId: data.tenantId, 
       month: data.month 
@@ -213,6 +213,7 @@ export default class RentLedgerService {
     transaction.status = 'paid';
     await transaction.save();
 
+    if (!transaction.rentLedgerId) throw new Error('Transaction has no associated ledger');
     const ledger = await this.recalculateLedger(transaction.rentLedgerId.toString());
     if (!ledger) throw new Error('Ledger not found for this transaction');
 
@@ -225,6 +226,7 @@ export default class RentLedgerService {
     if (!transaction) throw new Error('Transaction not found');
     if (transaction.status !== 'pending') throw new Error('Only pending transactions can be rejected');
 
+    if (!transaction.rentLedgerId) throw new Error('Transaction has no associated ledger');
     const ledgerId = transaction.rentLedgerId.toString();
     await PaymentTransaction.findByIdAndDelete(transactionId);
 

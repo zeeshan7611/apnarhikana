@@ -59,7 +59,7 @@ export default class TenantAppService {
 
     const ledgers = await RentLedger.find({ 
       tenantId, 
-      status: { $in: ['pending', 'partial', 'overdue'] } 
+      status: { $in: ['pending', 'partial', 'overdue', 'due'] } 
     }).sort({ month: 1 });
 
     const response: any[] = [];

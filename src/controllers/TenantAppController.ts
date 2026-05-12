@@ -122,7 +122,7 @@ export default class TenantAppController {
       }
 
       // 4. Initiate Payment to get QR/Link
-      const paymentResponse = await SmePayService.initiatePayment(orderResponse.slug);
+      const paymentResponse = await SmePayService.initiatePayment(orderResponse.order_slug);
 
       if (!paymentResponse.status) {
         throw new Error(paymentResponse.message || 'Failed to initiate SmePay payment');
@@ -131,7 +131,7 @@ export default class TenantAppController {
       // 5. Save Slug and Gateway Transaction ID to our DB
       const PaymentTransaction = (await import('../models/PaymentTransaction')).default;
       await PaymentTransaction.findByIdAndUpdate(transaction._id, {
-        smePaySlug: orderResponse.slug,
+        smePaySlug: orderResponse.order_slug,
         gatewayTransactionId: paymentResponse.transaction_id
       });
 
@@ -140,7 +140,7 @@ export default class TenantAppController {
         message: 'Payment initiated',
         data: {
           order_id: orderResponse.order_id,
-          slug: orderResponse.slug,
+          slug: orderResponse.order_slug,
           payment_link: paymentResponse.payment_link,
           qr_code: paymentResponse.qr_code,
           intents: paymentResponse.intents,
