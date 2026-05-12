@@ -191,13 +191,21 @@ export default class TenantAppService {
     status?: string
   ): Promise<{ transactions: any[]; total: number }> {
     const skip = (page - 1) * limit;
-    const query: any = { tenantId };
+    const query: any = { tenantId: new mongoose.Types.ObjectId(tenantId) };
     if (status) query.status = status;
 
+    console.log(`[DEBUG] Fetching transactions for tenant ${tenantId}, status: ${status || 'all'}`);
+
     const [transactions, total] = await Promise.all([
-      PaymentTransaction.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      PaymentTransaction.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('rentLedgerId', 'month totalAmount'),
       PaymentTransaction.countDocuments(query)
     ]);
+
+    console.log(`[DEBUG] Found ${transactions.length} transactions (Total: ${total})`);
     return { transactions, total };
   }
 
@@ -344,15 +352,33 @@ export default class TenantAppService {
   // ✅ 17. Get WiFi for Tenant
   static async getWiFiForTenant(tenantId: string): Promise<any> {
     const TenantAllocation = (await import('../models/TenantAllocation')).default;
-    const allocation = await TenantAllocation.findOne({ tenantId, status: 'active' })
-      .populate('inventoryAllocationId');
+    const allocation = await TenantAllocation.findOne({ tenantId, status: 'active' });
+    if (!allocation) return { message: 'No active allocation found' };
 
-    if (!allocation || !allocation.inventoryAllocationId) {
-      throw new Error('No active allocation found');
-    }
-
-    const invAlloc = allocation.inventoryAllocationId as any;
     const WiFi = (await import('../models/WiFi')).default;
-    return WiFi.findOne({ floorId: invAlloc.floorId, isActive: true });
+    return WiFi.findOne({ floorId: allocation.floorId, isActive: true });
+  }
+
+  // ✅ 18. Get Transaction History
+  static async getTransactions(tenantId: string, page: number = 1, limit: number = 10): Promise<any> {
+    const PaymentTransaction = (await import('../models/PaymentTransaction')).default;
+    const skip = (page - 1) * limit;
+
+    const [transactions, total] = await Promise.all([
+      PaymentTransaction.find({ tenantId })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('rentLedgerId'),
+      PaymentTransaction.countDocuments({ tenantId })
+    ]);
+
+    return { transactions, total };
+  }
+
+  // ✅ 19. Get Transaction Detail
+  static async getTransactionDetail(id: string): Promise<any> {
+    const PaymentTransaction = (await import('../models/PaymentTransaction')).default;
+    return PaymentTransaction.findById(id).populate('rentLedgerId');
   }
 }

@@ -166,7 +166,15 @@ router.get('/rent-detail/:id', jwtAuth, Controller.getRentLedgerDetail);
  *                     slug: { type: string }
  *                     payment_link: { type: string }
  *                     qr_code: { type: string }
- *                     transaction_id: { type: string }
+ *                     intents:
+ *                       type: object
+ *                       properties:
+ *                         gpay: { type: string }
+ *                         phonepe: { type: string }
+ *                         paytm: { type: string }
+ *                         bhim: { type: string }
+ *                     transaction_id: { type: string, description: "SmePay transaction reference" }
+ *                     transactionId: { type: string, description: "Internal transaction reference for status polling" }
  */
 router.post('/pay-rent', jwtAuth, Controller.payRent);
 
@@ -205,6 +213,9 @@ router.get('/check-payment-status/:transactionId', jwtAuth, Controller.checkPaym
  *       - in: query
  *         name: status
  *         schema: { type: string, enum: [pending, partial, paid, overdue, due] }
+ *     responses:
+ *       200:
+ *         description: List of transactions
  */
 router.get('/transactions', jwtAuth, Controller.getTransactions);
 
@@ -221,6 +232,9 @@ router.get('/transactions', jwtAuth, Controller.getTransactions);
  *         name: id
  *         required: true
  *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Transaction details
  */
 router.get('/transaction-detail/:id', jwtAuth, Controller.getTransactionDetail);
 
@@ -438,6 +452,9 @@ router.post('/accept-agreement', jwtAuth, Controller.acceptAgreement);
  *               drivingLicenceFront: { type: string, description: "URL of Driving License Front image" }
  *               drivingLicenceBack: { type: string, description: "URL of Driving License Back image" }
  *               otherDocument: { type: string, description: "URL of any other supporting document" }
+ *     responses:
+ *       200:
+ *         description: KYC documents submitted successfully
  */
 router.post('/kyc', jwtAuth, Controller.updateKYC);
 
@@ -449,6 +466,9 @@ router.post('/kyc', jwtAuth, Controller.updateKYC);
  *     tags: [TenantApp]
  *     security:
  *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: WiFi credentials
  */
 router.get('/wifi', jwtAuth, Controller.getWiFi);
 
