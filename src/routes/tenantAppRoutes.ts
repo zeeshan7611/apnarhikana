@@ -199,7 +199,7 @@ router.get('/rent-ledger-detail', jwtAuth, Controller.getRentLedgerDetail);
  *               amount: { type: number }
  *               paymentType:
  *                 type: string
- *                 enum: ["rent","deposit"]
+ *                 enum: ["rent","deposit","extra_charge"]
  *     responses:
  *       201:
  *         description: Payment initiated successfully
@@ -379,6 +379,9 @@ router.post('/initiate-cash-payment', jwtAuth, Controller.initiateCashPayment);
  *               otp: { type: string }
  *               rentLedgerId: { type: string }
  *               amount: { type: number }
+ *               paymentType:
+ *                 type: string
+ *                 enum: ["rent","deposit","extra_charge"]
  *     responses:
  *       200:
  *         description: Cash payment verified successfully

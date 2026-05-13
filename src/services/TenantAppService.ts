@@ -303,6 +303,7 @@ export default class TenantAppService {
     rentLedgerId: string;
     amount: number;
     notes?: string;
+    paymentType?: 'rent' | 'deposit' | 'extra_charge';
   }): Promise<any> {
     const PropertyUser = (await import('../models/PropertyUser')).default;
     const user = await PropertyUser.findById(data.propertyUserId);
@@ -324,6 +325,7 @@ export default class TenantAppService {
       propertyId: user.propertyId?.[0].toString() || '', // Use first property of user if available
       amount: data.amount,
       paymentMethod: 'cash',
+      paymentType: data.paymentType || 'rent',
       status: 'paid',
       notes: data.notes || `Cash payment verified via OTP from ${user.name}`,
       createdById: data.propertyUserId

@@ -101,7 +101,7 @@ export default class TenantAppController {
         propertyId,
         amount,
         paymentMethod: 'upi',
-        paymentType: isDeposit ? 'deposit' : 'rent',
+        paymentType: paymentType || (isDeposit ? 'deposit' : 'rent'),
         status: 'pending'
       });
 
@@ -357,7 +357,7 @@ export default class TenantAppController {
   static async verifyCashPayment(req: Request, res: Response, next: NextFunction) {
     try {
       const tenantId = (req as any).user.id;
-      const { propertyUserId, otp, rentLedgerId, amount, notes } = req.body;
+      const { propertyUserId, otp, rentLedgerId, amount, notes, paymentType } = req.body;
       if (!propertyUserId || !otp || !rentLedgerId || !amount) {
         return res.status(400).json({ message: 'propertyUserId, otp, rentLedgerId, and amount are required' });
       }
@@ -367,7 +367,8 @@ export default class TenantAppController {
         otp,
         rentLedgerId,
         amount,
-        notes
+        notes,
+        paymentType
       });
       res.json({ success: true, data: result });
     } catch (err) {

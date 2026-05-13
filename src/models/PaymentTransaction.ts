@@ -7,7 +7,7 @@ export interface IPaymentTransaction extends Document {
   amount: number;
   paymentMethod: 'cash' | 'upi' | 'bank_transfer' | 'cheque';
   status: 'pending' | 'partial' | 'paid' | 'overdue' | 'due';
-  paymentType: 'rent' | 'deposit';
+  paymentType: 'rent' | 'deposit' | 'extra_charge';
   referenceNumber?: string;
   utrNumber?: string;
   paymentScreenshotUrl?: string;
@@ -37,7 +37,7 @@ const PaymentTransactionSchema: Schema = new Schema({
   },
   paymentType: {
     type: String,
-    enum: ['rent', 'deposit'],
+    enum: ['rent', 'deposit', 'extra_charge'],
     default: 'rent',
     required: true
   },

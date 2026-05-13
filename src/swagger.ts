@@ -281,7 +281,7 @@ const swaggerDefinition = {
           amount:               { type: 'number' },
           paymentMethod:        { type: 'string', enum: ['cash', 'upi', 'bank_transfer', 'cheque'] },
           status:               { type: 'string', enum: ['pending', 'partial', 'paid', 'overdue', 'due'] },
-          paymentType:          { type: 'string', enum: ['rent', 'deposit'] },
+          paymentType:          { type: 'string', enum: ['rent', 'deposit', 'extra_charge'] },
           referenceNumber:      { type: 'string' },
           utrNumber:            { type: 'string', description: 'UTR number for UPI / bank transfers' },
           paymentScreenshotUrl: { type: 'string', description: 'URL of uploaded payment screenshot' },

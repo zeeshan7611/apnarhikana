@@ -128,7 +128,7 @@ export default class RentLedgerService {
     paymentScreenshotUrl?: string;
     notes?: string;
     status?: 'pending' | 'partial' | 'paid' | 'overdue' | 'due';
-    paymentType?: 'rent' | 'deposit';
+    paymentType?: 'rent' | 'deposit' | 'extra_charge';
     createdById?: string;
   }): Promise<{ ledger: IRentLedger | null; transaction: IPaymentTransaction }> {
     const isDeposit = (data.paymentType === 'deposit');
