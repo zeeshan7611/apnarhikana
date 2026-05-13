@@ -124,7 +124,9 @@ router.get('/get-expense', authorizePermissions('expenses:read'), ExpenseControl
  *               paymentMethod: { type: string }
  *               paidBy: { type: string }
  *               paidTo: { type: string }
- *               status: { type: string, enum: [pending, approved, rejected] }
+ *               status:
+ *                 type: string
+ *                 enum: ["pending","approved","rejected"]
  *     responses:
  *       200:
  *         description: Expense updated

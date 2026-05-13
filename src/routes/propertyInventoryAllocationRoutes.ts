@@ -194,7 +194,9 @@ router.get('/get-allocation', authorizePermissions('allocations:read'), Allocati
  *             properties:
  *               id: { type: string }
  *               notes: { type: string }
- *               status: { type: string, enum: [active, inactive, terminated] }
+ *               status:
+ *                 type: string
+ *                 enum: ["active","inactive","terminated"]
  *     responses:
  *       200:
  *         description: Allocation updated successfully

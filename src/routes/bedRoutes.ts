@@ -39,7 +39,35 @@ const router = Router();
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Bed'
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { $ref: '#/components/schemas/Bed' }
+ *                 message: { type: string }
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
  */
 router.post('/create-bed', authorizePermissions('beds:write'), BedController.createBed);
 
@@ -60,6 +88,30 @@ router.post('/create-bed', authorizePermissions('beds:write'), BedController.cre
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Bed'
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
  */
 router.get('/get-beds', authorizePermissions('beds:read'), BedController.getAllBeds);
 
@@ -84,8 +136,32 @@ router.get('/get-beds', authorizePermissions('beds:read'), BedController.getAllB
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Bed'
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       403:
+ *         description: Forbidden - Insufficient permissions
  *       404:
  *         description: Bed not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
  */
 router.get('/get-bed', authorizePermissions('beds:read'), BedController.getBedById);
 
@@ -116,7 +192,37 @@ router.get('/get-bed', authorizePermissions('beds:read'), BedController.getBedBy
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Bed'
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { $ref: '#/components/schemas/Bed' }
+ *                 message: { type: string }
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       404:
+ *         description: Bed not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
  */
 router.put('/update-bed', authorizePermissions('beds:write'), BedController.updateBed);
 
@@ -141,6 +247,39 @@ router.put('/update-bed', authorizePermissions('beds:write'), BedController.upda
  *     responses:
  *       200:
  *         description: Bed deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string }
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       404:
+ *         description: Bed not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
  */
 router.delete('/delete-bed', authorizePermissions('beds:write'), BedController.deleteBed);
 

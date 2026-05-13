@@ -13,7 +13,7 @@ const router = Router();
 
 /**
  * @swagger
- * /api/properties:
+ * /api/properties/get-properties:
  *   get:
  *     summary: Get all properties
  *     tags: [Properties]
@@ -28,6 +28,30 @@ const router = Router();
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Property'
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
  */
 router.get('/get-properties', authorizePermissions('properties:read'), PropertyController.getAllProperties);
 
@@ -48,6 +72,40 @@ router.get('/get-properties', authorizePermissions('properties:read'), PropertyC
  *     responses:
  *       200:
  *         description: Occupancy statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { type: object }
+ *                 message: { type: string }
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       404:
+ *         description: Property not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
  */
 router.get('/get-occupancy', authorizePermissions('properties:read'), PropertyController.getOccupancy);
 
@@ -74,6 +132,38 @@ router.get('/get-occupancy', authorizePermissions('properties:read'), PropertyCo
  *     responses:
  *       200:
  *         description: List of occupancy statistics for each property
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { type: array }
+ *                 message: { type: string }
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
  */
 router.post('/get-bulk-occupancy', authorizePermissions('properties:read'), PropertyController.getBulkOccupancy);
 
@@ -99,19 +189,43 @@ router.post('/get-bulk-occupancy', authorizePermissions('properties:read'), Prop
  *                     type: string
  *                   name:
  *                     type: string
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
  */
 router.get('/get-property-names', authorizePermissions('properties:read'), PropertyController.getPropertyNames);
 
 /**
  * @swagger
- * /api/properties/{id}:
+ * /api/properties/get-property:
  *   get:
  *     summary: Get property by ID
  *     tags: [Properties]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
+ *       - in: query
  *         name: id
  *         required: true
  *         schema:
@@ -124,14 +238,38 @@ router.get('/get-property-names', authorizePermissions('properties:read'), Prope
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Property'
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       403:
+ *         description: Forbidden - Insufficient permissions
  *       404:
  *         description: Property not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
  */
 router.get('/get-property', authorizePermissions('properties:read'), PropertyController.getPropertyById);
 
 /**
  * @swagger
- * /api/properties:
+ * /api/properties/create-property:
  *   post:
  *     summary: Create a new property
  *     tags: [Properties]
@@ -170,32 +308,56 @@ router.get('/get-property', authorizePermissions('properties:read'), PropertyCon
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Property'
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { $ref: '#/components/schemas/Property' }
+ *                 message: { type: string }
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
  */
 router.post('/create-property', authorizePermissions('properties:write'), PropertyController.createProperty);
 
 /**
  * @swagger
- * /api/properties/{id}:
- *   put:
+ * /api/properties/update-property:
+ *   patch:
  *     summary: Update an existing property
  *     tags: [Properties]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: Property ID
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required: [id]
  *             properties:
+ *               id:
+ *                 type: string
  *               name:
  *                 type: string
  *               address:
@@ -220,7 +382,37 @@ router.post('/create-property', authorizePermissions('properties:write'), Proper
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Property'
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { $ref: '#/components/schemas/Property' }
+ *                 message: { type: string }
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       404:
+ *         description: Property not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
  */
 router.patch('/update-property', authorizePermissions('properties:write'), PropertyController.updateProperty);
 
@@ -245,6 +437,39 @@ router.patch('/update-property', authorizePermissions('properties:write'), Prope
  *     responses:
  *       200:
  *         description: Property deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string }
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       404:
+ *         description: Property not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
  */
 router.delete('/delete-property', authorizePermissions('properties:write'), PropertyController.deleteProperty);
 
@@ -277,6 +502,40 @@ router.delete('/delete-property', authorizePermissions('properties:write'), Prop
  *     responses:
  *       200:
  *         description: Support details updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { type: object }
+ *                 message: { type: string }
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       404:
+ *         description: Property not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
  */
 router.post('/supportdetail', authorizePermissions('properties:write'), PropertyController.updateSupportDetails);
 

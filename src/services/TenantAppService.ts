@@ -99,11 +99,32 @@ export default class TenantAppService {
       response.push(...getInstallments('Security Deposit', remainingDeposit, 'deposit', undefined, allocation.startDate));
     }
 
-    // 2. Process Ledgers
+    // 2. Process Ledgers — include itemized extra charges (without double-counting)
     for (const ledger of ledgers) {
-      const remainingAmount = ledger.pendingAmount;
-      if (remainingAmount > 0) {
-        response.push(...getInstallments(`Rent - ${ledger.month}`, remainingAmount, 'rent', ledger._id.toString(), ledger.dueDate));
+      let remaining = ledger.pendingAmount || 0;
+
+      // If there are extra charges on the ledger, push them as separate items up to the remaining amount
+      if (ledger.extraCharges && ledger.extraCharges.length > 0) {
+        for (const charge of ledger.extraCharges) {
+          if (remaining <= 0) break;
+          const chargePending = Math.min(charge.amount || 0, remaining);
+          if (chargePending > 0) {
+            response.push({
+              title: charge.title || `Extra: ${charge.type}`,
+              amount: chargePending,
+              type: 'extra_charge',
+              rentLedgerId: ledger._id.toString(),
+              dueDate: ledger.dueDate,
+              extraType: charge.type
+            });
+            remaining -= chargePending;
+          }
+        }
+      }
+
+      // Remaining amount (after accounting for extra charges) belongs to rent — split into installments if needed
+      if (remaining > 0) {
+        response.push(...getInstallments(`Rent - ${ledger.month}`, remaining, 'rent', ledger._id.toString(), ledger.dueDate));
       }
     }
 

@@ -220,7 +220,9 @@ router.get('/get-allocation', authorizePermissions('allocations:read'), TenantAl
  *               id: { type: string }
  *               rentAmount: { type: number }
  *               depositAmount: { type: number }
- *               status: { type: string, enum: [active, inactive, terminated] }
+ *               status:
+ *                 type: string
+ *                 enum: ["active","inactive","terminated"]
  *               endDate: { type: string, format: date }
  *               notes: { type: string }
  *     responses:

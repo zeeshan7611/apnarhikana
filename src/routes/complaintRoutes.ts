@@ -30,10 +30,14 @@ const router = Router();
  *               tenantId: { type: string }
  *               propertyId: { type: string }
  *               category: { type: string }
- *               priority: { type: string, enum: [low, medium, high, urgent] }
+ *               priority:
+ *                 type: string
+ *                 enum: ["low","medium","high","urgent"]
  *               title: { type: string }
  *               description: { type: string }
- *               sourceApp: { type: string, enum: [tenant, propertyManager] }
+ *               sourceApp:
+ *                 type: string
+ *                 enum: ["tenant","propertyManager"]
  *               assignedTo: { type: string }
  *               resolutionNotes: { type: string }
  *     responses:
@@ -141,8 +145,12 @@ router.get('/get-complaint', authorizePermissions('complaints:read'), ComplaintC
  *             required: [id]
  *             properties:
  *               id: { type: string }
- *               status: { type: string, enum: [open, in-progress, resolved, closed] }
- *               priority: { type: string, enum: [low, medium, high, urgent] }
+ *               status:
+ *                 type: string
+ *                 enum: ["open","in-progress","resolved","closed"]
+ *               priority:
+ *                 type: string
+ *                 enum: ["low","medium","high","urgent"]
  *               category: { type: string }
  *               title: { type: string }
  *               description: { type: string }

@@ -31,7 +31,7 @@ const router = Router();
  *         required: true
  *         schema:
  *           type: string
- *           enum: [image/jpeg, image/png, image/webp, image/gif, image/svg+xml, application/pdf]
+ *           enum: ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml", "application/pdf"]
  *         example: image/jpeg
  *         description: MIME type of the file
  *       - in: query

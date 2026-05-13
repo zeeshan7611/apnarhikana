@@ -56,7 +56,9 @@ router.post('/generate-monthly-ledgers', authorizePermissions('payments:write'),
  *         schema: { type: string }
  *       - in: query
  *         name: status
- *         schema: { type: string, enum: [pending, partial, paid, overdue, due] }
+ *         schema:
+ *           type: string
+ *           enum: ["pending","partial","paid","overdue","due"]
  *     responses:
  *       200:
  *         description: List of transactions
@@ -104,7 +106,10 @@ router.get('/get-transaction', authorizePermissions('payments:read'), Controller
  *               rentLedgerId: { type: string }
  *               title:        { type: string, example: "Electricity - June" }
  *               amount:       { type: number }
- *               type:         { type: string, enum: [electricity, water, maintenance, other], default: other }
+ *               type:
+ *                 type: string
+ *                 enum: ["electricity","water","maintenance","other"]
+ *                 default: other
  *               description:  { type: string }
  *               performedById: { type: string }
  *     responses:

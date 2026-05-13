@@ -41,7 +41,35 @@ const router = Router();
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Room'
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { $ref: '#/components/schemas/Room' }
+ *                 message: { type: string }
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
  */
 router.post('/create-room', authorizePermissions('rooms:write'), RoomController.createRoom);
 
@@ -62,6 +90,30 @@ router.post('/create-room', authorizePermissions('rooms:write'), RoomController.
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Room'
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
  */
 router.get('/get-rooms', authorizePermissions('rooms:read'), RoomController.getAllRooms);
 
@@ -86,8 +138,32 @@ router.get('/get-rooms', authorizePermissions('rooms:read'), RoomController.getA
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Room'
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       403:
+ *         description: Forbidden - Insufficient permissions
  *       404:
  *         description: Room not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
  */
 router.get('/get-room', authorizePermissions('rooms:read'), RoomController.getRoomById);
 
@@ -120,7 +196,37 @@ router.get('/get-room', authorizePermissions('rooms:read'), RoomController.getRo
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Room'
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { $ref: '#/components/schemas/Room' }
+ *                 message: { type: string }
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       404:
+ *         description: Room not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
  */
 router.put('/update-room', authorizePermissions('rooms:write'), RoomController.updateRoom);
 
@@ -145,6 +251,39 @@ router.put('/update-room', authorizePermissions('rooms:write'), RoomController.u
  *     responses:
  *       200:
  *         description: Room deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string }
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       404:
+ *         description: Room not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
  */
 router.delete('/delete-room', authorizePermissions('rooms:write'), RoomController.deleteRoom);
 
@@ -171,6 +310,32 @@ router.delete('/delete-room', authorizePermissions('rooms:write'), RoomControlle
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Room'
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       404:
+ *         description: Property not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
  */
 router.get('/get-rooms-by-property', authorizePermissions('rooms:read'), RoomController.getRoomsByProperty);
 

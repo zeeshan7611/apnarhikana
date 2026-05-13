@@ -33,7 +33,9 @@ const router = Router();
  *               propertyId: { type: string, description: Target an entire property }
  *               floorId: { type: string, description: Target an entire floor }
  *               roomId: { type: string, description: Target an entire room }
- *               type: { type: string, enum: [announcement, notification, emergency] }
+ *               type:
+ *                 type: string
+ *                 enum: ["announcement","notification","emergency"]
  *               sentBy: { type: string, description: ID of the user sending the announcement }
  *     responses:
  *       201:

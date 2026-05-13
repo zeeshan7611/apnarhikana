@@ -32,6 +32,14 @@ const router = Router();
  *     responses:
  *       200:
  *         description: OTP sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 message: { type: string }
+ *                 otp: { type: string, description: "OTP code (dev/testing only)" }
  */
 router.post('/send-otp', Controller.sendOTP);
 
@@ -55,6 +63,18 @@ router.post('/send-otp', Controller.sendOTP);
  *     responses:
  *       200:
  *         description: Login successful with token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     tenant: { type: object }
+ *                     allocation: { type: object, nullable: true }
+ *                     token: { type: string, description: "JWT access token" }
  */
 router.post('/login', Controller.login);
 
@@ -74,11 +94,20 @@ router.post('/login', Controller.login);
  *             properties:
  *               ref_id: { type: string }
  *               transaction_id: { type: string }
- *               status: { type: string, enum: [SUCCESS, FAILED, PENDING] }
+ *               status:
+ *                 type: string
+ *                 enum: ["SUCCESS","FAILED","PENDING"]
  *               amount: { type: string }
  *     responses:
  *       200:
  *         description: Webhook processed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status: { type: boolean }
+ *                 message: { type: string }
  */
 router.post('/payment-webhook', Controller.paymentWebhook);
 
@@ -105,7 +134,9 @@ router.post('/payment-webhook', Controller.paymentWebhook);
  *                 properties:
  *                   title: { type: string }
  *                   amount: { type: number }
- *                   type: { type: string, enum: [rent, deposit, extra_charge] }
+ *                   type:
+ *                     type: string
+ *                     enum: ["rent","deposit","extra_charge"]
  *                   rentLedgerId: { type: string, nullable: true }
  *                   dueDate: { type: string, format: date-time, nullable: true }
  */
@@ -127,6 +158,23 @@ router.get('/rent-detail', jwtAuth, Controller.getRentDetail);
  *     responses:
  *       200:
  *         description: Detailed bill breakdown
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: string }
+ *                     month: { type: string, example: "2026-05" }
+ *                     rentAmount: { type: number }
+ *                     extraChargesAmount: { type: number }
+ *                     totalAmount: { type: number }
+ *                     paidAmount: { type: number }
+ *                     pendingAmount: { type: number }
+ *                     status: { type: string }
  */
 router.get('/rent-ledger-detail', jwtAuth, Controller.getRentLedgerDetail);
 
@@ -149,7 +197,9 @@ router.get('/rent-ledger-detail', jwtAuth, Controller.getRentLedgerDetail);
  *             properties:
  *               rentLedgerId: { type: string }
  *               amount: { type: number }
- *               paymentType: { type: string, enum: [rent, deposit] }
+ *               paymentType:
+ *                 type: string
+ *                 enum: ["rent","deposit"]
  *     responses:
  *       201:
  *         description: Payment initiated successfully
@@ -195,6 +245,14 @@ router.post('/pay-rent', jwtAuth, Controller.payRent);
  *     responses:
  *       200:
  *         description: Current transaction status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 status: { type: string, enum: ["pending","paid","failed"] }
+ *                 message: { type: string }
  */
 router.get('/check-payment-status', jwtAuth, Controller.checkPaymentStatus);
 
@@ -212,10 +270,29 @@ router.get('/check-payment-status', jwtAuth, Controller.checkPaymentStatus);
  *         schema: { type: integer, default: 1 }
  *       - in: query
  *         name: status
- *         schema: { type: string, enum: [pending, partial, paid, overdue, due] }
+ *         schema:
+ *           type: string
+ *           enum: ["pending","partial","paid","overdue","due"]
  *     responses:
  *       200:
  *         description: List of transactions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 transactions:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string }
+ *                       amount: { type: number }
+ *                       status: { type: string }
+ *                       paymentMethod: { type: string }
+ *                       createdAt: { type: string, format: date-time }
+ *                 total: { type: number }
  */
 router.get('/transactions', jwtAuth, Controller.getTransactions);
 
@@ -235,6 +312,20 @@ router.get('/transactions', jwtAuth, Controller.getTransactions);
  *     responses:
  *       200:
  *         description: Transaction details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: string }
+ *                     amount: { type: number }
+ *                     status: { type: string }
+ *                     paymentMethod: { type: string }
+ *                     paidAt: { type: string, format: date-time }
  */
 router.get('/transaction-detail', jwtAuth, Controller.getTransactionDetail);
 
@@ -255,6 +346,16 @@ router.get('/transaction-detail', jwtAuth, Controller.getTransactionDetail);
  *             required: [propertyUserId]
  *             properties:
  *               propertyUserId: { type: string }
+ *     responses:
+ *       200:
+ *         description: OTP initiated and sent to manager
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 message: { type: string }
  */
 router.post('/initiate-cash-payment', jwtAuth, Controller.initiateCashPayment);
 
@@ -278,6 +379,20 @@ router.post('/initiate-cash-payment', jwtAuth, Controller.initiateCashPayment);
  *               otp: { type: string }
  *               rentLedgerId: { type: string }
  *               amount: { type: number }
+ *     responses:
+ *       200:
+ *         description: Cash payment verified successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     transaction: { type: object }
+ *                     ledger: { type: object, nullable: true }
  */
 router.post('/verify-cash-payment', jwtAuth, Controller.verifyCashPayment);
 
@@ -300,8 +415,26 @@ router.post('/verify-cash-payment', jwtAuth, Controller.verifyCashPayment);
  *             required: [title, category, description]
  *             properties:
  *               title: { type: string }
- *               category: { type: string, enum: [plumbing, electrical, cleaning, maintenance, other] }
+ *               category:
+ *                 type: string
+ *                 enum: ["plumbing","electrical","cleaning","maintenance","other"]
  *               description: { type: string }
+ *     responses:
+ *       201:
+ *         description: Complaint created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: string }
+ *                     title: { type: string }
+ *                     status: { type: string }
+ *                     createdAt: { type: string, format: date-time }
  */
 router.post('/complaint', jwtAuth, Controller.createComplaint);
 
@@ -316,7 +449,28 @@ router.post('/complaint', jwtAuth, Controller.createComplaint);
  *     parameters:
  *       - in: query
  *         name: status
- *         schema: { type: string, enum: [open, in-progress, resolved, closed] }
+ *         schema:
+ *           type: string
+ *           enum: ["open","in-progress","resolved","closed"]
+ *     responses:
+ *       200:
+ *         description: List of tenant complaints
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 complaints:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string }
+ *                       title: { type: string }
+ *                       status: { type: string }
+ *                       priority: { type: string }
+ *                 total: { type: number }
  */
 router.get('/complaints', jwtAuth, Controller.getComplaints);
 
@@ -330,6 +484,24 @@ router.get('/complaints', jwtAuth, Controller.getComplaints);
  *     tags: [TenantApp]
  *     security:
  *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current tenant allocation details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     tenantId: { type: string }
+ *                     propertyId: { type: string }
+ *                     floorId: { type: string }
+ *                     roomId: { type: string }
+ *                     bedId: { type: string }
+ *                     status: { type: string }
  */
 router.get('/allocation', jwtAuth, Controller.getAllocation);
 
@@ -341,6 +513,25 @@ router.get('/allocation', jwtAuth, Controller.getAllocation);
  *     tags: [TenantApp]
  *     security:
  *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of announcements for property/floor/room
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string }
+ *                       title: { type: string }
+ *                       message: { type: string }
+ *                       type: { type: string }
+ *                       createdAt: { type: string, format: date-time }
  */
 router.get('/announcements', jwtAuth, Controller.getAnnouncements);
 
@@ -357,6 +548,25 @@ router.get('/announcements', jwtAuth, Controller.getAnnouncements);
  *         name: propertyId
  *         required: true
  *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Property contact information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     name: { type: string }
+ *                     address: { type: string }
+ *                     contacts:
+ *                       type: object
+ *                       properties:
+ *                         managerPhone: { type: string }
+ *                         supportEmail: { type: string }
  */
 router.get('/property-contacts', jwtAuth, Controller.getPropertyContacts);
 
@@ -370,6 +580,26 @@ router.get('/property-contacts', jwtAuth, Controller.getPropertyContacts);
  *     tags: [TenantApp]
  *     security:
  *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of notifications
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 notifications:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string }
+ *                       title: { type: string }
+ *                       message: { type: string }
+ *                       isRead: { type: boolean }
+ *                       createdAt: { type: string, format: date-time }
+ *                 total: { type: number }
  */
 router.get('/notifications', jwtAuth, Controller.getNotifications);
 
@@ -390,6 +620,20 @@ router.get('/notifications', jwtAuth, Controller.getNotifications);
  *             required: [id]
  *             properties:
  *               id: { type: string }
+ *     responses:
+ *       200:
+ *         description: Notification marked as read
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: string }
+ *                     isRead: { type: boolean }
  */
 router.patch('/notifications-read', jwtAuth, Controller.markNotificationRead);
 
@@ -410,6 +654,17 @@ router.patch('/notifications-read', jwtAuth, Controller.markNotificationRead);
  *             required: [oneSignalId]
  *             properties:
  *               oneSignalId: { type: string }
+ *     responses:
+ *       200:
+ *         description: OneSignal ID updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 message: { type: string }
+ *                 data: { type: object }
  */
 router.patch('/update-onesignal-id', jwtAuth, Controller.updateOneSignalId);
 
@@ -431,6 +686,22 @@ router.patch('/update-onesignal-id', jwtAuth, Controller.updateOneSignalId);
  *             required: [version]
  *             properties:
  *               version: { type: string, example: "v1.0" }
+ *     responses:
+ *       200:
+ *         description: Agreement accepted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 message: { type: string }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     isAgreementAccepted: { type: boolean }
+ *                     agreementAcceptedAt: { type: string, format: date-time }
+ *                     agreementVersion: { type: string }
  */
 router.post('/accept-agreement', jwtAuth, Controller.acceptAgreement);
 
@@ -459,6 +730,17 @@ router.post('/accept-agreement', jwtAuth, Controller.acceptAgreement);
  *     responses:
  *       200:
  *         description: KYC documents submitted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 message: { type: string }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     kyc: { type: object }
  */
 router.post('/kyc', jwtAuth, Controller.updateKYC);
 
@@ -473,6 +755,18 @@ router.post('/kyc', jwtAuth, Controller.updateKYC);
  *     responses:
  *       200:
  *         description: WiFi credentials
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     ssid: { type: string }
+ *                     password: { type: string }
+ *                     notes: { type: string }
  */
 router.get('/wifi', jwtAuth, Controller.getWiFi);
 

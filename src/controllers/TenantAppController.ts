@@ -347,7 +347,7 @@ export default class TenantAppController {
       const { propertyUserId } = req.body;
       if (!propertyUserId) return res.status(400).json({ message: 'propertyUserId is required' });
       const result = await TenantAppService.initiateCashPayment(propertyUserId);
-      res.json({ success: true, ...result });
+     return res.status(200).json({ success: true, ...result });
     } catch (err) {
       next(err);
     }

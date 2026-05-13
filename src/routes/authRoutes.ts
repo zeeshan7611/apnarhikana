@@ -24,17 +24,47 @@ const router = Router();
  *             type: object
  *             required: [name, email, password]
  *             properties:
- *               name:
- *                 type: string
- *               email:
- *                 type: string
- *               password:
- *                 type: string
+ *               name: { type: string }
+ *               email: { type: string }
+ *               password: { type: string }
  *     responses:
  *       201:
  *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: string }
+ *                     name: { type: string }
+ *                     email: { type: string }
+ *                     role: { type: string }
+ *                     token: { type: string }
+ *                 message: { type: string }
  *       400:
- *         description: Email already registered
+ *         description: Validation error or Email already registered
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
  */
 router.post('/register', AuthController.register);
 
@@ -52,15 +82,46 @@ router.post('/register', AuthController.register);
  *             type: object
  *             required: [email, password]
  *             properties:
- *               email:
- *                 type: string
- *               password:
- *                 type: string
+ *               email: { type: string }
+ *               password: { type: string }
  *     responses:
  *       200:
- *         description: Login successful
+ *         description: Login successful with token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: string }
+ *                     name: { type: string }
+ *                     email: { type: string }
+ *                     role: { type: string }
+ *                     token: { type: string }
+ *                 message: { type: string }
  *       400:
- *         description: Invalid credentials
+ *         description: Invalid credentials or validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 error: { type: string }
+ *                 message: { type: string }
  */
 router.post('/login', AuthController.login);
 
