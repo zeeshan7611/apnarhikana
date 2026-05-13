@@ -113,14 +113,14 @@ router.get('/rent-detail', jwtAuth, Controller.getRentDetail);
 
 /**
  * @swagger
- * /api/tenant-app/rent-detail/{id}:
+ * /api/tenant-app/rent-ledger-detail:
  *   get:
  *     summary: Get specific bill breakdown
  *     tags: [TenantApp]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
+ *       - in: query
  *         name: id
  *         required: true
  *         schema: { type: string }
@@ -128,7 +128,7 @@ router.get('/rent-detail', jwtAuth, Controller.getRentDetail);
  *       200:
  *         description: Detailed bill breakdown
  */
-router.get('/rent-detail/:id', jwtAuth, Controller.getRentLedgerDetail);
+router.get('/rent-ledger-detail', jwtAuth, Controller.getRentLedgerDetail);
 
 /**
  * @swagger
@@ -180,7 +180,7 @@ router.post('/pay-rent', jwtAuth, Controller.payRent);
 
 /**
  * @swagger
- * /api/tenant-app/check-payment-status/{transactionId}:
+ * /api/tenant-app/check-payment-status:
  *   get:
  *     summary: Poll payment status
  *     description: Returns the current status of a payment transaction. Frontend uses this to know when to close the payment screen.
@@ -188,7 +188,7 @@ router.post('/pay-rent', jwtAuth, Controller.payRent);
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
+ *       - in: query
  *         name: transactionId
  *         required: true
  *         schema: { type: string }
@@ -196,7 +196,7 @@ router.post('/pay-rent', jwtAuth, Controller.payRent);
  *       200:
  *         description: Current transaction status
  */
-router.get('/check-payment-status/:transactionId', jwtAuth, Controller.checkPaymentStatus);
+router.get('/check-payment-status', jwtAuth, Controller.checkPaymentStatus);
 
 /**
  * @swagger
@@ -221,14 +221,14 @@ router.get('/transactions', jwtAuth, Controller.getTransactions);
 
 /**
  * @swagger
- * /api/tenant-app/transaction-detail/{id}:
+ * /api/tenant-app/transaction-detail:
  *   get:
  *     summary: Get specific transaction details
  *     tags: [TenantApp]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
+ *       - in: query
  *         name: id
  *         required: true
  *         schema: { type: string }
@@ -236,7 +236,7 @@ router.get('/transactions', jwtAuth, Controller.getTransactions);
  *       200:
  *         description: Transaction details
  */
-router.get('/transaction-detail/:id', jwtAuth, Controller.getTransactionDetail);
+router.get('/transaction-detail', jwtAuth, Controller.getTransactionDetail);
 
 /**
  * @swagger
@@ -346,19 +346,19 @@ router.get('/announcements', jwtAuth, Controller.getAnnouncements);
 
 /**
  * @swagger
- * /api/tenant-app/property-contacts/{propertyId}:
+ * /api/tenant-app/property-contacts:
  *   get:
  *     summary: Get Manager contact details
  *     tags: [TenantApp]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
+ *       - in: query
  *         name: propertyId
  *         required: true
  *         schema: { type: string }
  */
-router.get('/property-contacts/:propertyId', jwtAuth, Controller.getPropertyContacts);
+router.get('/property-contacts', jwtAuth, Controller.getPropertyContacts);
 
 // ─── NOTIFICATIONS & PROFILE ────────────────────────────────────────────────
 
@@ -375,19 +375,23 @@ router.get('/notifications', jwtAuth, Controller.getNotifications);
 
 /**
  * @swagger
- * /api/tenant-app/notifications/{id}/read:
+ * /api/tenant-app/notifications-read:
  *   patch:
  *     summary: Mark as read
  *     tags: [TenantApp]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [id]
+ *             properties:
+ *               id: { type: string }
  */
-router.patch('/notifications/:id/read', jwtAuth, Controller.markNotificationRead);
+router.patch('/notifications-read', jwtAuth, Controller.markNotificationRead);
 
 /**
  * @swagger

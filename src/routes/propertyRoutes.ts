@@ -29,7 +29,7 @@ const router = Router();
  *               items:
  *                 $ref: '#/components/schemas/Property'
  */
-router.get('/', authorizePermissions('properties:read'), PropertyController.getAllProperties);
+router.get('/get-properties', authorizePermissions('properties:read'), PropertyController.getAllProperties);
 
 /**
  * @swagger
@@ -127,7 +127,7 @@ router.get('/get-property-names', authorizePermissions('properties:read'), Prope
  *       404:
  *         description: Property not found
  */
-router.get('/:id', authorizePermissions('properties:read'), PropertyController.getPropertyById);
+router.get('/get-property', authorizePermissions('properties:read'), PropertyController.getPropertyById);
 
 /**
  * @swagger
@@ -172,7 +172,7 @@ router.get('/:id', authorizePermissions('properties:read'), PropertyController.g
  *             schema:
  *               $ref: '#/components/schemas/Property'
  */
-router.post('/', authorizePermissions('properties:write'), PropertyController.createProperty);
+router.post('/create-property', authorizePermissions('properties:write'), PropertyController.createProperty);
 
 /**
  * @swagger
@@ -222,7 +222,7 @@ router.post('/', authorizePermissions('properties:write'), PropertyController.cr
  *             schema:
  *               $ref: '#/components/schemas/Property'
  */
-router.put('/:id', authorizePermissions('properties:write'), PropertyController.updateProperty);
+router.patch('/update-property', authorizePermissions('properties:write'), PropertyController.updateProperty);
 
 /**
  * @swagger

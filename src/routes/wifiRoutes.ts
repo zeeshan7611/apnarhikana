@@ -33,28 +33,28 @@ const router = Router();
  *               password: { type: string }
  *               notes: { type: string }
  */
-router.post('/', authorizePermissions('properties:write'), Controller.upsertWiFi);
+router.post('/', Controller.upsertWiFi);
 
 /**
  * @swagger
- * /api/wifi/property/{propertyId}:
+ * /api/wifi/get-wifi-by-property:
  *   get:
  *     summary: Get all WiFi for a property
  *     tags: [WiFi]
  *     security:
  *       - bearerAuth: []
  */
-router.get('/property/:propertyId', authorizePermissions('properties:read'), Controller.getByProperty);
+router.get('/get-wifi-by-property', authorizePermissions('properties:read'), Controller.getByProperty);
 
 /**
  * @swagger
- * /api/wifi/{id}:
+ * /api/wifi/delete-wifi:
  *   delete:
  *     summary: Delete WiFi details
  *     tags: [WiFi]
  *     security:
  *       - bearerAuth: []
  */
-router.delete('/:id', authorizePermissions('properties:write'), Controller.deleteWiFi);
+router.delete('/delete-wifi', authorizePermissions('properties:write'), Controller.deleteWiFi);
 
 export default router;

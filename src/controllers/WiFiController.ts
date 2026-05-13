@@ -15,8 +15,8 @@ export default class WiFiController {
   // GET /api/wifi/property/:propertyId
   static async getByProperty(req: Request, res: Response, next: NextFunction) {
     try {
-      const { propertyId } = req.params;
-      const data = await WiFiService.getWiFiByProperty(propertyId);
+      const { propertyId } = req.query;
+      const data = await WiFiService.getWiFiByProperty(propertyId as string);
       res.json({ success: true, data });
     } catch (err) {
       next(err);
@@ -26,7 +26,7 @@ export default class WiFiController {
   // DELETE /api/wifi/:id
   static async deleteWiFi(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const { id } = req.body;
       await WiFiService.deleteWiFi(id);
       res.json({ success: true, message: 'WiFi details deleted' });
     } catch (err) {

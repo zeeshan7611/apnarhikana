@@ -7,7 +7,7 @@ import propertyRoutes from './routes/propertyRoutes';
 import floorRoutes from './routes/floorRoutes';
 import roomRoutes from './routes/roomRoutes';
 import bedRoutes from './routes/bedRoutes';
-import allocationRoutes from './routes/propertInventoryAllocationRoutes';
+import allocationRoutes from './routes/propertyInventoryAllocationRoutes';
 import authRoutes from './routes/authRoutes';
 import rbacRoutes from './routes/rbacRoutes';
 import moduleRoutes from './routes/moduleRoutes';
@@ -20,6 +20,7 @@ import roomCategoryRoutes from './routes/roomCategoryRoutes';
 import rentLedgerRoutes from './routes/rentLedgerRoutes';
 import tenantAppRoutes from './routes/tenantAppRoutes';
 import uploadRoutes from './routes/uploadRoutes';
+import wifiRoutes from './routes/wifiRoutes';
 
 import { jwtAuth } from './middleware/jwtAuth';
 import RbacService from './services/RbacService';
@@ -82,6 +83,8 @@ app.use('/api/rent-ledger', jwtAuth, rentLedgerRoutes);
 app.use('/api/tenant-app', tenantAppRoutes);
 // Upload - POST is protected (upload)
 app.use('/api/upload', jwtAuth, uploadRoutes);
+// WiFi routes
+app.use('/api/wifi', jwtAuth, wifiRoutes);
 
 
 // Connect to DB and start server

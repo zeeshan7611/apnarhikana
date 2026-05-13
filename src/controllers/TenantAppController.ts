@@ -44,8 +44,8 @@ export default class TenantAppController {
   static async getRentLedgerDetail(req: Request, res: Response, next: NextFunction) {
     try {
       const tenantId = (req as any).user.id;
-      const { id } = req.params;
-      const data = await TenantAppService.getRentLedgerById(tenantId, id);
+      const { id } = req.query;
+      const data = await TenantAppService.getRentLedgerById(tenantId, id as string);
       res.json({ success: true, data });
     } catch (err) {
       next(err);
@@ -156,9 +156,9 @@ export default class TenantAppController {
   // GET /check-payment-status/:transactionId
   static async checkPaymentStatus(req: Request, res: Response, next: NextFunction) {
     try {
-      const { transactionId } = req.params;
+      const { transactionId } = req.query;
       const PaymentTransaction = (await import('../models/PaymentTransaction')).default;
-      const transaction = await PaymentTransaction.findById(transactionId);
+      const transaction = await PaymentTransaction.findById(transactionId as string);
       
       if (!transaction) return res.status(404).json({ success: false, message: 'Transaction not found' });
 
@@ -284,8 +284,8 @@ export default class TenantAppController {
   static async getTransactionDetail(req: Request, res: Response, next: NextFunction) {
     try {
       const tenantId = (req as any).user.id;
-      const { id } = req.params;
-      const data = await TenantAppService.getTransactionById(tenantId, id);
+      const { id } = req.query;
+      const data = await TenantAppService.getTransactionById(tenantId, id as string);
       res.json({ success: true, data });
     } catch (err) {
       next(err);
@@ -295,8 +295,8 @@ export default class TenantAppController {
   // GET /property-contacts/:propertyId
   static async getPropertyContacts(req: Request, res: Response, next: NextFunction) {
     try {
-      const { propertyId } = req.params;
-      const data = await TenantAppService.getPropertyContactDetails(propertyId);
+      const { propertyId } = req.query;
+      const data = await TenantAppService.getPropertyContactDetails(propertyId as string);
       res.json({ success: true, data });
     } catch (err) {
       next(err);
@@ -319,7 +319,7 @@ export default class TenantAppController {
   // PATCH /notifications/:id/read
   static async markNotificationRead(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const { id } = req.body;
       const data = await TenantAppService.markNotificationAsRead(id);
       res.json({ success: true, data });
     } catch (err) {
