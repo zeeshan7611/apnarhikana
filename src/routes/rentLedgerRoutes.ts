@@ -107,6 +107,9 @@ router.get('/get-transaction', authorizePermissions('payments:read'), Controller
  *               type:         { type: string, enum: [electricity, water, maintenance, other], default: other }
  *               description:  { type: string }
  *               performedById: { type: string }
+ *     responses:
+ *       200:
+ *         description: Extra charge added successfully
  */
 router.post('/add-extra-charge', authorizePermissions('payments:write'), Controller.addExtraCharge);
 
