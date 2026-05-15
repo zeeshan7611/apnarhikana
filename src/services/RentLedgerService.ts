@@ -333,7 +333,90 @@ export default class RentLedgerService {
 
     return { data, total };
   }
-  // ─── 8a. Get Single Transaction ──────────────────────────────────────────────
+
+  // ─── 8a. Get Property Transactions ─────────────────────────────────────────
+  static async getPropertyTransactions(filters: {
+    propertyId?: string;
+    tenantId?: string;
+    status?: string;
+    paymentType?: string;
+    from?: string;
+    to?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: IPaymentTransaction[]; total: number }> {
+    const query: any = {};
+    if (filters.propertyId) query.propertyId = new mongoose.Types.ObjectId(filters.propertyId);
+    if (filters.tenantId) query.tenantId = new mongoose.Types.ObjectId(filters.tenantId);
+    if (filters.status) query.status = filters.status;
+    if (filters.paymentType) query.paymentType = filters.paymentType;
+
+    if (filters.from || filters.to) {
+      query.paidAt = {};
+      if (filters.from) query.paidAt.$gte = new Date(filters.from);
+      if (filters.to) query.paidAt.$lte = new Date(filters.to);
+    }
+
+    const page = filters.page || 1;
+    const limit = filters.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      PaymentTransaction.find(query)
+        .populate('tenantId', 'fullName phoneNumber email')
+        .populate('rentLedgerId', 'month totalAmount paidAmount rentAmount')
+        .populate('propertyId', 'name')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      PaymentTransaction.countDocuments(query)
+    ]);
+
+    return { data, total };
+  }
+
+  // ─── 8b. Get Pending Payments ──────────────────────────────────────────────
+  static async getPendingPayments(filters: {
+    propertyId?: string;
+    tenantId?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: IRentLedger[]; total: number }> {
+    const query: any = {
+      status: { $in: ['pending', 'partial', 'overdue'] }
+    };
+    if (filters.propertyId) query.propertyId = new mongoose.Types.ObjectId(filters.propertyId);
+    if (filters.tenantId) query.tenantId = new mongoose.Types.ObjectId(filters.tenantId);
+
+    const page = filters.page || 1;
+    const limit = filters.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      RentLedger.find(query)
+        .populate('tenantId', 'fullName phoneNumber')
+        .populate('propertyId', 'name')
+        .populate('tenantAllocationId')
+        .sort({ dueDate: 1, createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      RentLedger.countDocuments(query)
+    ]);
+
+    return { data, total };
+  }
+
+  // ─── 8c. Get Recent Transactions ───────────────────────────────────────────
+  static async getRecentTransactions(limit: number = 5): Promise<IPaymentTransaction[]> {
+    return PaymentTransaction.find({})
+      .populate('tenantId', 'fullName phoneNumber email')
+      .populate('rentLedgerId', 'month totalAmount paidAmount rentAmount')
+      .populate('propertyId', 'name')
+      .sort({ createdAt: -1 })
+      .limit(limit);
+  }
+
+  // ─── 8d. Get Single Transaction ──────────────────────────────────────────────
   static async getTransactionById(id: string): Promise<IPaymentTransaction> {
     const transaction = await PaymentTransaction.findById(id)
       .populate('tenantId', 'fullName phoneNumber email')

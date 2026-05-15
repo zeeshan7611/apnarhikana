@@ -168,6 +168,78 @@ export default class RentLedgerController {
     }
   }
 
+  // GET /get-property-transactions
+  static async getPropertyTransactions(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyId, tenantId, status, paymentType, from, to } = req.query;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const { data, total } = await RentLedgerService.getPropertyTransactions({
+        propertyId: propertyId as string,
+        tenantId: tenantId as string,
+        status: status as string,
+        paymentType: paymentType as string,
+        from: from as string,
+        to: to as string,
+        page,
+        limit
+      });
+
+      res.json({
+        success: true,
+        data,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // GET /get-pending-payments
+  static async getPendingPayments(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyId, tenantId } = req.query;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const { data, total } = await RentLedgerService.getPendingPayments({
+        propertyId: propertyId as string,
+        tenantId: tenantId as string,
+        page,
+        limit
+      });
+
+      res.json({
+        success: true,
+        data,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // GET /get-recent-transactions
+  static async getRecentTransactions(req: Request, res: Response, next: NextFunction) {
+    try {
+      const limit = parseInt(req.query.limit as string) || 5;
+      const data = await RentLedgerService.getRecentTransactions(limit);
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  }
 
   // POST /mark-overdue
   static async markOverdue(req: Request, res: Response, next: NextFunction) {

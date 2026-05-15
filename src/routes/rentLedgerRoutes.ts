@@ -85,6 +85,133 @@ router.get('/get-payment-history', authorizePermissions('payments:read'), Contro
  */
 router.get('/get-transaction', authorizePermissions('payments:read'), Controller.getTransaction);
 
+/**
+ * @swagger
+ * /api/rent-ledger/get-property-transactions:
+ *   get:
+ *     summary: Get transactions for a property
+ *     description: Returns payment transactions for a property, with optional filters.
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: propertyId
+ *         schema: { type: string }
+ *       - in: query
+ *         name: tenantId
+ *         schema: { type: string }
+ *       - in: query
+ *         name: status
+ *         schema: { type: string }
+ *       - in: query
+ *         name: paymentType
+ *         schema: { type: string }
+ *       - in: query
+ *         name: from
+ *         schema: { type: string }
+ *         description: ISO date string for start date filter
+ *       - in: query
+ *         name: to
+ *         schema: { type: string }
+ *         description: ISO date string for end date filter
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Paginated list of payment transactions
+ */
+router.get('/get-property-transactions', authorizePermissions('payments:read'), Controller.getPropertyTransactions);
+
+/**
+ * @swagger
+ * /api/rent-ledger/get-pending-payments:
+ *   get:
+ *     summary: Get pending rent payments
+ *     description: Returns rent ledgers with pending, partial, or overdue status.
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: propertyId
+ *         schema: { type: string }
+ *       - in: query
+ *         name: tenantId
+ *         schema: { type: string }
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Paginated list of pending rent ledgers
+ */
+router.get('/get-pending-payments', authorizePermissions('payments:read'), Controller.getPendingPayments);
+
+/**
+ * @swagger
+ * /api/rent-ledger/get-recent-transactions:
+ *   get:
+ *     summary: Get recent payment transactions
+ *     description: Returns the most recent payment transactions, optionally limiting the count.
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Recent payment transactions
+ */
+router.get('/get-recent-transactions', authorizePermissions('payments:read'), Controller.getRecentTransactions);
+
+/**
+ * @swagger
+ * /api/rent-ledger/get-revenue-stats:
+ *   get:
+ *     summary: Get current month revenue stats
+ *     description: Returns revenue totals and transaction count for the current month.
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: propertyId
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Current month revenue statistics
+ */
+router.get('/get-revenue-stats', authorizePermissions('payments:read'), Controller.getRevenueStats);
+
+/**
+ * @swagger
+ * /api/rent-ledger/get-pending-payment-stats:
+ *   get:
+ *     summary: Get pending payment statistics
+ *     description: Returns counts and amounts for pending payment transactions and due rent ledgers.
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: propertyId
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Pending payment statistics
+ */
+router.get('/get-pending-payment-stats', authorizePermissions('payments:read'), Controller.getPendingPaymentStats);
+
 // ─── 3. ADD EXTRA CHARGE ────────────────────────────────────────────────────
 /**
  * @swagger
@@ -117,6 +244,54 @@ router.get('/get-transaction', authorizePermissions('payments:read'), Controller
  *         description: Extra charge added successfully
  */
 router.post('/add-extra-charge', authorizePermissions('payments:write'), Controller.addExtraCharge);
+
+/**
+ * @swagger
+ * /api/rent-ledger/approve-payment:
+ *   post:
+ *     summary: Approve a pending payment transaction
+ *     description: Marks a pending payment transaction as paid and recalculates the associated ledger.
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [transactionId]
+ *             properties:
+ *               transactionId: { type: string }
+ *     responses:
+ *       200:
+ *         description: Payment approved successfully
+ */
+router.post('/approve-payment', authorizePermissions('payments:write'), Controller.approvePayment);
+
+/**
+ * @swagger
+ * /api/rent-ledger/reject-payment:
+ *   post:
+ *     summary: Reject a pending payment transaction
+ *     description: Deletes a pending transaction and recalculates the related ledger.
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [transactionId]
+ *             properties:
+ *               transactionId: { type: string }
+ *     responses:
+ *       200:
+ *         description: Payment rejected successfully
+ */
+router.post('/reject-payment', authorizePermissions('payments:write'), Controller.rejectPayment);
 
 // ─── 4. MARK PAYMENT COMPLETED (GATEWAY) ───────────────────────────────────
 /**
