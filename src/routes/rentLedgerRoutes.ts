@@ -318,4 +318,73 @@ router.post('/reject-payment', authorizePermissions('payments:write'), Controlle
  */
 router.post('/complete-payment', authorizePermissions('payments:write'), Controller.completePayment);
 
+/**
+ * @swagger
+ * /api/rent-ledger/get-cash-payment-requests:
+ *   get:
+ *     summary: Get cash payment requests
+ *     description: Returns cash payment transactions with optional filters for property, tenant, status, and date range.
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: propertyId
+ *         schema: { type: string }
+ *       - in: query
+ *         name: tenantId
+ *         schema: { type: string }
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: ["pending","partial","paid","overdue","due"]
+ *       - in: query
+ *         name: from
+ *         schema: { type: string }
+ *         description: ISO date string for start date filter
+ *       - in: query
+ *         name: to
+ *         schema: { type: string }
+ *         description: ISO date string for end date filter
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Paginated list of cash payment transactions
+ */
+router.get('/get-cash-payment-requests', authorizePermissions('payments:read'), Controller.getCashPaymentRequests);
+
+/**
+ * @swagger
+ * /api/rent-ledger/approve-cash-payment-request:
+ *   post:
+ *     summary: Approve a cash payment request
+ *     description: Marks a pending cash payment transaction as paid and recalculates the associated ledger.
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [transactionId]
+ *             properties:
+ *               transactionId: { type: string, description: "ID of the cash payment transaction to approve" }
+ *     responses:
+ *       200:
+ *         description: Cash payment approved successfully
+ *       400:
+ *         description: Invalid request or transaction is not a cash payment
+ *       404:
+ *         description: Transaction not found
+ */
+router.post('/approve-cash-payment-request', authorizePermissions('payments:write'), Controller.approveCashPaymentRequest);
+
 export default router;

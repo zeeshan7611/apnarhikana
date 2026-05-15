@@ -25,4 +25,58 @@ export default class TenantService {
   static async deleteTenant(id: string): Promise<ITenant | null> {
     return Tenant.findByIdAndDelete(id);
   }
+
+  // ─── KYC Methods ────────────────────────────────────────────────────────
+  static async getKYCDetails(propertyId: string): Promise<any[]> {
+    const TenantAllocation = (await import('../models/TenantAllocation')).default;
+    
+    // Find all active tenant allocations for this property
+    const allocations = await TenantAllocation.find({ 
+      propertyId, 
+      status: 'active' 
+    }).select('tenantId');
+
+    if (allocations.length === 0) {
+      return [];
+    }
+
+    const tenantIds = allocations.map(alloc => alloc.tenantId);
+
+    // Find all tenants and return their KYC details
+    const tenants = await Tenant.find({ _id: { $in: tenantIds } }).select(
+      'fullName phoneNumber email kyc _id'
+    );
+
+    return tenants.map(tenant => ({
+      tenantId: tenant._id,
+      fullName: tenant.fullName,
+      phoneNumber: tenant.phoneNumber,
+      email: tenant.email,
+      kyc: tenant.kyc || { status: 'pending' }
+    }));
+  }
+
+  static async approveOrRejectKYC(
+    tenantId: string,
+    action: 'approve' | 'reject',
+    rejectionReason?: string
+  ): Promise<ITenant | null> {
+    if (action !== 'approve' && action !== 'reject') {
+      throw new Error('Action must be either "approve" or "reject"');
+    }
+
+    const updateData: any = {
+      'kyc.status': action === 'approve' ? 'approved' : 'rejected'
+    };
+
+    if (action === 'reject' && rejectionReason) {
+      updateData['kyc.rejectionReason'] = rejectionReason;
+    }
+
+    return Tenant.findByIdAndUpdate(
+      tenantId,
+      updateData,
+      { new: true }
+    ).populate('createdById', 'name email');
+  }
 }

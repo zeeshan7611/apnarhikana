@@ -635,4 +635,43 @@ export default class RentLedgerService {
 
     return { totalAllocations: activeAllocations.length, ledgersCreated };
   }
+
+  // ─── 14. Get Cash Payment Requests ──────────────────────────────────────────
+  static async getCashPaymentRequests(filters: {
+    propertyId?: string;
+    tenantId?: string;
+    status?: string;
+    from?: string;
+    to?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: IPaymentTransaction[]; total: number }> {
+    const query: any = { paymentMethod: 'cash' };
+    if (filters.propertyId) query.propertyId = new mongoose.Types.ObjectId(filters.propertyId);
+    if (filters.tenantId) query.tenantId = new mongoose.Types.ObjectId(filters.tenantId);
+    if (filters.status) query.status = filters.status;
+
+    if (filters.from || filters.to) {
+      query.paidAt = {};
+      if (filters.from) query.paidAt.$gte = new Date(filters.from);
+      if (filters.to) query.paidAt.$lte = new Date(filters.to);
+    }
+
+    const page = filters.page || 1;
+    const limit = filters.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      PaymentTransaction.find(query)
+        .populate('tenantId', 'fullName phoneNumber email')
+        .populate('rentLedgerId', 'month totalAmount paidAmount rentAmount')
+        .populate('propertyId', 'name')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      PaymentTransaction.countDocuments(query)
+    ]);
+
+    return { data, total };
+  }
 }

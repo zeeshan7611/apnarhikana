@@ -148,4 +148,57 @@ router.put('/update-tenant', authorizePermissions('tenants:write'), TenantContro
  */
 router.delete('/delete-tenant', authorizePermissions('tenants:delete'), TenantController.delete);
 
+/**
+ * @swagger
+ * /api/tenants/kyc-details:
+ *   get:
+ *     summary: Get all KYC details for a property
+ *     description: Retrieves KYC document information and approval status for all tenants in a property.
+ *     tags: [Tenants]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: propertyId
+ *         required: true
+ *         schema: { type: string }
+ *         description: ID of the property
+ *     responses:
+ *       200:
+ *         description: Array of KYC details for all active tenants in the property
+ *       400:
+ *         description: propertyId is required
+ */
+router.get('/kyc-details', authorizePermissions('tenants:read'), TenantController.getKYCDetails);
+
+/**
+ * @swagger
+ * /api/tenants/approve-or-reject-kyc:
+ *   post:
+ *     summary: Approve or reject tenant KYC
+ *     description: Updates the KYC status to approved or rejected. For rejection, optionally provide a rejection reason.
+ *     tags: [Tenants]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [tenantId, action]
+ *             properties:
+ *               tenantId: { type: string, description: "ID of the tenant" }
+ *               action: { type: string, enum: ["approve", "reject"], description: "Action to perform" }
+ *               rejectionReason: { type: string, description: "Reason for rejection (only for reject action)" }
+ *     responses:
+ *       200:
+ *         description: KYC status updated successfully
+ *       400:
+ *         description: Invalid action or missing required fields
+ *       404:
+ *         description: Tenant not found
+ */
+router.post('/approve-or-reject-kyc', authorizePermissions('tenants:write'), TenantController.approveOrRejectKYC);
+
 export default router;

@@ -72,4 +72,48 @@ export default class TenantController {
       next(error);
     }
   }
+
+  // GET /kyc-details
+  static async getKYCDetails(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyId } = req.query;
+      if (!propertyId) {
+        return res.status(400).json({ success: false, message: 'propertyId is required' });
+      }
+      const kycDetails = await TenantService.getKYCDetails(propertyId as string);
+      res.json({ 
+        success: true, 
+        data: kycDetails,
+        total: kycDetails.length
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // POST /approve-or-reject-kyc
+  static async approveOrRejectKYC(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { tenantId, action, rejectionReason } = req.body;
+      if (!tenantId) {
+        return res.status(400).json({ success: false, message: 'tenantId is required' });
+      }
+      if (!action || !['approve', 'reject'].includes(action)) {
+        return res.status(400).json({ success: false, message: 'action must be either "approve" or "reject"' });
+      }
+
+      const tenant = await TenantService.approveOrRejectKYC(tenantId, action, rejectionReason);
+      if (!tenant) {
+        return res.status(404).json({ success: false, message: 'Tenant not found' });
+      }
+
+      res.json({
+        success: true,
+        message: `KYC ${action === 'approve' ? 'approved' : 'rejected'} successfully`,
+        data: tenant.kyc
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
 }

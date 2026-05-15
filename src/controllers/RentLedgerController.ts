@@ -409,4 +409,61 @@ export default class RentLedgerController {
       next(err);
     }
   }
+
+  // GET /get-cash-payment-requests
+  static async getCashPaymentRequests(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyId, tenantId, status, from, to } = req.query;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const { data, total } = await RentLedgerService.getCashPaymentRequests({
+        propertyId: propertyId as string,
+        tenantId: tenantId as string,
+        status: status as string,
+        from: from as string,
+        to: to as string,
+        page,
+        limit
+      });
+
+      res.json({
+        success: true,
+        data,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // POST /approve-cash-payment-request
+  static async approveCashPaymentRequest(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { transactionId } = req.body;
+      if (!transactionId) {
+        return res.status(400).json({ success: false, message: 'transactionId is required' });
+      }
+
+      // Verify it's a cash payment
+      const PaymentTransaction = (await import('../models/PaymentTransaction')).default;
+      const transaction = await PaymentTransaction.findById(transactionId);
+      if (!transaction) {
+        return res.status(404).json({ success: false, message: 'Transaction not found' });
+      }
+      if (transaction.paymentMethod !== 'cash') {
+        return res.status(400).json({ success: false, message: 'Transaction is not a cash payment' });
+      }
+
+      const result = await RentLedgerService.approvePayment(transactionId);
+      res.json({ success: true, data: result });
+    } catch (err) {
+      next(err);
+    }
+  }
 }
