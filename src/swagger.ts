@@ -19,6 +19,7 @@ const swaggerDefinition = {
     { name: 'RentLedger', description: 'Monthly rent billing, payments, and extra charges' },
     { name: 'TenantApp', description: 'APIs for Tenant Mobile Application' },
     { name: 'Auth', description: 'User authentication and role management' },
+    { name: 'Payments', description: 'Rent collection and payment tracking' },
   ],
   components: {
     securitySchemes: {
@@ -292,6 +293,23 @@ const swaggerDefinition = {
           updatedAt:            { type: 'string', format: 'date-time' },
         },
       },
+      Payment: {
+        type: 'object',
+        properties: {
+          id:                 { type: 'string' },
+          tenantAllocationId: { type: 'string' },
+          tenantId:           { type: 'string' },
+          propertyId:         { type: 'string' },
+          amount:             { type: 'number' },
+          month:              { type: 'string', description: 'Format: YYYY-MM', example: '2025-04' },
+          paymentMethod:      { type: 'string', enum: ['cash', 'upi', 'bank_transfer', 'cheque'] },
+          status:             { type: 'string', enum: ['pending', 'paid', 'failed', 'partial'] },
+          paidAt:             { type: 'string', format: 'date-time' },
+          notes:              { type: 'string' },
+          createdAt:          { type: 'string', format: 'date-time' },
+          updatedAt:          { type: 'string', format: 'date-time' },
+        },
+      },
       Notification: {
         type: 'object',
         properties: {
@@ -305,6 +323,119 @@ const swaggerDefinition = {
           data:       { type: 'object' },
           createdAt:  { type: 'string', format: 'date-time' },
           updatedAt:  { type: 'string', format: 'date-time' },
+        },
+      },
+    },
+  },
+  paths: {
+    '/api/payments/collect-rent': {
+      post: {
+        summary: 'Record a rent payment for a tenant',
+        tags: ['Payments'],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['tenantAllocationId', 'amount', 'month', 'paymentMethod'],
+                properties: {
+                  tenantAllocationId: { type: 'string' },
+                  tenantId: { type: 'string' },
+                  propertyId: { type: 'string' },
+                  amount: { type: 'number' },
+                  month: { type: 'string', description: 'Format: YYYY-MM' },
+                  paymentMethod: { type: 'string', enum: ['cash', 'upi', 'bank_transfer', 'cheque'] },
+                  notes: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '201': {
+            description: 'Payment recorded',
+            content: {
+              'application/json': {
+                schema: { '$ref': '#/components/schemas/Payment' },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/payments/get-payments': {
+      get: {
+        summary: 'Get all payments with optional filters',
+        tags: ['Payments'],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { in: 'query', name: 'tenantId', schema: { type: 'string' } },
+          { in: 'query', name: 'propertyId', schema: { type: 'string' } },
+          { in: 'query', name: 'status', schema: { type: 'string' } },
+          { in: 'query', name: 'month', schema: { type: 'string' }, description: 'Format: YYYY-MM' },
+        ],
+        responses: {
+          '200': {
+            description: 'List of payments',
+            content: {
+              'application/json': {
+                schema: { type: 'array', items: { '$ref': '#/components/schemas/Payment' } },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/payments/get-payment': {
+      get: {
+        summary: 'Get payment by ID',
+        tags: ['Payments'],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { in: 'query', name: 'id', required: true, schema: { type: 'string' } },
+        ],
+        responses: {
+          '200': {
+            description: 'Payment details',
+            content: {
+              'application/json': { schema: { '$ref': '#/components/schemas/Payment' } },
+            },
+          },
+          '404': { description: 'Payment not found' },
+        },
+      },
+    },
+    '/api/payments/update-payment': {
+      put: {
+        summary: 'Update payment status',
+        tags: ['Payments'],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['id'],
+                properties: {
+                  id: { type: 'string' },
+                  status: { type: 'string', enum: ['pending', 'paid', 'failed', 'partial'] },
+                  paymentMethod: { type: 'string', enum: ['cash', 'upi', 'bank_transfer', 'cheque'] },
+                  notes: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Payment updated',
+            content: {
+              'application/json': { schema: { '$ref': '#/components/schemas/Payment' } },
+            },
+          },
         },
       },
     },

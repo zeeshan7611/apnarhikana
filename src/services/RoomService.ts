@@ -53,7 +53,7 @@ export default class RoomService {
       throw new Error("Property not found");
     }
 
-    const rooms = await Room.find();
+    const rooms = await Room.find({ isActive: true }).sort({ keyNumber: 1 });
     return rooms.slice(0, property.numberOfRooms);
   }
 }

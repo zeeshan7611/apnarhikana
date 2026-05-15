@@ -212,7 +212,7 @@ export default class TenantAppService {
     status?: string
   ): Promise<{ transactions: any[]; total: number }> {
     const skip = (page - 1) * limit;
-    const query: any = { tenantId: new mongoose.Types.ObjectId(tenantId) };
+    const query: any = { tenantId: new mongoose.Types.ObjectId(tenantId), status: { $in: ['partial', 'paid', 'overdue', 'due'] } };
     if (status) query.status = status;
 
     console.log(`[DEBUG] Fetching transactions for tenant ${tenantId}, status: ${status || 'all'}`);
@@ -346,13 +346,13 @@ export default class TenantAppService {
     );
   }
   // ✅ 16. Update KYC Details
-  static async updateKYC(tenantId: string, kycData: { 
-    adharCardFront?: string; 
-    adharCardBack?: string; 
-    panCard?: string; 
+  static async updateKYC(tenantId: string, kycData: {
+    adharCardFront?: string;
+    adharCardBack?: string;
+    panCard?: string;
     drivingLicenceFront?: string;
     drivingLicenceBack?: string;
-    otherDocument?: string 
+    otherDocument?: string
   }): Promise<any> {
     const Tenant = (await import('../models/Tenant')).default;
     return Tenant.findByIdAndUpdate(
@@ -379,7 +379,7 @@ export default class TenantAppService {
     if (!allocation) return { message: 'No active allocation found' };
 
     const WiFi = (await import('../models/WiFi')).default;
-    return WiFi.findOne({ floorId: allocation.floorId, isActive: true });
+    return WiFi.findOne({ propertyId: allocation.propertyId, floorId: allocation.floorId, isActive: true });
   }
 
   // ✅ 18. Get Transaction History
