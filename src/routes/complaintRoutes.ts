@@ -35,6 +35,7 @@ const router = Router();
  *                 enum: ["low","medium","high","urgent"]
  *               title: { type: string }
  *               description: { type: string }
+ *               imageUrl: { type: string }
  *               sourceApp:
  *                 type: string
  *                 enum: ["tenant","propertyManager"]

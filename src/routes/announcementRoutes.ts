@@ -29,6 +29,7 @@ const router = Router();
  *             properties:
  *               title: { type: string }
  *               message: { type: string }
+ *               imageUrl: { type: string }
  *               tenantId: { type: string, description: Target a specific tenant }
  *               propertyId: { type: string, description: Target an entire property }
  *               floorId: { type: string, description: Target an entire floor }

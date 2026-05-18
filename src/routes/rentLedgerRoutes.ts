@@ -387,4 +387,94 @@ router.get('/get-cash-payment-requests', authorizePermissions('payments:read'), 
  */
 router.post('/approve-cash-payment-request', authorizePermissions('payments:write'), Controller.approveCashPaymentRequest);
 
+/**
+ * @swagger
+ * /api/rent-ledger/trigger-rent-reminder:
+ *   post:
+ *     summary: Trigger rent reminders for pending/overdue ledgers
+ *     description: Send rent reminder notifications to all tenants with pending, partial, or overdue rent. Optionally filter by propertyId and/or month.
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               propertyId: { type: string, description: 'Optional property ID to filter reminders' }
+ *               month: { type: string, description: 'Optional month to filter reminders (e.g., "2024-05")' }
+ *     responses:
+ *       200:
+ *         description: Rent reminders triggered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 message: { type: string }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     total: { type: number, description: 'Total pending ledgers found' }
+ *                     sent: { type: number, description: 'Number of reminders sent' }
+ *                     failed: { type: number, description: 'Number of failed reminders' }
+ *       404:
+ *         description: No pending rent ledgers found
+ */
+router.post('/trigger-rent-reminder', authorizePermissions('payments:read'), Controller.triggerRentReminder);
+
+/**
+ * @swagger
+ * /api/rent-ledger/trigger-single-tenant-reminder:
+ *   post:
+ *     summary: Trigger rent reminder for a single tenant
+ *     description: Send rent reminder notification to a specific tenant for all pending, partial, or overdue rent. Optionally filter by month.
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [tenantId]
+ *             properties:
+ *               tenantId: { type: string, description: 'Tenant ID (required)' }
+ *               month: { type: string, description: 'Optional month to filter reminders (e.g., "2024-05")' }
+ *     responses:
+ *       200:
+ *         description: Rent reminder sent successfully to tenant
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 message: { type: string }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     tenantId: { type: string }
+ *                     total: { type: number, description: 'Total pending ledgers for tenant' }
+ *                     sent: { type: number, description: 'Number of reminders sent' }
+ *                     failed: { type: number, description: 'Number of failed reminders' }
+ *                     ledgers:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           ledgerId: { type: string }
+ *                           month: { type: string }
+ *                           pendingAmount: { type: number }
+ *       400:
+ *         description: tenantId is required
+ *       404:
+ *         description: No pending rent ledgers found for this tenant
+ */
+router.post('/trigger-single-tenant-reminder', authorizePermissions('payments:read'), Controller.triggerSingleTenantReminder);
+
 export default router;

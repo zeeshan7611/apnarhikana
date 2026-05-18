@@ -3,6 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IAnnouncement extends Document {
   title: string;
   message: string;
+  imageUrl?: string;
   tenantId?: mongoose.Types.ObjectId;   // Target specific tenant
   propertyId?: mongoose.Types.ObjectId; // Target a property
   floorId?: mongoose.Types.ObjectId;    // Target a floor
@@ -16,6 +17,7 @@ export interface IAnnouncement extends Document {
 const AnnouncementSchema: Schema = new Schema({
   title: { type: String, required: true },
   message: { type: String, required: true },
+  imageUrl: { type: String },
   tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant' },
   propertyId: { type: Schema.Types.ObjectId, ref: 'Property' },
   floorId: { type: Schema.Types.ObjectId, ref: 'Floor' },

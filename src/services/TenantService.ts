@@ -1,21 +1,29 @@
-import Tenant, { ITenant } from '../models/Tenant';
+import Tenant, { ITenant } from "../models/Tenant";
+import TenantAllocation from "../models/TenantAllocation";
 
 export default class TenantService {
   static async createTenant(data: any): Promise<ITenant> {
     return Tenant.create(data);
   }
 
-  static async getAllTenants(page: number = 1, limit: number = 10): Promise<{ data: ITenant[], total: number }> {
+  static async getAllTenants(
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<{ data: ITenant[]; total: number }> {
     const skip = (page - 1) * limit;
     const [data, total] = await Promise.all([
-      Tenant.find().populate('createdById', 'name email').sort({ createdAt: -1 }).skip(skip).limit(limit),
-      Tenant.countDocuments()
+      Tenant.find()
+        .populate("createdById", "name email")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Tenant.countDocuments(),
     ]);
     return { data, total };
   }
 
   static async getTenantById(id: string): Promise<ITenant | null> {
-    return Tenant.findById(id).populate('createdById', 'name email');
+    return Tenant.findById(id).populate("createdById", "name email");
   }
 
   static async updateTenant(id: string, data: any): Promise<ITenant | null> {
@@ -27,56 +35,39 @@ export default class TenantService {
   }
 
   // ─── KYC Methods ────────────────────────────────────────────────────────
-  static async getKYCDetails(propertyId: string): Promise<any[]> {
-    const TenantAllocation = (await import('../models/TenantAllocation')).default;
-    
-    // Find all active tenant allocations for this property
-    const allocations = await TenantAllocation.find({ 
-      propertyId, 
-      status: 'active' 
-    }).select('tenantId');
-
-    if (allocations.length === 0) {
-      return [];
+  static async getKYCDetails(limit: number, skip: number, propertyId?: string[]): Promise<any[]> {
+    var query: any = { "kyc.status": "pending" };
+    if (propertyId && propertyId.length > 0) {
+      query.propertyId = { $in: propertyId };
     }
 
-    const tenantIds = allocations.map(alloc => alloc.tenantId);
-
     // Find all tenants and return their KYC details
-    const tenants = await Tenant.find({ _id: { $in: tenantIds } }).select(
-      'fullName phoneNumber email kyc _id'
-    );
+    const tenants = await Tenant.find(query).select(
+      "fullName phoneNumber email kyc _id",
+    ).skip(skip).limit(limit).lean();
 
-    return tenants.map(tenant => ({
-      tenantId: tenant._id,
-      fullName: tenant.fullName,
-      phoneNumber: tenant.phoneNumber,
-      email: tenant.email,
-      kyc: { status: 'pending' }
-    }));
+    return tenants;
   }
 
   static async approveOrRejectKYC(
     tenantId: string,
-    action: 'approve' | 'reject',
-    rejectionReason?: string
+    action: "approve" | "reject",
+    rejectionReason?: string,
   ): Promise<ITenant | null> {
-    if (action !== 'approve' && action !== 'reject') {
+    if (action !== "approve" && action !== "reject") {
       throw new Error('Action must be either "approve" or "reject"');
     }
 
     const updateData: any = {
-      'kyc.status': action === 'approve' ? 'approved' : 'rejected'
+      "kyc.status": action === "approve" ? "approved" : "rejected",
     };
 
-    if (action === 'reject' && rejectionReason) {
-      updateData['kyc.rejectionReason'] = rejectionReason;
+    if (action === "reject" && rejectionReason) {
+      updateData["kyc.rejectionReason"] = rejectionReason;
     }
 
-    return Tenant.findByIdAndUpdate(
-      tenantId,
-      updateData,
-      { new: true }
-    ).populate('createdById', 'name email');
+    return Tenant.findByIdAndUpdate(tenantId, updateData, {
+      new: true,
+    }).populate("createdById", "name email");
   }
 }

@@ -398,6 +398,116 @@ export default class RentLedgerController {
     }
   }
 
+  // POST /trigger-rent-reminder
+  static async triggerRentReminder(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyId, month } = req.body;
+      
+      let query: any = { status: { $in: ['pending', 'partial', 'overdue'] } };
+      
+      if (propertyId) {
+        query.propertyId = propertyId;
+      }
+      
+      if (month) {
+        query.month = month;
+      }
+
+      const ledgers = await RentLedger.find(query);
+      
+      if (ledgers.length === 0) {
+        return res.status(404).json({ success: false, message: 'No pending rent ledgers found' });
+      }
+
+      let sentCount = 0;
+      for (const ledger of ledgers) {
+        try {
+          await NotificationService.sendRentReminder(
+            ledger.tenantId.toString(),
+            ledger.month,
+            ledger.totalAmount - ledger.paidAmount
+          );
+          sentCount++;
+        } catch (err) {
+          console.error(`Failed to send reminder for ledger ${ledger._id}:`, err);
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Rent reminders triggered successfully`,
+        data: {
+          total: ledgers.length,
+          sent: sentCount,
+          failed: ledgers.length - sentCount
+        }
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // POST /trigger-single-tenant-reminder
+  static async triggerSingleTenantReminder(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { tenantId, month } = req.body;
+      
+      if (!tenantId) {
+        return res.status(400).json({ success: false, message: 'tenantId is required' });
+      }
+
+      let query: any = {
+        tenantId,
+        status: { $in: ['pending', 'partial', 'overdue'] }
+      };
+      
+      if (month) {
+        query.month = month;
+      }
+
+      const ledgers = await RentLedger.find(query);
+      
+      if (ledgers.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'No pending rent ledgers found for this tenant'
+        });
+      }
+
+      let sentCount = 0;
+      for (const ledger of ledgers) {
+        try {
+          await NotificationService.sendRentReminder(
+            ledger.tenantId.toString(),
+            ledger.month,
+            ledger.totalAmount - ledger.paidAmount
+          );
+          sentCount++;
+        } catch (err) {
+          console.error(`Failed to send reminder for ledger ${ledger._id}:`, err);
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Rent reminder(s) sent to tenant successfully`,
+        data: {
+          tenantId,
+          total: ledgers.length,
+          sent: sentCount,
+          failed: ledgers.length - sentCount,
+          ledgers: ledgers.map(l => ({
+            ledgerId: l._id,
+            month: l.month,
+            pendingAmount: l.totalAmount - l.paidAmount
+          }))
+        }
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   // GET /get-transaction
   static async getTransaction(req: Request, res: Response, next: NextFunction) {
     try {

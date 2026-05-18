@@ -73,14 +73,16 @@ export default class TenantController {
     }
   }
 
-  // GET /kyc-details
+  // POST /kyc-details
   static async getKYCDetails(req: Request, res: Response, next: NextFunction) {
     try {
-      const { propertyId } = req.query;
-      if (!propertyId) {
-        return res.status(400).json({ success: false, message: 'propertyId is required' });
-      }
-      const kycDetails = await TenantService.getKYCDetails(propertyId as string);
+      const { propertyId } = req.body;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const skip = parseInt(req.query.skip as string) || 0;
+
+      let propertyIds: string[] | undefined;
+
+      const kycDetails = await TenantService.getKYCDetails(limit, skip, propertyIds);
       res.json({ 
         success: true, 
         data: kycDetails,

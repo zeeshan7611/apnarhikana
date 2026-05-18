@@ -6,6 +6,7 @@ export interface IComplaint extends Document {
   priority: 'low' | 'medium' | 'high' | 'urgent';
   title: string;
   description: string;
+  imageUrl?: string;
   sourceApp: 'tenant' | 'propertyManager';
   status: 'open' | 'in-progress' | 'resolved' | 'closed';
   propertyId: mongoose.Types.ObjectId;
@@ -22,6 +23,7 @@ const ComplaintSchema: Schema = new Schema({
   priority: { type: String, enum: ['low', 'medium', 'high', 'urgent'], default: 'medium' },
   title: { type: String, required: true },
   description: { type: String, required: true },
+  imageUrl: { type: String },
   sourceApp: { type: String, enum: ['tenant', 'propertyManager'], required: true },
   status: { type: String, enum: ['open', 'in-progress', 'resolved', 'closed'], default: 'open' },
   assignedTo: { type: Schema.Types.ObjectId, ref: 'PropertyUser' },

@@ -33,6 +33,7 @@ const router = Router();
  *               category: { type: string }
  *               date: { type: string, format: date-time }
  *               uploadBillImageUrl: { type: string }
+ *               imageUrl: { type: string }
  *               propertyId: { type: string }
  *               userId: { type: string }
  *               paymentMethod: { type: string }
@@ -121,6 +122,7 @@ router.get('/get-expense', authorizePermissions('expenses:read'), ExpenseControl
  *               category: { type: string }
  *               date: { type: string, format: date-time }
  *               uploadBillImageUrl: { type: string }
+ *               imageUrl: { type: string }
  *               paymentMethod: { type: string }
  *               paidBy: { type: string }
  *               paidTo: { type: string }

@@ -151,25 +151,34 @@ router.delete('/delete-tenant', authorizePermissions('tenants:delete'), TenantCo
 /**
  * @swagger
  * /api/tenants/kyc-details:
- *   get:
- *     summary: Get all KYC details for a property
- *     description: Retrieves KYC document information and approval status for all tenants in a property.
+ *   post:
+ *     summary: Get KYC details for one or multiple properties
+ *     description: Retrieves KYC document information and approval status for tenants. If propertyId is omitted, returns KYC details across all properties.
  *     tags: [Tenants]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: propertyId
- *         required: true
- *         schema: { type: string }
- *         description: ID of the property
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               propertyId:
+ *                 oneOf:
+ *                   - type: string
+ *                   - type: array
+ *                     items:
+ *                       type: string
+ *                 description: Optional property ID or array of property IDs to filter KYC details
+ *             example:
+ *               propertyId: ['propertyId1', 'propertyId2']
  *     responses:
  *       200:
- *         description: Array of KYC details for all active tenants in the property
+ *         description: Array of KYC details
  *       400:
- *         description: propertyId is required
+ *         description: Invalid request payload
  */
-router.get('/kyc-details', authorizePermissions('tenants:read'), TenantController.getKYCDetails);
+router.post('/kyc-details', authorizePermissions('tenants:read'), TenantController.getKYCDetails);
 
 /**
  * @swagger
