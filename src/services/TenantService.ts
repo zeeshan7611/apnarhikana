@@ -52,7 +52,7 @@ export default class TenantService {
       fullName: tenant.fullName,
       phoneNumber: tenant.phoneNumber,
       email: tenant.email,
-      kyc: tenant.kyc || { status: 'pending' }
+      kyc: { status: 'pending' }
     }));
   }
 

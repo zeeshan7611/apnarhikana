@@ -21,6 +21,7 @@ import rentLedgerRoutes from './routes/rentLedgerRoutes';
 import tenantAppRoutes from './routes/tenantAppRoutes';
 import uploadRoutes from './routes/uploadRoutes';
 import wifiRoutes from './routes/wifiRoutes';
+import agreementRoutes from './routes/agreementRoutes';
 
 import { jwtAuth } from './middleware/jwtAuth';
 import RbacService from './services/RbacService';
@@ -38,6 +39,9 @@ app.use(express.json());
 
 // Auth routes (public)
 app.use('/api/auth', authRoutes);
+
+// Agreement routes (public)
+app.use('/api/agreement', agreementRoutes);
 
 // Swagger UI
 setupSwagger(app);
