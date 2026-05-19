@@ -7,9 +7,49 @@ export enum NotificationType {
   COMPLAINT = 'complaint',
   PAYMENT = 'payment',
   ALLOCATION = 'allocation',
+  KYC = 'kyc',
 }
 
 export default class NotificationService {
+  /**
+   * Send notification to all managers of a property
+   */
+  static async notifyManagers(propertyId: string, title: string, message: string, type: NotificationType, data: any = {}) {
+    try {
+      const PropertyUser = (await import('../models/PropertyUser')).default;
+      const managers = await PropertyUser.find({
+        propertyId: propertyId,
+        isActive: true
+      }).select('_id notficationToken');
+
+      if (!managers || managers.length === 0) return;
+
+      const managerIds = managers.map(m => m._id.toString());
+
+      await Notification.create({
+        propertyId,
+        title,
+        message,
+        type,
+        data,
+      });
+
+      const playerIds = managers.map(m => m.notficationToken).filter(id => id) as string[];
+
+      if (playerIds.length > 0) {
+        return OneSignalService.sendToPlayerIds(playerIds, title, message, {
+          data: { ...data, type },
+        });
+      }
+
+      return OneSignalService.sendToUsers(managerIds, title, message, {
+        data: { ...data, type },
+      });
+    } catch (err) {
+      console.error('Failed to notify managers:', err);
+    }
+  }
+
   /**
    * Send notification to a single tenant and save to DB
    */

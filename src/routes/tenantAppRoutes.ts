@@ -333,7 +333,8 @@ router.get('/transaction-detail', jwtAuth, Controller.getTransactionDetail);
  * @swagger
  * /api/tenant-app/initiate-cash-payment:
  *   post:
- *     summary: Initiate Cash Payment (OTP to Manager)
+ *     summary: Record Cash Payment (Pending Manager Approval)
+ *     description: Directly registers a cash payment handover. This creates a pending cash transaction which the property manager can verify and approve.
  *     tags: [TenantApp]
  *     security:
  *       - bearerAuth: []
@@ -343,48 +344,18 @@ router.get('/transaction-detail', jwtAuth, Controller.getTransactionDetail);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [propertyUserId]
+ *             required: [propertyUserId, amount, paymentType]
  *             properties:
- *               propertyUserId: { type: string }
- *     responses:
- *       200:
- *         description: OTP initiated and sent to manager
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean }
- *                 message: { type: string }
- */
-router.post('/initiate-cash-payment', jwtAuth, Controller.initiateCashPayment);
-
-/**
- * @swagger
- * /api/tenant-app/verify-cash-payment:
- *   post:
- *     summary: Verify Cash handover via OTP
- *     tags: [TenantApp]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [propertyUserId, otp, rentLedgerId, amount]
- *             properties:
- *               propertyUserId: { type: string }
- *               otp: { type: string }
- *               rentLedgerId: { type: string }
- *               amount: { type: number }
+ *               propertyUserId: { type: string, description: "ID of the manager receiving the cash" }
+ *               rentLedgerId: { type: string, description: "Required for rent or extra charge payments" }
+ *               amount: { type: number, description: "Cash amount handed over" }
+ *               notes: { type: string, description: "Optional notes about the handover" }
  *               paymentType:
  *                 type: string
  *                 enum: ["rent","deposit","extra_charge"]
  *     responses:
  *       200:
- *         description: Cash payment verified successfully
+ *         description: Cash payment recorded successfully in pending state
  *         content:
  *           application/json:
  *             schema:
@@ -397,7 +368,8 @@ router.post('/initiate-cash-payment', jwtAuth, Controller.initiateCashPayment);
  *                     transaction: { type: object }
  *                     ledger: { type: object, nullable: true }
  */
-router.post('/verify-cash-payment', jwtAuth, Controller.verifyCashPayment);
+router.post('/initiate-cash-payment', jwtAuth, Controller.initiateCashPayment);
+
 
 // ─── SUPPORT & COMPLAINTS ──────────────────────────────────────────────────
 
@@ -422,6 +394,8 @@ router.post('/verify-cash-payment', jwtAuth, Controller.verifyCashPayment);
  *                 type: string
  *                 enum: ["plumbing","electrical","cleaning","maintenance","other"]
  *               description: { type: string }
+ *               imageUrl: { type: string }
+ *               resolutionURI: { type: string }
  *     responses:
  *       201:
  *         description: Complaint created successfully
@@ -476,6 +450,42 @@ router.post('/complaint', jwtAuth, Controller.createComplaint);
  *                 total: { type: number }
  */
 router.get('/complaints', jwtAuth, Controller.getComplaints);
+
+/**
+ * @swagger
+ * /api/tenant-app/complaint:
+ *   get:
+ *     summary: Fetch complaint detail by ID
+ *     description: Retrieves the detailed record of a specific complaint belonging to the authenticated tenant.
+ *     tags: [TenantApp]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The unique ID of the complaint
+ *     responses:
+ *       200:
+ *         description: Complaint detail retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *       400:
+ *         description: Complaint ID is required
+ *       403:
+ *         description: Access denied (complaint belongs to another tenant)
+ *       404:
+ *         description: Complaint not found
+ */
+router.get('/complaint', jwtAuth, Controller.getComplaintDetail);
 
 // ─── PROPERTY & ALLOCATION ──────────────────────────────────────────────────
 
@@ -713,7 +723,7 @@ router.post('/accept-agreement', jwtAuth, Controller.acceptAgreement);
  * /api/tenant-app/kyc:
  *   post:
  *     summary: Submit KYC documents
- *     description: Allows tenants to upload Aadhar, PAN, and other document URLs for verification.
+ *     description: Allows tenants to upload Aadhaar, PAN, and other document URLs for verification.
  *     tags: [TenantApp]
  *     security:
  *       - bearerAuth: []
@@ -724,12 +734,26 @@ router.post('/accept-agreement', jwtAuth, Controller.acceptAgreement);
  *           schema:
  *             type: object
  *             properties:
- *               adharCardFront: { type: string, description: "URL of Aadhaar Card Front image" }
- *               adharCardBack: { type: string, description: "URL of Aadhaar Card Back image" }
- *               panCard: { type: string, description: "URL of PAN Card image" }
- *               drivingLicenceFront: { type: string, description: "URL of Driving License Front image" }
- *               drivingLicenceBack: { type: string, description: "URL of Driving License Back image" }
- *               otherDocument: { type: string, description: "URL of any other supporting document" }
+ *               adharCard:
+ *                 type: object
+ *                 properties:
+ *                   adharCardFront: { type: string, description: "URL of Aadhaar Card Front image" }
+ *                   adharCardBack: { type: string, description: "URL of Aadhaar Card Back image" }
+ *               panCard:
+ *                 type: object
+ *                 properties:
+ *                   panCardFront: { type: string, description: "URL of PAN Card Front image" }
+ *               drivingLicence:
+ *                 type: object
+ *                 properties:
+ *                   drivingLicenceFront: { type: string, description: "URL of Driving License Front image" }
+ *                   drivingLicenceBack: { type: string, description: "URL of Driving License Back image" }
+ *               otherDocument:
+ *                 type: object
+ *                 properties:
+ *                   documentUrl: { type: string, description: "URL of any other supporting document" }
+ *               docType: { type: string, example: "Aadhaar Card", description: "Type of KYC document submitted" }
+ *               submittedAt: { type: string, example: "10 May 2025", description: "Date/time when submitted" }
  *     responses:
  *       200:
  *         description: KYC documents submitted successfully
@@ -746,6 +770,51 @@ router.post('/accept-agreement', jwtAuth, Controller.acceptAgreement);
  *                     kyc: { type: object }
  */
 router.post('/kyc', jwtAuth, Controller.updateKYC);
+
+/**
+ * @swagger
+ * /api/tenant-app/kyc:
+ *   get:
+ *     summary: View my submitted KYC status and details
+ *     tags: [TenantApp]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: KYC status and document URLs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     adharCard:
+ *                       type: object
+ *                       properties:
+ *                         adharCardFront: { type: string }
+ *                         adharCardBack: { type: string }
+ *                     panCard:
+ *                       type: object
+ *                       properties:
+ *                         panCardFront: { type: string }
+ *                     drivingLicence:
+ *                       type: object
+ *                       properties:
+ *                         drivingLicenceFront: { type: string }
+ *                         drivingLicenceBack: { type: string }
+ *                     otherDocument:
+ *                       type: object
+ *                       properties:
+ *                         documentUrl: { type: string }
+ *                     docType: { type: string }
+ *                     submittedAt: { type: string }
+ *                     status: { type: string, enum: ["pending", "uploaded", "approved", "rejected"] }
+ *                     rejectionReason: { type: string }
+ */
+router.get('/kyc', jwtAuth, Controller.getKYC);
 
 /**
  * @swagger
@@ -772,5 +841,34 @@ router.post('/kyc', jwtAuth, Controller.updateKYC);
  *                     notes: { type: string }
  */
 router.get('/wifi', jwtAuth, Controller.getWiFi);
+
+/**
+ * @swagger
+ * /api/tenant-app/property-users:
+ *   get:
+ *     summary: Get Property Users (Managers/Staff) for Tenant
+ *     description: Fetches a list of property users (name, ID, and designation) associated with the tenant's property.
+ *     tags: [TenantApp]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of property users retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       ID: { type: string }
+ *                       Name: { type: string }
+ *                       Designation: { type: string }
+ */
+router.get('/property-users', jwtAuth, Controller.getPropertyUsers);
 
 export default router;

@@ -15,14 +15,24 @@ export interface ITenant extends Document {
   agreementAcceptedAt?: Date;
   agreementVersion?: string;
   kyc?: {
-    adharCardFront?: string;
-    adharCardBack?: string;
-    panCard?: string;
-    drivingLicenceFront?: string;
-    drivingLicenceBack?: string;
-    otherDocument?: string;
-    status: 'pending' | 'approved' | 'rejected';
+    status: 'pending' | 'uploaded' | 'approved' | 'rejected';
     rejectionReason?: string;
+    docType?: string;
+    submittedAt?: string;
+    adharCard?: {
+      adharCardFront?: string;
+      adharCardBack?: string;
+    };
+    panCard?: {
+      panCardFront?: string;
+    };
+    drivingLicence?: {
+      drivingLicenceFront?: string;
+      drivingLicenceBack?: string;
+    };
+    otherDocument?: {
+      documentUrl?: string;
+    };
   };
   createdById: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -44,14 +54,24 @@ const TenantSchema: Schema = new Schema({
   agreementAcceptedAt: { type: Date },
   agreementVersion: { type: String },
   kyc: {
-    adharCardFront: { type: String },
-    adharCardBack: { type: String },
-    panCard: { type: String },
-    drivingLicenceFront: { type: String },
-    drivingLicenceBack: { type: String },
-    otherDocument: { type: String },
-    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
-    rejectionReason: { type: String }
+    status: { type: String, enum: ['pending', 'uploaded', 'approved', 'rejected'], default: 'pending' },
+    rejectionReason: { type: String },
+    docType: { type: String },
+    submittedAt: { type: String },
+    adharCard: {
+      adharCardFront: { type: String },
+      adharCardBack: { type: String }
+    },
+    panCard: {
+      panCardFront: { type: String }
+    },
+    drivingLicence: {
+      drivingLicenceFront: { type: String },
+      drivingLicenceBack: { type: String }
+    },
+    otherDocument: {
+      documentUrl: { type: String }
+    }
   },
   createdById: { type: Schema.Types.ObjectId, ref: 'PropertyUser', required: true },
 }, {

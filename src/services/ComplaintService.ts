@@ -3,9 +3,19 @@ import TenantAllocation from '../models/TenantAllocation';
 import NotificationService, { NotificationType } from './NotificationService';
 
 export default class ComplaintService {
-  static async createComplaint(data: any): Promise<IComplaint> {
+  static async createComplaint(data: any, creatorId?: string): Promise<IComplaint> {
+    if (data.type === 'self') {
+      data.tenantId = null;
+      data.sourceApp = 'landlord';
+      if (creatorId) {
+        data.assignedTo = creatorId;
+      }
+    } else {
+      data.type = 'tenant';
+    }
+
     // If propertyId not provided, try to find it from tenant's active allocation
-    if (!data.propertyId && data.tenantId) {
+    if (data.type !== 'self' && !data.propertyId && data.tenantId) {
       const activeAllocation = await TenantAllocation.findOne({ 
         tenantId: data.tenantId, 
         status: 'active' 
@@ -21,8 +31,8 @@ export default class ComplaintService {
     
     const complaint = await Complaint.create(data);
 
-    // Notify tenant
-    if (complaint.tenantId) {
+    // Notify tenant (only for tenant type complaints)
+    if (data.type !== 'self' && complaint.tenantId) {
       await NotificationService.notifyTenant(
         complaint.tenantId.toString(),
         'Complaint Created',

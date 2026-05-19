@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import path from 'path';
 
@@ -47,3 +47,34 @@ export const getPresignedUploadUrl = async (
 
   return { uploadUrl, publicUrl, key, expiresIn };
 };
+
+/**
+ * Delete a file from R2 bucket by key
+ */
+export const deleteFile = async (key: string): Promise<void> => {
+  try {
+    const command = new DeleteObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME!.trim(),
+      Key: key,
+    });
+    await r2Client.send(command);
+  } catch (err) {
+    console.error(`Failed to delete file with key: ${key}`, err);
+  }
+};
+
+/**
+ * Extract key from public URL and delete from R2
+ */
+export const deleteFileFromUrl = async (url: string): Promise<void> => {
+  try {
+    if (!url) return;
+    const parsed = new URL(url);
+    // Remove the leading slash if present
+    const key = parsed.pathname.startsWith('/') ? parsed.pathname.substring(1) : parsed.pathname;
+    await deleteFile(key);
+  } catch (err) {
+    console.error(`Failed to delete file from URL: ${url}`, err);
+  }
+};
+

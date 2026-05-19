@@ -265,6 +265,30 @@ export default class TenantAppController {
     }
   }
 
+  // GET /complaint
+  static async getComplaintDetail(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tenantId = (req as any).user.id;
+      const { id } = req.query;
+      if (!id) return res.status(400).json({ message: 'id is required' });
+
+      const ComplaintService = (await import('../services/ComplaintService')).default;
+      const complaint = await ComplaintService.getComplaintById(id as string);
+      if (!complaint) {
+        return res.status(404).json({ message: 'Complaint not found' });
+      }
+
+      // Security check: ensure this complaint belongs to the tenant
+      if (complaint.tenantId && complaint.tenantId._id.toString() !== tenantId) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      res.json({ success: true, data: complaint });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   // GET /transactions
   static async getTransactions(req: Request, res: Response, next: NextFunction) {
     try {
@@ -344,33 +368,25 @@ export default class TenantAppController {
   // POST /initiate-cash-payment
   static async initiateCashPayment(req: Request, res: Response, next: NextFunction) {
     try {
-      const { propertyUserId } = req.body;
-      if (!propertyUserId) return res.status(400).json({ message: 'propertyUserId is required' });
-      const result = await TenantAppService.initiateCashPayment(propertyUserId);
-     return res.status(200).json({ success: true, ...result });
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  // POST /verify-cash-payment
-  static async verifyCashPayment(req: Request, res: Response, next: NextFunction) {
-    try {
       const tenantId = (req as any).user.id;
-      const { propertyUserId, otp, rentLedgerId, amount, notes, paymentType } = req.body;
-      if (!propertyUserId || !otp || !rentLedgerId || !amount) {
-        return res.status(400).json({ message: 'propertyUserId, otp, rentLedgerId, and amount are required' });
+      const { propertyUserId, rentLedgerId, amount, notes, paymentType } = req.body;
+      if (!propertyUserId) return res.status(400).json({ message: 'propertyUserId is required' });
+      if (amount === undefined || amount <= 0) return res.status(400).json({ message: 'Valid amount is required' });
+
+      const isDeposit = paymentType === 'deposit';
+      if (!isDeposit && !rentLedgerId) {
+        return res.status(400).json({ message: 'rentLedgerId is required for rent or extra charge payments' });
       }
-      const result = await TenantAppService.verifyCashPayment({
+
+      const result = await TenantAppService.recordCashPayment({
         tenantId,
         propertyUserId,
-        otp,
         rentLedgerId,
         amount,
         notes,
         paymentType
       });
-      res.json({ success: true, data: result });
+      return res.status(200).json({ success: true, data: result });
     } catch (err) {
       next(err);
     }
@@ -395,24 +411,36 @@ export default class TenantAppController {
     try {
       const tenantId = (req as any).user.id;
       const { 
-        adharCardFront, 
-        adharCardBack, 
+        adharCard, 
         panCard, 
-        drivingLicenceFront, 
-        drivingLicenceBack, 
-        otherDocument 
+        drivingLicence, 
+        otherDocument,
+        docType,
+        submittedAt
       } = req.body;
       
       const data = await TenantAppService.updateKYC(tenantId, { 
-        adharCardFront, 
-        adharCardBack, 
+        adharCard, 
         panCard, 
-        drivingLicenceFront, 
-        drivingLicenceBack, 
-        otherDocument 
+        drivingLicence, 
+        otherDocument,
+        docType,
+        submittedAt
       });
       
       res.json({ success: true, message: 'KYC documents submitted successfully', data });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // GET /kyc
+  static async getKYC(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tenantId = (req as any).user.id;
+      const Tenant = (await import('../models/Tenant')).default;
+      const tenant = await Tenant.findById(tenantId).select('kyc');
+      res.json({ success: true, data: tenant?.kyc || null });
     } catch (err) {
       next(err);
     }
@@ -423,6 +451,17 @@ export default class TenantAppController {
     try {
       const tenantId = (req as any).user.id;
       const data = await TenantAppService.getWiFiForTenant(tenantId);
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // GET /property-users
+  static async getPropertyUsers(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tenantId = (req as any).user.id;
+      const data = await TenantAppService.getPropertyUsersForTenant(tenantId);
       res.json({ success: true, data });
     } catch (err) {
       next(err);

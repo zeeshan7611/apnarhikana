@@ -16,6 +16,7 @@ const router = Router();
  * /api/complaints/create-complaint:
  *   post:
  *     summary: Raise a new complaint
+ *     description: Creates a new complaint. If type is "self", it indicates a self-reported issue by the Property User (landlord), which sets tenantId to null, sourceApp to "landlord", and assigns the complaint to the logged-in user.
  *     tags: [Complaints]
  *     security:
  *       - bearerAuth: []
@@ -25,9 +26,9 @@ const router = Router();
  *         application/json:
  *           schema:
  *             type: object
- *             required: [tenantId, category, title, description, sourceApp]
+ *             required: [category, title, description, sourceApp]
  *             properties:
- *               tenantId: { type: string }
+ *               tenantId: { type: string, description: "Required if type is tenant, otherwise ignored/null" }
  *               propertyId: { type: string }
  *               category: { type: string }
  *               priority:
@@ -36,11 +37,16 @@ const router = Router();
  *               title: { type: string }
  *               description: { type: string }
  *               imageUrl: { type: string }
+ *               resolutionURI: { type: string }
  *               sourceApp:
  *                 type: string
- *                 enum: ["tenant","propertyManager"]
+ *                 enum: ["tenant","propertyManager","landlord"]
  *               assignedTo: { type: string }
  *               resolutionNotes: { type: string }
+ *               type:
+ *                 type: string
+ *                 enum: ["self", "tenant"]
+ *                 default: "tenant"
  *     responses:
  *       201:
  *         description: Complaint created
@@ -155,6 +161,8 @@ router.get('/get-complaint', authorizePermissions('complaints:read'), ComplaintC
  *               category: { type: string }
  *               title: { type: string }
  *               description: { type: string }
+ *               imageUrl: { type: string }
+ *               resolutionURI: { type: string }
  *               assignedTo: { type: string }
  *               resolutionNotes: { type: string }
  *     responses:

@@ -245,54 +245,6 @@ router.get('/get-pending-payment-stats', authorizePermissions('payments:read'), 
  */
 router.post('/add-extra-charge', authorizePermissions('payments:write'), Controller.addExtraCharge);
 
-/**
- * @swagger
- * /api/rent-ledger/approve-payment:
- *   post:
- *     summary: Approve a pending payment transaction
- *     description: Marks a pending payment transaction as paid and recalculates the associated ledger.
- *     tags: [RentLedger]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [transactionId]
- *             properties:
- *               transactionId: { type: string }
- *     responses:
- *       200:
- *         description: Payment approved successfully
- */
-router.post('/approve-payment', authorizePermissions('payments:write'), Controller.approvePayment);
-
-/**
- * @swagger
- * /api/rent-ledger/reject-payment:
- *   post:
- *     summary: Reject a pending payment transaction
- *     description: Deletes a pending transaction and recalculates the related ledger.
- *     tags: [RentLedger]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [transactionId]
- *             properties:
- *               transactionId: { type: string }
- *     responses:
- *       200:
- *         description: Payment rejected successfully
- */
-router.post('/reject-payment', authorizePermissions('payments:write'), Controller.rejectPayment);
-
 // ─── 4. MARK PAYMENT COMPLETED (GATEWAY) ───────────────────────────────────
 /**
  * @swagger
@@ -338,7 +290,7 @@ router.post('/complete-payment', authorizePermissions('payments:write'), Control
  *         name: status
  *         schema:
  *           type: string
- *           enum: ["pending","partial","paid","overdue","due"]
+ *           enum: ["pending","partial","paid","overdue","due","initiated","rejected"]
  *       - in: query
  *         name: from
  *         schema: { type: string }
@@ -363,8 +315,8 @@ router.get('/get-cash-payment-requests', authorizePermissions('payments:read'), 
  * @swagger
  * /api/rent-ledger/approve-cash-payment-request:
  *   post:
- *     summary: Approve a cash payment request
- *     description: Marks a pending cash payment transaction as paid and recalculates the associated ledger.
+ *     summary: Process a cash payment request (Approve / Reject)
+ *     description: Approves or rejects a cash payment transaction. Recalculates the associated ledger if approved, updates status, and triggers push notifications.
  *     tags: [RentLedger]
  *     security:
  *       - bearerAuth: []
@@ -374,14 +326,17 @@ router.get('/get-cash-payment-requests', authorizePermissions('payments:read'), 
  *         application/json:
  *           schema:
  *             type: object
- *             required: [transactionId]
+ *             required: [transactionId, action]
  *             properties:
- *               transactionId: { type: string, description: "ID of the cash payment transaction to approve" }
+ *               transactionId: { type: string, description: "ID of the cash payment transaction" }
+ *               action: { type: string, enum: ["approve", "reject"], description: "Action to take on the cash payment" }
  *     responses:
  *       200:
- *         description: Cash payment approved successfully
+ *         description: Cash payment processed successfully
  *       400:
- *         description: Invalid request or transaction is not a cash payment
+ *         description: Invalid request
+ *       403:
+ *         description: Access denied
  *       404:
  *         description: Transaction not found
  */

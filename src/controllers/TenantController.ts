@@ -76,13 +76,17 @@ export default class TenantController {
   // POST /kyc-details
   static async getKYCDetails(req: Request, res: Response, next: NextFunction) {
     try {
-      const { propertyId } = req.body;
+      const { propertyId, status } = req.body;
       const limit = parseInt(req.query.limit as string) || 10;
       const skip = parseInt(req.query.skip as string) || 0;
+      const statusFilter = status || (req.query.status as string);
 
       let propertyIds: string[] | undefined;
+      if (propertyId) {
+        propertyIds = Array.isArray(propertyId) ? propertyId : [propertyId];
+      }
 
-      const kycDetails = await TenantService.getKYCDetails(limit, skip, propertyIds);
+      const kycDetails = await TenantService.getKYCDetails(limit, skip, propertyIds, statusFilter);
       res.json({ 
         success: true, 
         data: kycDetails,
@@ -113,6 +117,28 @@ export default class TenantController {
         success: true,
         message: `KYC ${action === 'approve' ? 'approved' : 'rejected'} successfully`,
         data: tenant.kyc
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // GET /get-tenant-kyc
+  static async getTenantKYC(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tenantId = (req.query.tenantId as string) || (req.body.tenantId as string);
+      if (!tenantId) {
+        return res.status(400).json({ success: false, message: 'tenantId is required' });
+      }
+
+      const tenant = await TenantService.getTenantKYC(tenantId);
+      if (!tenant) {
+        return res.status(404).json({ success: false, message: 'Tenant not found' });
+      }
+
+      res.json({
+        success: true,
+        data: tenant
       });
     } catch (err) {
       next(err);

@@ -68,33 +68,6 @@ export default class RentLedgerController {
     }
   }
 
-  // POST /approve-payment
-  static async approvePayment(req: Request, res: Response, next: NextFunction) {
-    try {
-      const { transactionId } = req.body;
-      if (!transactionId) {
-        return res.status(400).json({ success: false, message: 'transactionId is required' });
-      }
-      const result = await RentLedgerService.approvePayment(transactionId);
-      res.json({ success: true, data: result });
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  // POST /reject-payment
-  static async rejectPayment(req: Request, res: Response, next: NextFunction) {
-    try {
-      const { transactionId } = req.body;
-      if (!transactionId) {
-        return res.status(400).json({ success: false, message: 'transactionId is required' });
-      }
-      const result = await RentLedgerService.rejectPayment(transactionId);
-      res.json({ success: true, data: result });
-    } catch (err) {
-      next(err);
-    }
-  }
 
   // POST /complete-payment
   static async completePayment(req: Request, res: Response, next: NextFunction) {
@@ -552,12 +525,17 @@ export default class RentLedgerController {
     }
   }
 
+
   // POST /approve-cash-payment-request
   static async approveCashPaymentRequest(req: Request, res: Response, next: NextFunction) {
     try {
-      const { transactionId } = req.body;
+      const { transactionId, action } = req.body;
+      const loggedInUserId = (req as any).user.id;
       if (!transactionId) {
         return res.status(400).json({ success: false, message: 'transactionId is required' });
+      }
+      if (!action || (action !== 'approve' && action !== 'reject')) {
+        return res.status(400).json({ success: false, message: 'action must be either "approve" or "reject"' });
       }
 
       // Verify it's a cash payment
@@ -570,7 +548,15 @@ export default class RentLedgerController {
         return res.status(400).json({ success: false, message: 'Transaction is not a cash payment' });
       }
 
-      const result = await RentLedgerService.approvePayment(transactionId);
+      // Enforce action only by the selected manager who received the cash
+      if (!transaction.createdById || transaction.createdById.toString() !== loggedInUserId) {
+        return res.status(403).json({ 
+          success: false, 
+          message: `Access denied: only the selected manager who received the cash can ${action} this payment` 
+        });
+      }
+
+      const result = await RentLedgerService.processCashPaymentRequest(transactionId, action);
       res.json({ success: true, data: result });
     } catch (err) {
       next(err);

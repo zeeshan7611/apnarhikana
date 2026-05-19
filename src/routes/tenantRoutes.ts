@@ -153,7 +153,7 @@ router.delete('/delete-tenant', authorizePermissions('tenants:delete'), TenantCo
  * /api/tenants/kyc-details:
  *   post:
  *     summary: Get KYC details for one or multiple properties
- *     description: Retrieves KYC document information and approval status for tenants. If propertyId is omitted, returns KYC details across all properties.
+ *     description: Retrieves KYC document information and approval status for tenants. If propertyId is omitted, returns KYC details across all properties. Can filter by KYC status.
  *     tags: [Tenants]
  *     security:
  *       - bearerAuth: []
@@ -170,8 +170,13 @@ router.delete('/delete-tenant', authorizePermissions('tenants:delete'), TenantCo
  *                     items:
  *                       type: string
  *                 description: Optional property ID or array of property IDs to filter KYC details
+ *               status:
+ *                 type: string
+ *                 enum: ["pending", "uploaded", "approved", "rejected"]
+ *                 description: Optional status to filter KYC details
  *             example:
  *               propertyId: ['propertyId1', 'propertyId2']
+ *               status: 'uploaded'
  *     responses:
  *       200:
  *         description: Array of KYC details
@@ -209,5 +214,45 @@ router.post('/kyc-details', authorizePermissions('tenants:read'), TenantControll
  *         description: Tenant not found
  */
 router.post('/approve-or-reject-kyc', authorizePermissions('tenants:write'), TenantController.approveOrRejectKYC);
+
+/**
+ * @swagger
+ * /api/tenants/get-tenant-kyc:
+ *   get:
+ *     summary: Fetch minimal tenant profile and full KYC details by tenantId
+ *     description: Retrieves the tenant's full name, phone number, email, and detailed KYC documents/status by their tenant ID.
+ *     tags: [Tenants]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: tenantId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The unique ID of the tenant
+ *     responses:
+ *       200:
+ *         description: Minimal tenant details and full KYC documents
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id: { type: string }
+ *                     fullName: { type: string }
+ *                     phoneNumber: { type: string }
+ *                     email: { type: string }
+ *                     kyc: { type: object }
+ *       400:
+ *         description: Missing required tenantId parameter
+ *       404:
+ *         description: Tenant not found
+ */
+router.get('/get-tenant-kyc', authorizePermissions('tenants:read'), TenantController.getTenantKYC);
 
 export default router;

@@ -4,7 +4,8 @@ import ComplaintService from '../services/ComplaintService';
 export default class ComplaintController {
   static async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const complaint = await ComplaintService.createComplaint(req.body);
+      const creatorId = (req as any).user?.id;
+      const complaint = await ComplaintService.createComplaint(req.body, creatorId);
       res.status(201).json({ success: true, data: complaint });
     } catch (err) {
       next(err);

@@ -277,57 +277,45 @@ export default class TenantAppService {
     return Tenant.findByIdAndUpdate(tenantId, { oneSignalId }, { new: true });
   }
 
-  // ✅ 13. Initiate Cash Payment OTP
-  static async initiateCashPayment(propertyUserId: string): Promise<{ message: string }> {
-    const PropertyUser = (await import('../models/PropertyUser')).default;
-    const user = await PropertyUser.findById(propertyUserId);
-    if (!user) throw new Error('Property User not found');
-    if (!user.phoneNumber) throw new Error('Property User has no phone number registered');
-
-    const otp = Math.floor(1000 + Math.random() * 9000).toString(); // 4-digit OTP for faster entry
-    user.otp = otp;
-    user.otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 mins expiry
-    await user.save();
-
-    // Mock sending OTP
-    console.log(`CASH PAYMENT OTP for manager ${user.name} (${user.phoneNumber}): ${otp}`);
-
-    return { message: `OTP sent to manager ${user.name}` };
-  }
-
-  // ✅ 14. Verify Cash Payment OTP
-  static async verifyCashPayment(data: {
+  // ✅ 13. Record Cash Payment (Pending approval by Manager)
+  static async recordCashPayment(data: {
     tenantId: string;
     propertyUserId: string;
-    otp: string;
-    rentLedgerId: string;
+    rentLedgerId?: string;
     amount: number;
     notes?: string;
     paymentType?: 'rent' | 'deposit' | 'extra_charge';
   }): Promise<any> {
     const PropertyUser = (await import('../models/PropertyUser')).default;
     const user = await PropertyUser.findById(data.propertyUserId);
-    if (!user) throw new Error('Property User not found');
+    if (!user) throw new Error('Property Manager not found');
 
-    if (!user.otp || user.otp !== data.otp) throw new Error('Invalid OTP');
-    if (!user.otpExpiry || user.otpExpiry < new Date()) throw new Error('OTP expired');
+    // Resolve propertyId
+    let propertyId = '';
+    const isDeposit = data.paymentType === 'deposit';
+    if (isDeposit) {
+      const TenantAllocation = (await import('../models/TenantAllocation')).default;
+      const allocation = await TenantAllocation.findOne({ tenantId: data.tenantId, status: 'active' });
+      if (!allocation) throw new Error('No active allocation found');
+      propertyId = allocation.propertyId.toString();
+    } else {
+      if (!data.rentLedgerId) throw new Error('rentLedgerId is required');
+      const ledger = await RentLedger.findOne({ _id: data.rentLedgerId, tenantId: data.tenantId });
+      if (!ledger) throw new Error('Rent ledger not found or access denied');
+      propertyId = ledger.propertyId.toString();
+    }
 
-    // Clear OTP
-    user.otp = undefined;
-    user.otpExpiry = undefined;
-    await user.save();
-
-    // Mark as paid
+    // Mark as pending transaction
     const RentLedgerService = (await import('../services/RentLedgerService')).default;
     return RentLedgerService.recordPayment({
-      rentLedgerId: data.rentLedgerId,
+      ...(data.rentLedgerId ? { rentLedgerId: data.rentLedgerId } : {}),
       tenantId: data.tenantId,
-      propertyId: user.propertyId?.[0].toString() || '', // Use first property of user if available
+      propertyId: propertyId,
       amount: data.amount,
       paymentMethod: 'cash',
       paymentType: data.paymentType || 'rent',
-      status: 'paid',
-      notes: data.notes || `Cash payment verified via OTP from ${user.name}`,
+      status: 'initiated', // Initiated by tenant
+      notes: data.notes || `Cash payment submitted by tenant to manager ${user.name}`,
       createdById: data.propertyUserId
     });
   }
@@ -347,29 +335,64 @@ export default class TenantAppService {
   }
   // ✅ 16. Update KYC Details
   static async updateKYC(tenantId: string, kycData: {
-    adharCardFront?: string;
-    adharCardBack?: string;
-    panCard?: string;
-    drivingLicenceFront?: string;
-    drivingLicenceBack?: string;
-    otherDocument?: string
+    adharCard?: {
+      adharCardFront?: string;
+      adharCardBack?: string;
+    };
+    panCard?: {
+      panCardFront?: string;
+    };
+    drivingLicence?: {
+      drivingLicenceFront?: string;
+      drivingLicenceBack?: string;
+    };
+    otherDocument?: {
+      documentUrl?: string;
+    };
+    docType?: string;
+    submittedAt?: string;
   }): Promise<any> {
     const Tenant = (await import('../models/Tenant')).default;
-    return Tenant.findByIdAndUpdate(
+    const updatedTenant = await Tenant.findByIdAndUpdate(
       tenantId,
       {
         $set: {
-          'kyc.adharCardFront': kycData.adharCardFront,
-          'kyc.adharCardBack': kycData.adharCardBack,
+          'kyc.adharCard': kycData.adharCard,
           'kyc.panCard': kycData.panCard,
-          'kyc.drivingLicenceFront': kycData.drivingLicenceFront,
-          'kyc.drivingLicenceBack': kycData.drivingLicenceBack,
+          'kyc.drivingLicence': kycData.drivingLicence,
           'kyc.otherDocument': kycData.otherDocument,
-          'kyc.status': 'pending' // Reset to pending on update
+          'kyc.docType': kycData.docType,
+          'kyc.submittedAt': kycData.submittedAt,
+          'kyc.status': 'uploaded'
         }
       },
       { new: true }
     );
+
+    // Notification Flow: When user upload documents “Manager App” get notification.
+    if (updatedTenant) {
+      try {
+        const TenantAllocation = (await import('../models/TenantAllocation')).default;
+        const NotificationService = (await import('./NotificationService')).default;
+        const { NotificationType } = await import('./NotificationService');
+
+        const activeAllocation = await TenantAllocation.findOne({ tenantId, status: 'active' });
+        const propertyId = activeAllocation?.propertyId?.toString();
+        if (propertyId) {
+          await NotificationService.notifyManagers(
+            propertyId,
+            'KYC Document Uploaded',
+            `Tenant ${updatedTenant.fullName} has uploaded KYC documents.`,
+            NotificationType.KYC,
+            { tenantId: updatedTenant._id }
+          );
+        }
+      } catch (notifyErr) {
+        console.error('Failed to send upload notification:', notifyErr);
+      }
+    }
+
+    return updatedTenant;
   }
 
   // ✅ 17. Get WiFi for Tenant
@@ -403,5 +426,24 @@ export default class TenantAppService {
   static async getTransactionDetail(id: string): Promise<any> {
     const PaymentTransaction = (await import('../models/PaymentTransaction')).default;
     return PaymentTransaction.findById(id).populate('rentLedgerId');
+  }
+
+  // ✅ 20. Get Property Users (Managers) associated with Tenant's active allocation
+  static async getPropertyUsersForTenant(tenantId: string): Promise<any[]> {
+    const TenantAllocation = (await import('../models/TenantAllocation')).default;
+    const allocation = await TenantAllocation.findOne({ tenantId, status: 'active' });
+    if (!allocation) throw new Error('No active allocation found for this tenant');
+
+    const PropertyUser = (await import('../models/PropertyUser')).default;
+    const users = await PropertyUser.find({
+      propertyId: allocation.propertyId,
+      isActive: true
+    }).select('_id name designation');
+
+    return users.map(user => ({
+      ID: user._id,
+      Name: user.name,
+      Designation: user.designation || 'Staff'
+    }));
   }
 }

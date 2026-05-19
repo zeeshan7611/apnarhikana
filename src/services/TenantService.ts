@@ -35,10 +35,20 @@ export default class TenantService {
   }
 
   // ─── KYC Methods ────────────────────────────────────────────────────────
-  static async getKYCDetails(limit: number, skip: number, propertyId?: string[]): Promise<any[]> {
-    var query: any = { "kyc.status": "pending" };
+  static async getKYCDetails(limit: number, skip: number, propertyId?: string[], status?: string): Promise<any[]> {
+    var query: any = {};
+    if (status) {
+      query["kyc.status"] = status;
+    } else {
+      query["kyc.status"] = { $in: ["pending", "uploaded"] };
+    }
+
     if (propertyId && propertyId.length > 0) {
-      query.propertyId = { $in: propertyId };
+      const allocations = await TenantAllocation.find({
+        propertyId: { $in: propertyId }
+      }).select('tenantId');
+      const tenantIds = allocations.map(a => a.tenantId);
+      query._id = { $in: tenantIds };
     }
 
     // Find all tenants and return their KYC details
@@ -58,16 +68,73 @@ export default class TenantService {
       throw new Error('Action must be either "approve" or "reject"');
     }
 
-    const updateData: any = {
-      "kyc.status": action === "approve" ? "approved" : "rejected",
-    };
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) return null;
 
-    if (action === "reject" && rejectionReason) {
-      updateData["kyc.rejectionReason"] = rejectionReason;
+    const updateData: any = {};
+
+    if (action === "approve") {
+      updateData["kyc.status"] = "approved";
+    } else {
+      // Status: Uploaded => Pending
+      updateData["kyc.status"] = "pending";
+      if (rejectionReason) {
+        updateData["kyc.rejectionReason"] = rejectionReason;
+      }
+
+      // Note : In the reject case we have to remove the images from R2Storage as well
+      const { deleteFileFromUrl } = await import('./R2Service');
+      const docUrls = [
+        tenant.kyc?.adharCard?.adharCardFront,
+        tenant.kyc?.adharCard?.adharCardBack,
+        tenant.kyc?.panCard?.panCardFront,
+        tenant.kyc?.drivingLicence?.drivingLicenceFront,
+        tenant.kyc?.drivingLicence?.drivingLicenceBack,
+        tenant.kyc?.otherDocument?.documentUrl
+      ].filter(url => url) as string[];
+
+      for (const url of docUrls) {
+        await deleteFileFromUrl(url);
+      }
+
+      // Clear the files in the DB since they are removed from R2
+      updateData["kyc.adharCard"] = undefined;
+      updateData["kyc.panCard"] = undefined;
+      updateData["kyc.drivingLicence"] = undefined;
+      updateData["kyc.otherDocument"] = undefined;
     }
 
-    return Tenant.findByIdAndUpdate(tenantId, updateData, {
+    const updatedTenant = await Tenant.findByIdAndUpdate(tenantId, updateData, {
       new: true,
     }).populate("createdById", "name email");
+
+    // Notification Flow: When landlord reject or approve “Tenant App” get notification.
+    if (updatedTenant) {
+      try {
+        const NotificationService = (await import('./NotificationService')).default;
+        const { NotificationType } = await import('./NotificationService');
+
+        const title = action === 'approve' ? 'KYC Approved' : 'KYC Rejected';
+        const message = action === 'approve'
+          ? 'Your KYC documents have been successfully approved by the landlord!'
+          : `Your KYC was rejected. Reason: ${rejectionReason || 'Please re-submit your documents.'}`;
+
+        await NotificationService.notifyTenant(
+          tenantId,
+          title,
+          message,
+          NotificationType.KYC,
+          { status: updatedTenant.kyc?.status }
+        );
+      } catch (notifyErr) {
+        console.error('Failed to notify tenant of KYC update:', notifyErr);
+      }
+    }
+
+    return updatedTenant;
+  }
+
+  static async getTenantKYC(tenantId: string): Promise<any | null> {
+    return Tenant.findById(tenantId).select("fullName phoneNumber email kyc _id").lean();
   }
 }

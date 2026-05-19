@@ -127,7 +127,7 @@ export default class RentLedgerService {
     utrNumber?: string;
     paymentScreenshotUrl?: string;
     notes?: string;
-    status?: 'pending' | 'partial' | 'paid' | 'overdue' | 'due';
+    status?: 'pending' | 'partial' | 'paid' | 'overdue' | 'due' | 'initiated' | 'rejected';
     paymentType?: 'rent' | 'deposit' | 'extra_charge';
     createdById?: string;
   }): Promise<{ ledger: IRentLedger | null; transaction: IPaymentTransaction }> {
@@ -180,13 +180,13 @@ export default class RentLedgerService {
     paymentScreenshotUrl?: string;
     notes?: string;
     createdById: string;
-    status?: 'pending' | 'partial' | 'paid' | 'overdue' | 'due';
+    status?: 'pending' | 'partial' | 'paid' | 'overdue' | 'due' | 'initiated' | 'rejected';
   }): Promise<{ ledger: IRentLedger | null; transaction: IPaymentTransaction }> {
-    const ledger = await RentLedger.findOne({ 
-      tenantId: data.tenantId, 
-      month: data.month 
+    const ledger = await RentLedger.findOne({
+      tenantId: data.tenantId,
+      month: data.month
     });
-    
+
     if (!ledger) throw new Error('Rent ledger not found for the specified month');
 
     return this.recordPayment({
@@ -204,42 +204,61 @@ export default class RentLedgerService {
     });
   }
 
-  // ─── 5. Approve Transaction ──────────────────────────────────────────────────
-  static async approvePayment(transactionId: string): Promise<{ ledger: IRentLedger; transaction: IPaymentTransaction }> {
+  // ─── 5. Process Cash Payment Request (Approve / Reject) ──────────────────────
+  static async processCashPaymentRequest(transactionId: string, action: 'approve' | 'reject'): Promise<{ ledger: IRentLedger | null; transaction: IPaymentTransaction }> {
     const transaction = await PaymentTransaction.findById(transactionId);
     if (!transaction) throw new Error('Transaction not found');
-    if (transaction.status !== 'pending') throw new Error('Only pending transactions can be approved');
+    if (transaction.status !== 'pending' && transaction.status !== 'initiated') {
+      throw new Error('Only pending or initiated transactions can be processed');
+    }
 
-    transaction.status = 'paid';
+    if (action === 'approve') {
+      transaction.status = 'paid';
+    } else {
+      transaction.status = 'rejected';
+    }
     await transaction.save();
 
-    if (!transaction.rentLedgerId) throw new Error('Transaction has no associated ledger');
-    const ledger = await this.recalculateLedger(transaction.rentLedgerId.toString());
-    if (!ledger) throw new Error('Ledger not found for this transaction');
+    // Recalculate ledger if associated
+    let ledger: IRentLedger | null = null;
+    if (transaction.rentLedgerId) {
+      ledger = await this.recalculateLedger(transaction.rentLedgerId.toString());
+    }
+
+    // Trigger Notification to Tenant
+    try {
+      const NotificationService = (await import('./NotificationService')).default;
+      const { NotificationType } = await import('./NotificationService');
+      const amountStr = `₹${transaction.amount}`;
+      const paymentTypeStr = transaction.paymentType === 'deposit' ? 'Security Deposit' : 'Rent/Charges';
+      if (action === 'approve') {
+        await NotificationService.notifyTenant(
+          transaction.tenantId.toString(),
+          'Cash Payment Approved',
+          `Your cash payment of ${amountStr} for ${paymentTypeStr} has been successfully approved by the manager.`,
+          NotificationType.PAYMENT,
+          { transactionId: transaction._id.toString(), status: 'paid' }
+        );
+      } else {
+        await NotificationService.notifyTenant(
+          transaction.tenantId.toString(),
+          'Cash Payment Rejected',
+          `Your cash payment of ${amountStr} for ${paymentTypeStr} was rejected by the manager. Please contact them.`,
+          NotificationType.PAYMENT,
+          { transactionId: transaction._id.toString(), status: 'rejected' }
+        );
+      }
+    } catch (notificationErr) {
+      console.error('Failed to send cash payment action notification:', notificationErr);
+    }
 
     return { ledger, transaction };
-  }
-
-  // ─── 6. Reject Transaction (Delete) ─────────────────────────────────────────
-  static async rejectPayment(transactionId: string): Promise<{ ledger: IRentLedger }> {
-    const transaction = await PaymentTransaction.findById(transactionId);
-    if (!transaction) throw new Error('Transaction not found');
-    if (transaction.status !== 'pending') throw new Error('Only pending transactions can be rejected');
-
-    if (!transaction.rentLedgerId) throw new Error('Transaction has no associated ledger');
-    const ledgerId = transaction.rentLedgerId.toString();
-    await PaymentTransaction.findByIdAndDelete(transactionId);
-
-    const ledger = await this.recalculateLedger(ledgerId);
-    if (!ledger) throw new Error('Ledger not found for this transaction');
-
-    return { ledger };
   }
   // ─── 6b. Complete Payment (Gateway/Webhook) ─────────────────────────────────
   static async completePayment(transactionId: string): Promise<{ ledger: IRentLedger | null; transaction: IPaymentTransaction }> {
     const transaction = await PaymentTransaction.findById(transactionId);
     if (!transaction) throw new Error('Transaction not found');
-    
+
     transaction.status = 'paid';
     await transaction.save();
 
@@ -649,7 +668,11 @@ export default class RentLedgerService {
     const query: any = { paymentMethod: 'cash' };
     if (filters.propertyId) query.propertyId = new mongoose.Types.ObjectId(filters.propertyId);
     if (filters.tenantId) query.tenantId = new mongoose.Types.ObjectId(filters.tenantId);
-    if (filters.status) query.status = filters.status;
+    if (filters.status) {
+      query.status = filters.status;
+    } else {
+      query.status = { $in: ['initiated'] };
+    }
 
     if (filters.from || filters.to) {
       query.paidAt = {};

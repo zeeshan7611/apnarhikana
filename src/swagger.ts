@@ -56,6 +56,41 @@ const swaggerDefinition = {
           alternateNumber: { type: 'string' },
           emergencyContactNumber: { type: 'string' },
           homeContactNumber: { type: 'string' },
+          kyc: {
+            type: 'object',
+            properties: {
+              status: { type: 'string', enum: ['pending', 'uploaded', 'approved', 'rejected'] },
+              rejectionReason: { type: 'string' },
+              docType: { type: 'string' },
+              submittedAt: { type: 'string' },
+              adharCard: {
+                type: 'object',
+                properties: {
+                  adharCardFront: { type: 'string' },
+                  adharCardBack: { type: 'string' }
+                }
+              },
+              panCard: {
+                type: 'object',
+                properties: {
+                  panCardFront: { type: 'string' }
+                }
+              },
+              drivingLicence: {
+                type: 'object',
+                properties: {
+                  drivingLicenceFront: { type: 'string' },
+                  drivingLicenceBack: { type: 'string' }
+                }
+              },
+              otherDocument: {
+                type: 'object',
+                properties: {
+                  documentUrl: { type: 'string' }
+                }
+              }
+            }
+          },
           createdById: { type: 'string' },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
@@ -112,11 +147,13 @@ const swaggerDefinition = {
           title: { type: 'string' },
           description: { type: 'string' },
           imageUrl: { type: 'string' },
+          resolutionURI: { type: 'string' },
           priority: { type: 'string', enum: ['low', 'medium', 'high', 'urgent'] },
           status: { type: 'string', enum: ['open', 'in-progress', 'resolved', 'closed'] },
-          sourceApp: { type: 'string', enum: ['tenant', 'propertyManager'] },
+          sourceApp: { type: 'string', enum: ['tenant', 'propertyManager', 'landlord'] },
           assignedTo: { type: 'string' },
           resolutionNotes: { type: 'string' },
+          type: { type: 'string', enum: ['self', 'tenant'] },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
         },
@@ -191,7 +228,7 @@ const swaggerDefinition = {
           actions: { type: 'array', items: { type: 'string' } },
         },
       },
-      Module: {
+      PermissionModule: {
         type: 'object',
         properties: {
           id: { type: 'string' },
@@ -321,7 +358,7 @@ const swaggerDefinition = {
           propertyId: { type: 'string' },
           title:      { type: 'string' },
           message:    { type: 'string' },
-          type:       { type: 'string', enum: ['announcement', 'complaint', 'payment', 'allocation'] },
+          type:       { type: 'string', enum: ['announcement', 'complaint', 'payment', 'allocation', 'kyc'] },
           isRead:     { type: 'boolean' },
           data:       { type: 'object' },
           createdAt:  { type: 'string', format: 'date-time' },
