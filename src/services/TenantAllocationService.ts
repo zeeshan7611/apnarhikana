@@ -339,9 +339,34 @@ export default class TenantAllocationService {
     const allocation = await TenantAllocation.findById(id);
     if (!allocation) throw new Error('Allocation not found');
 
-    allocation.endDate = new Date(exitDate);
-    // If exitDate is in the past or today, we might want to change status, 
-    // but the request only specifies updating endDate.
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const targetExitDate = new Date(exitDate);
+    targetExitDate.setHours(0, 0, 0, 0);
+
+    const timeDiff = targetExitDate.getTime() - today.getTime();
+    const servedDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    const noticePeriodDays = Math.max(0, servedDays);
+
+    let refundPercentage = 0;
+    if (noticePeriodDays >= 30) {
+      refundPercentage = 100;
+    } else if (noticePeriodDays > 21) {
+      refundPercentage = 75;
+    } else if (noticePeriodDays > 14) {
+      refundPercentage = 50;
+    } else if (noticePeriodDays > 7) {
+      refundPercentage = 25;
+    } else {
+      refundPercentage = 0;
+    }
+
+    allocation.endDate = targetExitDate;
+    allocation.exitInitiatedAt = new Date();
+    allocation.eligibleRefundPercentage = refundPercentage;
+    allocation.eligibleRefundAmount = (refundPercentage / 100) * (allocation.depositAmount || 0);
+
     return allocation.save();
   }
 }

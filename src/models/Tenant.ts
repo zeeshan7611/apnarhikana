@@ -8,6 +8,7 @@ export interface ITenant extends Document {
   alternateNumber?: string;
   emergencyContactNumber: string;
   homeContactNumber?: string;
+  profileImage?: string;
   otp?: string;
   otpExpiry?: Date;
   oneSignalId?: string;
@@ -47,6 +48,7 @@ const TenantSchema: Schema = new Schema({
   alternateNumber: { type: String },
   emergencyContactNumber: { type: String, required: true },
   homeContactNumber: { type: String },
+  profileImage: { type: String },
   otp: { type: String },
   otpExpiry: { type: Date },
   oneSignalId: { type: String },

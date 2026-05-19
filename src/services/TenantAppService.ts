@@ -446,4 +446,23 @@ export default class TenantAppService {
       Designation: user.designation || 'Staff'
     }));
   }
+
+  // ✅ 21. Update Profile Details for Tenant
+  static async updateProfile(tenantId: string, updateData: {
+    fullName?: string;
+    email?: string;
+    alternateNumber?: string;
+    emergencyContactNumber?: string;
+    homeContactNumber?: string;
+    profileImage?: string;
+  }): Promise<any> {
+    const Tenant = (await import('../models/Tenant')).default;
+    const updatedTenant = await Tenant.findByIdAndUpdate(
+      tenantId,
+      { $set: updateData },
+      { new: true }
+    );
+    if (!updatedTenant) throw new Error('Tenant not found');
+    return updatedTenant;
+  }
 }

@@ -467,4 +467,74 @@ export default class TenantAppController {
       next(err);
     }
   }
+
+  // PUT /update-profile
+  static async updateProfile(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tenantId = (req as any).user.id;
+      const { fullName, email, alternateNumber, emergencyContactNumber, homeContactNumber, profileImage } = req.body;
+
+      const data = await TenantAppService.updateProfile(tenantId, {
+        fullName,
+        email,
+        alternateNumber,
+        emergencyContactNumber,
+        homeContactNumber,
+        profileImage
+      });
+
+      res.json({ success: true, message: 'Profile updated successfully', data });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // POST /initiate-exit
+  static async initiateExit(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tenantId = (req as any).user.id;
+      const { exitDate } = req.body;
+      if (!exitDate) {
+        return res.status(400).json({ success: false, message: 'exitDate is required' });
+      }
+
+      // Find active allocation for the tenant
+      const TenantAllocation = (await import('../models/TenantAllocation')).default;
+      const allocation = await TenantAllocation.findOne({ tenantId, status: 'active' });
+      if (!allocation) {
+        return res.status(404).json({ success: false, message: 'No active room allocation found' });
+      }
+
+      const TenantAllocationService = (await import('../services/TenantAllocationService')).default;
+      const updatedAllocation = await TenantAllocationService.initiateExit(allocation._id.toString(), exitDate);
+
+      // Trigger push notification to property managers that tenant has scheduled an exit
+      try {
+        const NotificationService = (await import('../services/NotificationService')).default;
+        const { NotificationType } = await import('../services/NotificationService');
+        const Tenant = (await import('../models/Tenant')).default;
+        const tenant = await Tenant.findById(tenantId);
+        if (tenant && updatedAllocation) {
+          const dateStr = new Date(exitDate).toLocaleDateString();
+          await NotificationService.notifyManagers(
+            updatedAllocation.propertyId.toString(),
+            'Tenant Exit Scheduled',
+            `${tenant.fullName} has scheduled exit on ${dateStr}. Eligible refund: ${updatedAllocation.eligibleRefundPercentage}%.`,
+            NotificationType.ALLOCATION,
+            { allocationId: updatedAllocation._id.toString(), tenantId }
+          );
+        }
+      } catch (notifyErr) {
+        console.error('Failed to notify managers about scheduled exit:', notifyErr);
+      }
+
+      res.json({ 
+        success: true, 
+        message: 'Exit initiated successfully', 
+        data: updatedAllocation 
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
 }

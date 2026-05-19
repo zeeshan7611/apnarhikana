@@ -15,6 +15,9 @@ export interface ITenantAllocation extends Document {
   status: 'active' | 'inactive' | 'terminated';
   notes?: string;
   createdById: mongoose.Types.ObjectId;
+  exitInitiatedAt?: Date;
+  eligibleRefundPercentage?: number;
+  eligibleRefundAmount?: number;
 }
 
 const TenantAllocationSchema: Schema = new Schema({
@@ -36,6 +39,9 @@ const TenantAllocationSchema: Schema = new Schema({
   status: { type: String, enum: ['active', 'inactive', 'terminated'], default: 'active' },
   notes: { type: String },
   createdById: { type: Schema.Types.ObjectId, ref: 'PropertyUser', required: true },
+  exitInitiatedAt: { type: Date },
+  eligibleRefundPercentage: { type: Number, default: 0 },
+  eligibleRefundAmount: { type: Number, default: 0 },
 }, {
   timestamps: true,
 });

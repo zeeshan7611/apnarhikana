@@ -871,4 +871,72 @@ router.get('/wifi', jwtAuth, Controller.getWiFi);
  */
 router.get('/property-users', jwtAuth, Controller.getPropertyUsers);
 
+/**
+ * @swagger
+ * /api/tenant-app/update-profile:
+ *   put:
+ *     summary: Update tenant profile details
+ *     description: Updates the profile fields of the authenticated tenant, including fullName, email, contact numbers, and profile image.
+ *     tags: [TenantApp]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName: { type: string }
+ *               email: { type: string }
+ *               alternateNumber: { type: string }
+ *               emergencyContactNumber: { type: string }
+ *               homeContactNumber: { type: string }
+ *               profileImage: { type: string }
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 message: { type: string }
+ *                 data: { type: object }
+ */
+router.put('/update-profile', jwtAuth, Controller.updateProfile);
+
+/**
+ * @swagger
+ * /api/tenant-app/initiate-exit:
+ *   post:
+ *     summary: Schedule move-out and calculate security deposit refund
+ *     description: Registers notice of exit for the authenticated tenant. The backend calculates the notice period days and sets the eligible refund percentage and refund amount of their security deposit.
+ *     tags: [TenantApp]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [exitDate]
+ *             properties:
+ *               exitDate: { type: string, format: date, example: "2026-06-30", description: "The scheduled departure date" }
+ *     responses:
+ *       200:
+ *         description: Exit initiated and refund eligibility calculated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 message: { type: string }
+ *                 data: { type: object }
+ */
+router.post('/initiate-exit', jwtAuth, Controller.initiateExit);
+
 export default router;
