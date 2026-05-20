@@ -227,4 +227,29 @@ router.delete("/delete-property-user", authorizePermissions("users:delete"), Con
  */
 router.get("/get-users-by-property", authorizePermissions("users:read"), Controller.getUsersByPropertyId);
 
+/**
+ * @swagger
+ * /api/property-users/get-request-access-users:
+ *   get:
+ *     summary: Get all property users who have the 'request_access' role
+ *     tags: [PropertyUsers]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of property users with request_access role
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/PropertyUser'
+ */
+router.get("/get-request-access-users", authorizePermissions("users:read"), Controller.getRequestAccessUsers);
+
 export default router;

@@ -127,6 +127,20 @@ export default class PropertyUserService {
       .sort({ createdAt: -1 });
   }
 
+  // ✅ Get users with 'request_access' role
+  static async getRequestAccessUsers(): Promise<IPropertyUser[]> {
+    const Role = (await import("../models/Role")).default;
+    const roleObj = await Role.findOne({ name: { $regex: /^request_access$/i } });
+    if (!roleObj) {
+      return [];
+    }
+    return PropertyUser.find({ roleIds: roleObj._id })
+      .populate("roleIds")
+      .populate("propertyId", "name id")
+      .select("-passwordHash")
+      .sort({ createdAt: -1 });
+  }
+
   static async login(email: string, password: string) {
     const user = await PropertyUser
       .findOne({ email })

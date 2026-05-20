@@ -84,6 +84,16 @@ export default class PropertyUserController {
     }
   }
 
+  // ✅ Get users with 'request_access' role
+  static async getRequestAccessUsers(req: Request, res: Response, next: NextFunction) {
+    try {
+      const users = await PropertyUserService.getRequestAccessUsers();
+      res.json({ success: true, data: users });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // 🔐 Login API
   static async login(req: Request, res: Response, next: NextFunction) {
     try {

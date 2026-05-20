@@ -324,10 +324,9 @@ export default class RentLedgerService {
     page?: number;
     limit?: number;
   }): Promise<{ data: IPaymentTransaction[], total: number }> {
-    const query: any = {};
+    const query: any = { status: 'paid' };
     if (filters.propertyId) query.propertyId = filters.propertyId;
     if (filters.tenantId) query.tenantId = filters.tenantId;
-    if (filters.status) query.status = filters.status;
 
     if (filters.from || filters.to) {
       query.paidAt = {};
@@ -364,10 +363,9 @@ export default class RentLedgerService {
     page?: number;
     limit?: number;
   }): Promise<{ data: IPaymentTransaction[]; total: number }> {
-    const query: any = {};
+    const query: any = { status: 'paid' };
     if (filters.propertyId) query.propertyId = new mongoose.Types.ObjectId(filters.propertyId);
     if (filters.tenantId) query.tenantId = new mongoose.Types.ObjectId(filters.tenantId);
-    if (filters.status) query.status = filters.status;
     if (filters.paymentType) query.paymentType = filters.paymentType;
 
     if (filters.from || filters.to) {
@@ -394,40 +392,9 @@ export default class RentLedgerService {
     return { data, total };
   }
 
-  // ─── 8b. Get Pending Payments ──────────────────────────────────────────────
-  static async getPendingPayments(filters: {
-    propertyId?: string;
-    tenantId?: string;
-    page?: number;
-    limit?: number;
-  }): Promise<{ data: IRentLedger[]; total: number }> {
-    const query: any = {
-      status: { $in: ['pending', 'partial', 'overdue'] }
-    };
-    if (filters.propertyId) query.propertyId = new mongoose.Types.ObjectId(filters.propertyId);
-    if (filters.tenantId) query.tenantId = new mongoose.Types.ObjectId(filters.tenantId);
-
-    const page = filters.page || 1;
-    const limit = filters.limit || 10;
-    const skip = (page - 1) * limit;
-
-    const [data, total] = await Promise.all([
-      RentLedger.find(query)
-        .populate('tenantId', 'fullName phoneNumber')
-        .populate('propertyId', 'name')
-        .populate('tenantAllocationId')
-        .sort({ dueDate: 1, createdAt: -1 })
-        .skip(skip)
-        .limit(limit),
-      RentLedger.countDocuments(query)
-    ]);
-
-    return { data, total };
-  }
-
   // ─── 8c. Get Recent Transactions ───────────────────────────────────────────
   static async getRecentTransactions(limit: number = 5): Promise<IPaymentTransaction[]> {
-    return PaymentTransaction.find({})
+    return PaymentTransaction.find({ status: 'paid' })
       .populate('tenantId', 'fullName phoneNumber email')
       .populate('rentLedgerId', 'month totalAmount paidAmount rentAmount')
       .populate('propertyId', 'name')
@@ -437,11 +404,11 @@ export default class RentLedgerService {
 
   // ─── 8d. Get Single Transaction ──────────────────────────────────────────────
   static async getTransactionById(id: string): Promise<IPaymentTransaction> {
-    const transaction = await PaymentTransaction.findById(id)
+    const transaction = await PaymentTransaction.findOne({ _id: id, status: 'paid' })
       .populate('tenantId', 'fullName phoneNumber email')
       .populate('rentLedgerId', 'month totalAmount paidAmount rentAmount')
       .populate('propertyId', 'name');
-    if (!transaction) throw new Error('Transaction not found');
+    if (!transaction) throw new Error('Transaction not found or not paid');
     return transaction;
   }
 
@@ -655,7 +622,6 @@ export default class RentLedgerService {
     return { totalAllocations: activeAllocations.length, ledgersCreated };
   }
 
-  // ─── 14. Get Cash Payment Requests ──────────────────────────────────────────
   static async getCashPaymentRequests(filters: {
     propertyId?: string;
     tenantId?: string;
@@ -665,14 +631,9 @@ export default class RentLedgerService {
     page?: number;
     limit?: number;
   }): Promise<{ data: IPaymentTransaction[]; total: number }> {
-    const query: any = { paymentMethod: 'cash' };
+    const query: any = { paymentMethod: 'cash', status: 'initiated' };
     if (filters.propertyId) query.propertyId = new mongoose.Types.ObjectId(filters.propertyId);
     if (filters.tenantId) query.tenantId = new mongoose.Types.ObjectId(filters.tenantId);
-    if (filters.status) {
-      query.status = filters.status;
-    } else {
-      query.status = { $in: ['initiated'] };
-    }
 
     if (filters.from || filters.to) {
       query.paidAt = {};

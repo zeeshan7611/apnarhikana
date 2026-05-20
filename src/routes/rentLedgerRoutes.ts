@@ -58,7 +58,7 @@ router.post('/generate-monthly-ledgers', authorizePermissions('payments:write'),
  *         name: status
  *         schema:
  *           type: string
- *           enum: ["pending","partial","paid","overdue","due"]
+ *           enum: ["paid","overdue","due"]
  *     responses:
  *       200:
  *         description: List of transactions
@@ -126,34 +126,6 @@ router.get('/get-transaction', authorizePermissions('payments:read'), Controller
  *         description: Paginated list of payment transactions
  */
 router.get('/get-property-transactions', authorizePermissions('payments:read'), Controller.getPropertyTransactions);
-
-/**
- * @swagger
- * /api/rent-ledger/get-pending-payments:
- *   get:
- *     summary: Get pending rent payments
- *     description: Returns rent ledgers with pending, partial, or overdue status.
- *     tags: [RentLedger]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: propertyId
- *         schema: { type: string }
- *       - in: query
- *         name: tenantId
- *         schema: { type: string }
- *       - in: query
- *         name: page
- *         schema: { type: integer }
- *       - in: query
- *         name: limit
- *         schema: { type: integer }
- *     responses:
- *       200:
- *         description: Paginated list of pending rent ledgers
- */
-router.get('/get-pending-payments', authorizePermissions('payments:read'), Controller.getPendingPayments);
 
 /**
  * @swagger
@@ -290,7 +262,7 @@ router.post('/complete-payment', authorizePermissions('payments:write'), Control
  *         name: status
  *         schema:
  *           type: string
- *           enum: ["pending","partial","paid","overdue","due","initiated","rejected"]
+ *           enum: ["initiated"]
  *       - in: query
  *         name: from
  *         schema: { type: string }

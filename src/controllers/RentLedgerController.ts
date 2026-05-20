@@ -174,35 +174,6 @@ export default class RentLedgerController {
     }
   }
 
-  // GET /get-pending-payments
-  static async getPendingPayments(req: Request, res: Response, next: NextFunction) {
-    try {
-      const { propertyId, tenantId } = req.query;
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
-
-      const { data, total } = await RentLedgerService.getPendingPayments({
-        propertyId: propertyId as string,
-        tenantId: tenantId as string,
-        page,
-        limit
-      });
-
-      res.json({
-        success: true,
-        data,
-        pagination: {
-          total,
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit)
-        }
-      });
-    } catch (err) {
-      next(err);
-    }
-  }
-
   // GET /get-recent-transactions
   static async getRecentTransactions(req: Request, res: Response, next: NextFunction) {
     try {
