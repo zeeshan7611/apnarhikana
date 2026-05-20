@@ -228,7 +228,7 @@ const swaggerDefinition = {
           actions: { type: 'array', items: { type: 'string' } },
         },
       },
-      PermissionModule: {
+      Module: {
         type: 'object',
         properties: {
           id: { type: 'string' },
