@@ -18,7 +18,7 @@ export default class ComplaintService {
     if (data.type !== 'self' && !data.propertyId && data.tenantId) {
       const activeAllocation = await TenantAllocation.findOne({ 
         tenantId: data.tenantId, 
-        status: 'active' 
+        status: { $in: ['active', 'notice'] } 
       }).populate({
         path: 'inventoryAllocationId',
         select: 'propertyId'

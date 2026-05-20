@@ -925,6 +925,7 @@ router.put('/update-profile', jwtAuth, Controller.updateProfile);
  *             required: [exitDate]
  *             properties:
  *               exitDate: { type: string, format: date, example: "2026-06-30", description: "The scheduled departure date" }
+ *               propertyUserId: { type: string, description: "The unique ID of the property manager (user) to be notified" }
  *     responses:
  *       200:
  *         description: Exit initiated and refund eligibility calculated successfully

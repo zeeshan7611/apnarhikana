@@ -153,10 +153,23 @@ router.delete('/delete-tenant', authorizePermissions('tenants:delete'), TenantCo
  * /api/tenants/kyc-details:
  *   post:
  *     summary: Get KYC details for one or multiple properties
- *     description: Retrieves KYC document information and approval status for tenants. If propertyId is omitted, returns KYC details across all properties. Can filter by KYC status.
+ *     description: Retrieves KYC document information and approval status for tenants. If propertyId is omitted, returns KYC details across all properties. Can filter by KYC status. If status is omitted, returns KYC details across all statuses.
  *     tags: [Tenants]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of items per page
  *     requestBody:
  *       content:
  *         application/json:
@@ -173,13 +186,50 @@ router.delete('/delete-tenant', authorizePermissions('tenants:delete'), TenantCo
  *               status:
  *                 type: string
  *                 enum: ["pending", "uploaded", "approved", "rejected"]
- *                 description: Optional status to filter KYC details
+ *                 description: Optional status to filter KYC details. If not provided, returns all data.
+ *               page:
+ *                 type: integer
+ *                 description: Optional page number (alternative to query param)
+ *               limit:
+ *                 type: integer
+ *                 description: Optional limit (alternative to query param)
  *             example:
  *               propertyId: ['propertyId1', 'propertyId2']
  *               status: 'uploaded'
+ *               page: 1
+ *               limit: 10
  *     responses:
  *       200:
- *         description: Array of KYC details
+ *         description: Paginated list of KYC details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id: { type: string }
+ *                       fullName: { type: string }
+ *                       phoneNumber: { type: string }
+ *                       email: { type: string }
+ *                       kyc:
+ *                         type: object
+ *                         properties:
+ *                           status: { type: string }
+ *                           rejectionReason: { type: string }
+ *                           documents: { type: array, items: { type: object } }
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     total: { type: integer }
+ *                     page: { type: integer }
+ *                     limit: { type: integer }
+ *                     totalPages: { type: integer }
  *       400:
  *         description: Invalid request payload
  */

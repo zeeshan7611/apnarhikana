@@ -76,9 +76,10 @@ export default class TenantController {
   // POST /kyc-details
   static async getKYCDetails(req: Request, res: Response, next: NextFunction) {
     try {
-      const { propertyId, status } = req.body;
-      const limit = parseInt(req.query.limit as string) || 10;
-      const skip = parseInt(req.query.skip as string) || 0;
+      const { propertyId, status, page: bodyPage, limit: bodyLimit } = req.body;
+      const page = parseInt((req.query.page || bodyPage) as string) || 1;
+      const limit = parseInt((req.query.limit || bodyLimit) as string) || 10;
+      const skip = (page - 1) * limit;
       const statusFilter = status || (req.query.status as string);
 
       let propertyIds: string[] | undefined;
@@ -86,11 +87,16 @@ export default class TenantController {
         propertyIds = Array.isArray(propertyId) ? propertyId : [propertyId];
       }
 
-      const kycDetails = await TenantService.getKYCDetails(limit, skip, propertyIds, statusFilter);
+      const { data, total } = await TenantService.getKYCDetails(limit, skip, propertyIds, statusFilter);
       res.json({ 
         success: true, 
-        data: kycDetails,
-        total: kycDetails.length
+        data,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
       });
     } catch (err) {
       next(err);

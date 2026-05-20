@@ -12,19 +12,19 @@ export default class AnnouncementService {
     if (data.tenantId) {
       targetTenantIds = [data.tenantId.toString()];
     } else if (data.roomId) {
-      const allocations = await TenantAllocation.find({ status: 'active' }).populate({
+      const allocations = await TenantAllocation.find({ status: { $in: ['active', 'notice'] } }).populate({
         path: 'inventoryAllocationId',
         match: { roomId: data.roomId }
       });
       targetTenantIds = allocations.filter(a => a.inventoryAllocationId).map(a => a.tenantId.toString());
     } else if (data.floorId) {
-      const allocations = await TenantAllocation.find({ status: 'active' }).populate({
+      const allocations = await TenantAllocation.find({ status: { $in: ['active', 'notice'] } }).populate({
         path: 'inventoryAllocationId',
         match: { floorId: data.floorId }
       });
       targetTenantIds = allocations.filter(a => a.inventoryAllocationId).map(a => a.tenantId.toString());
     } else if (data.propertyId) {
-      const allocations = await TenantAllocation.find({ status: 'active' }).populate({
+      const allocations = await TenantAllocation.find({ status: { $in: ['active', 'notice'] } }).populate({
         path: 'inventoryAllocationId',
         match: { propertyId: data.propertyId }
       });

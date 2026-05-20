@@ -12,12 +12,13 @@ export interface ITenantAllocation extends Document {
   depositAmount: number;
   startDate: Date;
   endDate?: Date;
-  status: 'active' | 'inactive' | 'terminated';
+  status: 'active' | 'inactive' | 'terminated' | 'notice';
   notes?: string;
   createdById: mongoose.Types.ObjectId;
   exitInitiatedAt?: Date;
   eligibleRefundPercentage?: number;
   eligibleRefundAmount?: number;
+  propertyUserId?: mongoose.Types.ObjectId;
 }
 
 const TenantAllocationSchema: Schema = new Schema({
@@ -36,12 +37,13 @@ const TenantAllocationSchema: Schema = new Schema({
   depositAmount: { type: Number, required: true },
   startDate: { type: Date, required: true },
   endDate: { type: Date },
-  status: { type: String, enum: ['active', 'inactive', 'terminated'], default: 'active' },
+  status: { type: String, enum: ['active', 'inactive', 'terminated', 'notice'], default: 'active' },
   notes: { type: String },
   createdById: { type: Schema.Types.ObjectId, ref: 'PropertyUser', required: true },
   exitInitiatedAt: { type: Date },
   eligibleRefundPercentage: { type: Number, default: 0 },
   eligibleRefundAmount: { type: Number, default: 0 },
+  propertyUserId: { type: Schema.Types.ObjectId, ref: 'PropertyUser' },
 }, {
   timestamps: true,
 });

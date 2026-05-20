@@ -42,7 +42,7 @@ export default class TenantAppService {
     await tenant.save();
 
     // Get active allocation
-    const allocation = await TenantAllocation.findOne({ tenantId: tenant._id, status: 'active' })
+    const allocation = await TenantAllocation.findOne({ tenantId: tenant._id, status: { $in: ['active', 'notice'] } })
       .populate({
         path: 'inventoryAllocationId',
         populate: ['propertyId', 'floorId', 'roomId', 'bedId', 'roomCategoryId'],
@@ -55,7 +55,7 @@ export default class TenantAppService {
 
   // ✅ 3. Get Rent Details with Installment Breakdown
   static async getRentDetail(tenantId: string): Promise<any> {
-    const allocation = await TenantAllocation.findOne({ tenantId, status: 'active' }).populate('propertyId');
+    const allocation = await TenantAllocation.findOne({ tenantId, status: { $in: ['active', 'notice'] } }).populate('propertyId');
     if (!allocation) throw new Error('No active allocation found');
 
     const ledgers = await RentLedger.find({
@@ -141,7 +141,7 @@ export default class TenantAppService {
 
   // ✅ 4. Create Complaint (delegates to Complaint model)
   static async createComplaint(tenantId: string, data: any): Promise<IComplaint> {
-    const activeAllocation = await TenantAllocation.findOne({ tenantId, status: 'active' });
+    const activeAllocation = await TenantAllocation.findOne({ tenantId, status: { $in: ['active', 'notice'] } });
     if (!activeAllocation) throw new Error('No active allocation found for tenant');
 
     return Complaint.create({
@@ -153,7 +153,7 @@ export default class TenantAppService {
 
   // ✅ 5. Get Complete Allocation Detail
   static async getAllocationDetail(tenantId: string): Promise<ITenantAllocation | null> {
-    return TenantAllocation.findOne({ tenantId, status: 'active' })
+    return TenantAllocation.findOne({ tenantId, status: { $in: ['active', 'notice'] } })
       .populate({
         path: 'inventoryAllocationId',
         populate: ['propertyId', 'floorId', 'roomId', 'bedId', 'roomCategoryId'],
@@ -163,7 +163,7 @@ export default class TenantAppService {
 
   // ✅ 6. Get Recent Announcements for Property/Floor/Room
   static async getAnnouncements(tenantId: string): Promise<IAnnouncement[]> {
-    const allocation = await TenantAllocation.findOne({ tenantId, status: 'active' });
+    const allocation = await TenantAllocation.findOne({ tenantId, status: { $in: ['active', 'notice'] } });
     if (!allocation) return [];
 
     const query = {
@@ -250,7 +250,7 @@ export default class TenantAppService {
     const skip = (page - 1) * limit;
 
     // Get active allocation to check property-wide notifications
-    const allocation = await TenantAllocation.findOne({ tenantId, status: 'active' });
+    const allocation = await TenantAllocation.findOne({ tenantId, status: { $in: ['active', 'notice'] } });
 
     const query = {
       $or: [
@@ -295,7 +295,7 @@ export default class TenantAppService {
     const isDeposit = data.paymentType === 'deposit';
     if (isDeposit) {
       const TenantAllocation = (await import('../models/TenantAllocation')).default;
-      const allocation = await TenantAllocation.findOne({ tenantId: data.tenantId, status: 'active' });
+      const allocation = await TenantAllocation.findOne({ tenantId: data.tenantId, status: { $in: ['active', 'notice'] } });
       if (!allocation) throw new Error('No active allocation found');
       propertyId = allocation.propertyId.toString();
     } else {
@@ -376,7 +376,7 @@ export default class TenantAppService {
         const NotificationService = (await import('./NotificationService')).default;
         const { NotificationType } = await import('./NotificationService');
 
-        const activeAllocation = await TenantAllocation.findOne({ tenantId, status: 'active' });
+        const activeAllocation = await TenantAllocation.findOne({ tenantId, status: { $in: ['active', 'notice'] } });
         const propertyId = activeAllocation?.propertyId?.toString();
         if (propertyId) {
           await NotificationService.notifyManagers(
@@ -398,7 +398,7 @@ export default class TenantAppService {
   // ✅ 17. Get WiFi for Tenant
   static async getWiFiForTenant(tenantId: string): Promise<any> {
     const TenantAllocation = (await import('../models/TenantAllocation')).default;
-    const allocation = await TenantAllocation.findOne({ tenantId, status: 'active' });
+    const allocation = await TenantAllocation.findOne({ tenantId, status: { $in: ['active', 'notice'] } });
     if (!allocation) return { message: 'No active allocation found' };
 
     const WiFi = (await import('../models/WiFi')).default;
@@ -431,7 +431,7 @@ export default class TenantAppService {
   // ✅ 20. Get Property Users (Managers) associated with Tenant's active allocation
   static async getPropertyUsersForTenant(tenantId: string): Promise<any[]> {
     const TenantAllocation = (await import('../models/TenantAllocation')).default;
-    const allocation = await TenantAllocation.findOne({ tenantId, status: 'active' });
+    const allocation = await TenantAllocation.findOne({ tenantId, status: { $in: ['active', 'notice'] } });
     if (!allocation) throw new Error('No active allocation found for this tenant');
 
     const PropertyUser = (await import('../models/PropertyUser')).default;

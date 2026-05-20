@@ -62,7 +62,7 @@ Routes use explicit action verbs rather than relying solely on HTTP methods:
 
 ### Tenant Management
 - **Tenant**: Personal information, contact details, and joining history.
-- **TenantAllocation**: Links a `Tenant` to a specific `PropertyInventoryAllocation`. Tracks rent amount, deposit, start/end dates, and status (`active`, `inactive`, `terminated`).
+- **TenantAllocation**: Links a `Tenant` to a specific `PropertyInventoryAllocation`. Tracks rent amount, deposit, start/end dates, and status (`active`, `inactive`, `terminated`, `notice`).
 
 ### Support Modules
 - **Expense**: Tracks property-specific financial outgoings.

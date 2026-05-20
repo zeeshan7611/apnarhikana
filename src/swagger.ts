@@ -204,7 +204,7 @@ const swaggerDefinition = {
           depositAmount: { type: 'number' },
           startDate: { type: 'string', format: 'date-time' },
           endDate: { type: 'string', format: 'date-time' },
-          status: { type: 'string', enum: ['active', 'inactive', 'terminated'] },
+          status: { type: 'string', enum: ['active', 'inactive', 'terminated', 'notice'] },
           notes: { type: 'string' },
           createdById: { type: 'string' },
           createdAt: { type: 'string', format: 'date-time' },

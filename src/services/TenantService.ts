@@ -35,12 +35,15 @@ export default class TenantService {
   }
 
   // ─── KYC Methods ────────────────────────────────────────────────────────
-  static async getKYCDetails(limit: number, skip: number, propertyId?: string[], status?: string): Promise<any[]> {
+  static async getKYCDetails(
+    limit: number,
+    skip: number,
+    propertyId?: string[],
+    status?: string
+  ): Promise<{ data: any[]; total: number }> {
     var query: any = {};
     if (status) {
       query["kyc.status"] = status;
-    } else {
-      query["kyc.status"] = { $in: ["pending", "uploaded"] };
     }
 
     if (propertyId && propertyId.length > 0) {
@@ -51,12 +54,16 @@ export default class TenantService {
       query._id = { $in: tenantIds };
     }
 
-    // Find all tenants and return their KYC details
-    const tenants = await Tenant.find(query).select(
-      "fullName phoneNumber email kyc _id",
-    ).skip(skip).limit(limit).lean();
+    const [tenants, total] = await Promise.all([
+      Tenant.find(query)
+        .select("fullName phoneNumber email kyc _id")
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Tenant.countDocuments(query),
+    ]);
 
-    return tenants;
+    return { data: tenants, total };
   }
 
   static async approveOrRejectKYC(
@@ -75,6 +82,10 @@ export default class TenantService {
 
     if (action === "approve") {
       updateData["kyc.status"] = "approved";
+      await TenantAllocation.findOneAndUpdate(
+        { tenantId, status: "active" },
+        { status: "notice" }
+      );
     } else {
       // Status: Uploaded => Pending
       updateData["kyc.status"] = "pending";

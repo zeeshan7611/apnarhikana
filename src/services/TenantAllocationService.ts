@@ -15,7 +15,7 @@ type TenantAllocationCreateInput = {
   depositAmount: number;
   startDate: Date | string;
   endDate?: Date | string;
-  status?: 'active' | 'inactive' | 'terminated';
+  status?: 'active' | 'inactive' | 'terminated' | 'notice';
   notes?: string;
   createdById: string;
 };
@@ -36,7 +36,7 @@ type CreateTenantAllocationInput = {
   depositAmount: number;
   startDate?: Date | string;
   endDate?: Date | string;
-  status?: 'active' | 'inactive' | 'terminated';
+  status?: 'active' | 'inactive' | 'terminated' | 'notice';
   notes?: string;
 };
 
@@ -64,7 +64,7 @@ export default class TenantAllocationService {
   static async createAllocation(data: TenantAllocationCreateInput): Promise<ITenantAllocation> {
     const occupiedAllocation = await TenantAllocation.findOne({
       inventoryAllocationId: data.inventoryAllocationId,
-      status: 'active',
+      status: { $in: ['active', 'notice'] },
     });
 
     if (occupiedAllocation) {
@@ -106,7 +106,7 @@ export default class TenantAllocationService {
 
     const occupiedAllocation = await TenantAllocation.findOne({
       inventoryAllocationId: inventoryAllocation._id,
-      status: 'active',
+      status: { $in: ['active', 'notice'] },
     });
 
     if (occupiedAllocation) {
@@ -132,7 +132,7 @@ export default class TenantAllocationService {
     const inventoryIds = inventoryAllocations.map((item) => item._id);
     const activeTenantAllocations = await TenantAllocation.find({
       inventoryAllocationId: { $in: inventoryIds },
-      status: 'active',
+      status: { $in: ['active', 'notice'] },
     }).select('inventoryAllocationId');
 
     const occupiedInventoryIds = new Set(
@@ -335,7 +335,11 @@ export default class TenantAllocationService {
   }
 
   // ✅ Initiate Exit (Update endDate)
-  static async initiateExit(id: string, exitDate: Date | string): Promise<ITenantAllocation | null> {
+  static async initiateExit(
+    id: string,
+    exitDate: Date | string,
+    propertyUserId?: string
+  ): Promise<ITenantAllocation | null> {
     const allocation = await TenantAllocation.findById(id);
     if (!allocation) throw new Error('Allocation not found');
 
@@ -366,6 +370,11 @@ export default class TenantAllocationService {
     allocation.exitInitiatedAt = new Date();
     allocation.eligibleRefundPercentage = refundPercentage;
     allocation.eligibleRefundAmount = (refundPercentage / 100) * (allocation.depositAmount || 0);
+
+    if (propertyUserId) {
+      const mongoose = await import('mongoose');
+      allocation.propertyUserId = new mongoose.default.Types.ObjectId(propertyUserId);
+    }
 
     return allocation.save();
   }

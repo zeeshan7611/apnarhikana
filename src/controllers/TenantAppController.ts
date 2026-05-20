@@ -79,7 +79,7 @@ export default class TenantAppController {
       if (isDeposit) {
         // For deposit: get propertyId from active allocation (no ledger needed)
         const TenantAllocation = (await import('../models/TenantAllocation')).default;
-        const allocation = await TenantAllocation.findOne({ tenantId, status: 'active' });
+        const allocation = await TenantAllocation.findOne({ tenantId, status: { $in: ['active', 'notice'] } });
         if (!allocation) {
           return res.status(404).json({ success: false, message: 'No active allocation found' });
         }
@@ -378,6 +378,14 @@ export default class TenantAppController {
         return res.status(400).json({ message: 'rentLedgerId is required for rent or extra charge payments' });
       }
 
+      const mongoose = await import('mongoose');
+      if (!mongoose.default.Types.ObjectId.isValid(propertyUserId)) {
+        return res.status(400).json({ success: false, message: 'Invalid propertyUserId format' });
+      }
+      if (!isDeposit && rentLedgerId && !mongoose.default.Types.ObjectId.isValid(rentLedgerId)) {
+        return res.status(400).json({ success: false, message: 'Invalid rentLedgerId format' });
+      }
+
       const result = await TenantAppService.recordCashPayment({
         tenantId,
         propertyUserId,
@@ -386,8 +394,40 @@ export default class TenantAppController {
         notes,
         paymentType
       });
+
+      // Trigger push notification to property manager (propertyUserId) that tenant has initiated a cash payment
+      try {
+        const NotificationService = (await import('../services/NotificationService')).default;
+        const { NotificationType } = await import('../services/NotificationService');
+        const Tenant = (await import('../models/Tenant')).default;
+        const tenant = await Tenant.findById(tenantId);
+        if (tenant && result && result.transaction) {
+          const typeStr = paymentType === 'deposit' ? 'deposit' : 'rent';
+          await NotificationService.notifyPropertyUser(
+            propertyUserId,
+            'Cash Payment Pending Approval',
+            `${tenant.fullName} has submitted a cash payment of ₹${amount} for ${typeStr} for your approval.`,
+            NotificationType.PAYMENT,
+            { transactionId: result.transaction._id.toString(), tenantId }
+          );
+        }
+      } catch (notifyErr) {
+        console.error('Failed to notify manager about cash payment initiation:', notifyErr);
+      }
+
       return res.status(200).json({ success: true, data: result });
-    } catch (err) {
+    } catch (err: any) {
+      const knownMessages = [
+        'Property Manager not found',
+        'No active allocation found',
+        'Rent ledger not found or access denied',
+        'rentLedgerId is required',
+        'Rent ledger not found',
+        'Ledger is locked'
+      ];
+      if (err instanceof Error && knownMessages.some(msg => err.message.includes(msg))) {
+        return res.status(400).json({ success: false, message: err.message });
+      }
       next(err);
     }
   }
@@ -493,22 +533,26 @@ export default class TenantAppController {
   static async initiateExit(req: Request, res: Response, next: NextFunction) {
     try {
       const tenantId = (req as any).user.id;
-      const { exitDate } = req.body;
+      const { exitDate, propertyUserId } = req.body;
       if (!exitDate) {
         return res.status(400).json({ success: false, message: 'exitDate is required' });
       }
 
       // Find active allocation for the tenant
       const TenantAllocation = (await import('../models/TenantAllocation')).default;
-      const allocation = await TenantAllocation.findOne({ tenantId, status: 'active' });
+      const allocation = await TenantAllocation.findOne({ tenantId, status: { $in: ['active', 'notice'] } });
       if (!allocation) {
         return res.status(404).json({ success: false, message: 'No active room allocation found' });
       }
 
       const TenantAllocationService = (await import('../services/TenantAllocationService')).default;
-      const updatedAllocation = await TenantAllocationService.initiateExit(allocation._id.toString(), exitDate);
+      const updatedAllocation = await TenantAllocationService.initiateExit(
+        allocation._id.toString(),
+        exitDate,
+        propertyUserId
+      );
 
-      // Trigger push notification to property managers that tenant has scheduled an exit
+      // Trigger push notification to property managers/user that tenant has scheduled an exit
       try {
         const NotificationService = (await import('../services/NotificationService')).default;
         const { NotificationType } = await import('../services/NotificationService');
@@ -516,13 +560,27 @@ export default class TenantAppController {
         const tenant = await Tenant.findById(tenantId);
         if (tenant && updatedAllocation) {
           const dateStr = new Date(exitDate).toLocaleDateString();
-          await NotificationService.notifyManagers(
-            updatedAllocation.propertyId.toString(),
-            'Tenant Exit Scheduled',
-            `${tenant.fullName} has scheduled exit on ${dateStr}. Eligible refund: ${updatedAllocation.eligibleRefundPercentage}%.`,
-            NotificationType.ALLOCATION,
-            { allocationId: updatedAllocation._id.toString(), tenantId }
-          );
+          const title = 'Tenant Exit Scheduled';
+          const message = `${tenant.fullName} has scheduled exit on ${dateStr}. Eligible refund: ${updatedAllocation.eligibleRefundPercentage}%.`;
+          const notificationData = { allocationId: updatedAllocation._id.toString(), tenantId };
+
+          if (propertyUserId) {
+            await NotificationService.notifyPropertyUser(
+              propertyUserId,
+              title,
+              message,
+              NotificationType.ALLOCATION,
+              notificationData
+            );
+          } else {
+            await NotificationService.notifyManagers(
+              updatedAllocation.propertyId.toString(),
+              title,
+              message,
+              NotificationType.ALLOCATION,
+              notificationData
+            );
+          }
         }
       } catch (notifyErr) {
         console.error('Failed to notify managers about scheduled exit:', notifyErr);

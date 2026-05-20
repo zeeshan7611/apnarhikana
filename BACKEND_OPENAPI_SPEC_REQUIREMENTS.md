@@ -143,7 +143,7 @@ Add the following block to the root of `swagger.json` under `components`:
         "depositAmount":         { "type": "number" },
         "startDate":             { "type": "string", "format": "date" },
         "endDate":               { "type": "string", "format": "date" },
-        "status":                { "type": "string", "enum": ["active", "inactive", "terminated"] },
+        "status":                { "type": "string", "enum": ["active", "inactive", "terminated", "notice"] },
         "notes":                 { "type": "string" }
       }
     },

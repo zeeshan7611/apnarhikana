@@ -141,6 +141,39 @@ export default class NotificationService {
   }
 
   /**
+   * Send notification to a single property user and save to DB
+   */
+  static async notifyPropertyUser(propertyUserId: string, title: string, message: string, type: NotificationType, data: any = {}) {
+    try {
+      const PropertyUser = (await import('../models/PropertyUser')).default;
+      const user = await PropertyUser.findById(propertyUserId);
+      if (!user) return;
+
+      const propertyId = user.propertyId && user.propertyId.length > 0 ? user.propertyId[0].toString() : undefined;
+
+      await Notification.create({
+        propertyId,
+        title,
+        message,
+        type,
+        data: { ...data, propertyUserId },
+      });
+
+      if (user.notficationToken) {
+        return OneSignalService.sendToPlayerIds([user.notficationToken], title, message, {
+          data: { ...data, type, propertyUserId },
+        });
+      }
+
+      return OneSignalService.sendToUsers([propertyUserId], title, message, {
+        data: { ...data, type, propertyUserId },
+      });
+    } catch (err) {
+      console.error('Failed to notify property user:', err);
+    }
+  }
+
+  /**
    * Send Rent Reminder
    */
   static async sendRentReminder(tenantId: string, month: string, amount: number) {

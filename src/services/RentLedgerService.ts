@@ -454,7 +454,7 @@ export default class RentLedgerService {
     const [y, m] = month.split('-').map(Number);
     const dueDate = new Date(y, m, 5); // 5th of next month
 
-    const activeAllocations = await TenantAllocation.find({ status: 'active' });
+    const activeAllocations = await TenantAllocation.find({ status: { $in: ['active', 'notice'] } });
     let created = 0;
     let skipped = 0;
 
@@ -618,7 +618,7 @@ export default class RentLedgerService {
   // ─── 13. Sync All Ledgers ──────────────────────────────────────────────────
   static async syncAllLedgers(performedById: string): Promise<{ totalAllocations: number; ledgersCreated: number }> {
     const TenantAllocation = (await import('../models/TenantAllocation')).default;
-    const activeAllocations = await TenantAllocation.find({ status: 'active' });
+    const activeAllocations = await TenantAllocation.find({ status: { $in: ['active', 'notice'] } });
 
     let ledgersCreated = 0;
     for (const alloc of activeAllocations) {
