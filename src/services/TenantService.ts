@@ -39,31 +39,81 @@ export default class TenantService {
     limit: number,
     skip: number,
     propertyId?: string[],
-    status?: string
+    status?: string,
   ): Promise<{ data: any[]; total: number }> {
-    var query: any = {};
+    const query: any = {};
+
     if (status) {
       query["kyc.status"] = status;
     }
 
+    // Filter tenants by property
     if (propertyId && propertyId.length > 0) {
       const allocations = await TenantAllocation.find({
-        propertyId: { $in: propertyId }
-      }).select('tenantId');
-      const tenantIds = allocations.map(a => a.tenantId);
+        propertyId: { $in: propertyId },
+      }).select("tenantId");
+
+      const tenantIds = allocations.map((a) => a.tenantId);
+
       query._id = { $in: tenantIds };
     }
 
+    // Fetch tenants
     const [tenants, total] = await Promise.all([
       Tenant.find(query)
         .select("fullName phoneNumber email kyc _id")
         .skip(skip)
         .limit(limit)
         .lean(),
+
       Tenant.countDocuments(query),
     ]);
 
-    return { data: tenants, total };
+    const tenantIds = tenants.map((t) => t._id);
+
+    // Fetch allocations with property & room details
+    const allocations = await TenantAllocation.find({
+      tenantId: { $in: tenantIds },
+      status: "active",
+    })
+      .populate("propertyId", "propertyName")
+      .populate("roomId", "roomNumber roomName")
+      .lean();
+
+    // Merge allocation data into tenant response
+    const allocationMap = new Map();
+
+    allocations.forEach((allocation: any) => {
+      allocationMap.set(allocation.tenantId.toString(), allocation);
+    });
+
+    const finalData = tenants.map((tenant: any) => {
+      const allocation: any = allocationMap.get(tenant._id.toString());
+
+      return {
+        ...tenant,
+
+        property: allocation?.propertyId
+          ? {
+              _id: allocation.propertyId._id,
+              propertyName: allocation.propertyId.propertyName,
+            }
+          : null,
+
+        room: allocation?.roomId
+          ? {
+              _id: allocation.roomId._id,
+              roomName:
+                allocation.roomId.roomName || allocation.roomId.roomNumber,
+            }
+          : null,
+      };
+    });
+
+    return {
+      data: finalData,
+      total,
+    };
   }
 
   static async approveOrRejectKYC(
@@ -84,7 +134,7 @@ export default class TenantService {
       updateData["kyc.status"] = "approved";
       await TenantAllocation.findOneAndUpdate(
         { tenantId, status: "active" },
-        { status: "notice" }
+        { status: "notice" },
       );
     } else {
       // Status: Uploaded => Pending
@@ -94,15 +144,15 @@ export default class TenantService {
       }
 
       // Note : In the reject case we have to remove the images from R2Storage as well
-      const { deleteFileFromUrl } = await import('./R2Service');
+      const { deleteFileFromUrl } = await import("./R2Service");
       const docUrls = [
         tenant.kyc?.adharCard?.adharCardFront,
         tenant.kyc?.adharCard?.adharCardBack,
         tenant.kyc?.panCard?.panCardFront,
         tenant.kyc?.drivingLicence?.drivingLicenceFront,
         tenant.kyc?.drivingLicence?.drivingLicenceBack,
-        tenant.kyc?.otherDocument?.documentUrl
-      ].filter(url => url) as string[];
+        tenant.kyc?.otherDocument?.documentUrl,
+      ].filter((url) => url) as string[];
 
       for (const url of docUrls) {
         await deleteFileFromUrl(url);
@@ -122,30 +172,69 @@ export default class TenantService {
     // Notification Flow: When landlord reject or approve “Tenant App” get notification.
     if (updatedTenant) {
       try {
-        const NotificationService = (await import('./NotificationService')).default;
-        const { NotificationType } = await import('./NotificationService');
+        const NotificationService = (await import("./NotificationService"))
+          .default;
+        const { NotificationType } = await import("./NotificationService");
 
-        const title = action === 'approve' ? 'KYC Approved' : 'KYC Rejected';
-        const message = action === 'approve'
-          ? 'Your KYC documents have been successfully approved by the landlord!'
-          : `Your KYC was rejected. Reason: ${rejectionReason || 'Please re-submit your documents.'}`;
+        const title = action === "approve" ? "KYC Approved" : "KYC Rejected";
+        const message =
+          action === "approve"
+            ? "Your KYC documents have been successfully approved by the landlord!"
+            : `Your KYC was rejected. Reason: ${rejectionReason || "Please re-submit your documents."}`;
 
         await NotificationService.notifyTenant(
           tenantId,
           title,
           message,
           NotificationType.KYC,
-          { status: updatedTenant.kyc?.status }
+          { status: updatedTenant.kyc?.status },
         );
       } catch (notifyErr) {
-        console.error('Failed to notify tenant of KYC update:', notifyErr);
+        console.error("Failed to notify tenant of KYC update:", notifyErr);
       }
     }
 
     return updatedTenant;
   }
 
-  static async getTenantKYC(tenantId: string): Promise<any | null> {
-    return Tenant.findById(tenantId).select("fullName phoneNumber email kyc _id").lean();
+ static async getTenantKYC(tenantId: string): Promise<any | null> {
+
+  // Fetch tenant
+  const tenant: any = await Tenant.findById(tenantId)
+    .select("fullName phoneNumber email kyc _id")
+    .lean();
+
+  if (!tenant) {
+    return null;
   }
+
+  // Fetch active allocation with property & room
+  const allocation: any = await TenantAllocation.findOne({
+    tenantId,
+    status: "active",
+  })
+    .populate("propertyId", "propertyName")
+    .populate("roomId", "roomNumber roomName")
+    .lean();
+
+  return {
+    ...tenant,
+
+    property: allocation?.propertyId
+      ? {
+          _id: allocation.propertyId._id,
+          propertyName: allocation.propertyId.propertyName,
+        }
+      : null,
+
+    room: allocation?.roomId
+      ? {
+          _id: allocation.roomId._id,
+          roomName:
+            allocation.roomId.roomName ||
+            allocation.roomId.roomNumber,
+        }
+      : null,
+  };
+}
 }
