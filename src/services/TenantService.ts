@@ -76,8 +76,8 @@ export default class TenantService {
       tenantId: { $in: tenantIds },
       status: "active",
     })
-      .populate("propertyId", "propertyName")
-      .populate("roomId", "roomNumber roomName")
+      .populate("propertyId", "name")
+      .populate("roomId", "name")
       .lean();
 
     // Merge allocation data into tenant response
@@ -213,8 +213,8 @@ export default class TenantService {
     tenantId,
     status: "active",
   })
-    .populate("propertyId", "propertyName")
-    .populate("roomId", "roomNumber roomName")
+    .populate("propertyId", "name")
+    .populate("roomId", "name")
     .lean();
 
   return {
