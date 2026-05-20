@@ -96,7 +96,7 @@ export default class TenantService {
         property: allocation?.propertyId
           ? {
               _id: allocation.propertyId._id,
-              propertyName: allocation.propertyId.propertyName,
+              propertyName: allocation.propertyId.name,
             }
           : null,
 
@@ -104,7 +104,7 @@ export default class TenantService {
           ? {
               _id: allocation.roomId._id,
               roomName:
-                allocation.roomId.roomName || allocation.roomId.roomNumber,
+                allocation.roomId.name || allocation.roomId.roomNumber,
             }
           : null,
       };
@@ -223,7 +223,7 @@ export default class TenantService {
     property: allocation?.propertyId
       ? {
           _id: allocation.propertyId._id,
-          propertyName: allocation.propertyId.propertyName,
+          propertyName: allocation.propertyId.name,
         }
       : null,
 
@@ -231,8 +231,8 @@ export default class TenantService {
       ? {
           _id: allocation.roomId._id,
           roomName:
-            allocation.roomId.roomName ||
-            allocation.roomId.roomNumber,
+            allocation.roomId.name ||
+            allocation.roomId.keyNumber,
         }
       : null,
   };
