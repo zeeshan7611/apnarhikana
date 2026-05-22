@@ -19,6 +19,10 @@ export interface ITenantAllocation extends Document {
   eligibleRefundPercentage?: number;
   eligibleRefundAmount?: number;
   propertyUserId?: mongoose.Types.ObjectId;
+  moveOutStatus?: 'pending' | 'acknowledged' | 'approved' | 'rejected';
+  moveOutInitiatedBy?: 'tenant' | 'landlord';
+  moveOutRejectionReason?: string;
+  moveOutAcknowledgedAt?: Date;
 }
 
 const TenantAllocationSchema: Schema = new Schema({
@@ -44,6 +48,10 @@ const TenantAllocationSchema: Schema = new Schema({
   eligibleRefundPercentage: { type: Number, default: 0 },
   eligibleRefundAmount: { type: Number, default: 0 },
   propertyUserId: { type: Schema.Types.ObjectId, ref: 'PropertyUser' },
+  moveOutStatus: { type: String, enum: ['pending', 'acknowledged', 'approved', 'rejected'] },
+  moveOutInitiatedBy: { type: String, enum: ['tenant', 'landlord'] },
+  moveOutRejectionReason: { type: String },
+  moveOutAcknowledgedAt: { type: Date },
 }, {
   timestamps: true,
 });

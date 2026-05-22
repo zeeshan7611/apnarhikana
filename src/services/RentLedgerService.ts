@@ -228,7 +228,7 @@ export default class RentLedgerService {
     // Trigger Notification to Tenant
     try {
       const NotificationService = (await import('./NotificationService')).default;
-      const { NotificationType } = await import('./NotificationService');
+      const { NotificationType, NotificationScreen } = await import('./NotificationService');
       const amountStr = `₹${transaction.amount}`;
       const paymentTypeStr = transaction.paymentType === 'deposit' ? 'Security Deposit' : 'Rent/Charges';
       if (action === 'approve') {
@@ -237,7 +237,7 @@ export default class RentLedgerService {
           'Cash Payment Approved',
           `Your cash payment of ${amountStr} for ${paymentTypeStr} has been successfully approved by the manager.`,
           NotificationType.PAYMENT,
-          { transactionId: transaction._id.toString(), status: 'paid' }
+          { screen: NotificationScreen.TENANT_TRANSACTION_DETAIL, transactionId: transaction._id.toString(), status: 'paid' }
         );
       } else {
         await NotificationService.notifyTenant(
@@ -245,7 +245,7 @@ export default class RentLedgerService {
           'Cash Payment Rejected',
           `Your cash payment of ${amountStr} for ${paymentTypeStr} was rejected by the manager. Please contact them.`,
           NotificationType.PAYMENT,
-          { transactionId: transaction._id.toString(), status: 'rejected' }
+          { screen: NotificationScreen.TENANT_TRANSACTION_DETAIL, transactionId: transaction._id.toString(), status: 'rejected' }
         );
       }
     } catch (notificationErr) {
@@ -254,6 +254,7 @@ export default class RentLedgerService {
 
     return { ledger, transaction };
   }
+
   // ─── 6b. Complete Payment (Gateway/Webhook) ─────────────────────────────────
   static async completePayment(transactionId: string): Promise<{ ledger: IRentLedger | null; transaction: IPaymentTransaction }> {
     const transaction = await PaymentTransaction.findById(transactionId);
@@ -266,6 +267,22 @@ export default class RentLedgerService {
     let ledger: IRentLedger | null = null;
     if (transaction.rentLedgerId) {
       ledger = await this.recalculateLedger(transaction.rentLedgerId.toString());
+    }
+
+    // Notify landlord managers: rent/deposit paid online
+    try {
+      const NotificationService = (await import('./NotificationService')).default;
+      const { NotificationType, NotificationScreen } = await import('./NotificationService');
+      const paymentTypeStr = transaction.paymentType === 'deposit' ? 'Security Deposit' : 'Rent';
+      await NotificationService.notifyManagers(
+        transaction.propertyId.toString(),
+        'Payment Received',
+        `${paymentTypeStr} payment of ₹${transaction.amount} has been received via UPI.`,
+        NotificationType.PAYMENT,
+        { screen: NotificationScreen.LANDLORD_TRANSACTION_DETAIL, transactionId: transaction._id.toString(), tenantId: transaction.tenantId.toString() }
+      );
+    } catch (notificationErr) {
+      console.error('Failed to send payment complete notification to managers:', notificationErr);
     }
 
     return { ledger, transaction };

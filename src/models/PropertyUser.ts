@@ -4,6 +4,7 @@ export interface IPropertyUser extends Document {
   email: string;
   passwordHash: string;
   name: string;
+  fullName: string;
   roleIds: mongoose.Types.ObjectId[];
   propertyId?: mongoose.Types.ObjectId[];
   phoneNumber?: string;
@@ -49,6 +50,13 @@ const PropertyUserSchema: Schema = new Schema({
   otpExpiry: { type: Date },
 }, {
   timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true },
+});
+
+// Virtual so consumers see fullName just like the Tenant model
+PropertyUserSchema.virtual('fullName').get(function (this: IPropertyUser) {
+  return this.name;
 });
 
 export default mongoose.model<IPropertyUser>('PropertyUser', PropertyUserSchema);

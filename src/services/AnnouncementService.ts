@@ -1,5 +1,5 @@
 import Announcement, { IAnnouncement } from '../models/Announcement';
-import NotificationService, { NotificationType } from './NotificationService';
+import NotificationService, { NotificationScreen, NotificationType } from './NotificationService';
 import TenantAllocation from '../models/TenantAllocation';
 
 export default class AnnouncementService {
@@ -38,7 +38,7 @@ export default class AnnouncementService {
         announcement.title,
         announcement.message,
         NotificationType.ANNOUNCEMENT,
-        { announcementId: announcement._id }
+        { screen: NotificationScreen.TENANT_ANNOUNCEMENT, announcementId: announcement._id }
       );
     } else if (!data.tenantId && !data.roomId && !data.floorId && !data.propertyId) {
       // If no filters provided, send to all (Global announcement)
@@ -46,7 +46,7 @@ export default class AnnouncementService {
         announcement.title,
         announcement.message,
         NotificationType.ANNOUNCEMENT,
-        { announcementId: announcement._id }
+        { screen: NotificationScreen.TENANT_ANNOUNCEMENT, announcementId: announcement._id }
       );
     }
 

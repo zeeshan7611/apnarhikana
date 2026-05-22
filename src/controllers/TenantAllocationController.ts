@@ -125,8 +125,66 @@ export default class TenantAllocationController {
       if (!allocationId || !exitDate) {
         return res.status(400).json({ message: "allocationId and exitDate are required" });
       }
-      const allocation = await TenantAllocationService.initiateExit(allocationId, exitDate);
+      const propertyUserId = (req as any).user?.id;
+      const allocation = await TenantAllocationService.initiateExit(allocationId, exitDate, propertyUserId, 'landlord');
       res.json({ success: true, data: allocation, message: "Exit initiated successfully" });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async getMoveOutList(req: Request, res: Response, next: NextFunction) {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const { propertyId, moveOutStatus } = req.query;
+
+      const result = await TenantAllocationService.getMoveOutList({
+        propertyId: propertyId as string,
+        moveOutStatus: moveOutStatus as string,
+        page,
+        limit,
+      });
+
+      res.json({ success: true, ...result });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async getMoveOutDetail(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.query;
+      if (!id) return res.status(400).json({ success: false, message: 'id is required' });
+
+      const allocation = await TenantAllocationService.getMoveOutDetail(id as string);
+      if (!allocation) return res.status(404).json({ success: false, message: 'Move-out request not found' });
+
+      res.json({ success: true, data: allocation });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async approveMoveOut(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.body;
+      if (!id) return res.status(400).json({ success: false, message: 'id is required' });
+
+      const allocation = await TenantAllocationService.approveMoveOut(id);
+      res.json({ success: true, data: allocation, message: 'Move-out approved successfully' });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async rejectMoveOut(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id, reason } = req.body;
+      if (!id) return res.status(400).json({ success: false, message: 'id is required' });
+
+      const allocation = await TenantAllocationService.rejectMoveOut(id, reason);
+      res.json({ success: true, data: allocation, message: 'Move-out rejected' });
     } catch (err) {
       next(err);
     }

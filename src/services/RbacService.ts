@@ -24,18 +24,20 @@ const DEFAULT_PERMISSIONS = [
   { name: 'Complaints Viewer', moduleKey: 'complaints', actions: ['read'] },
   { name: 'Announcements Admin', moduleKey: 'announcements', actions: ['read', 'write', 'update', 'delete'] },
   { name: 'Announcements Viewer', moduleKey: 'announcements', actions: ['read'] },
+  { name: 'Requests Admin', moduleKey: 'requests', actions: ['read', 'write', 'update', 'delete'] },
+  { name: 'Requests Viewer', moduleKey: 'requests', actions: ['read'] },
 ];
 
 export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   admin: [
-    'Properties Admin', 'Floors Admin', 'Rooms Admin', 'Beds Admin', 
-    'Allocations Admin', 'Users Admin', 'Tenants Admin', 
-    'Expenses Admin', 'Complaints Admin', 'Announcements Admin'
+    'Properties Admin', 'Floors Admin', 'Rooms Admin', 'Beds Admin',
+    'Allocations Admin', 'Users Admin', 'Tenants Admin',
+    'Expenses Admin', 'Complaints Admin', 'Announcements Admin', 'Requests Admin'
   ],
   manager: [
     'Properties Viewer', 'Floors Admin', 'Rooms Admin', 'Beds Admin',
     'Allocations Admin', 'Users Admin', 'Tenants Admin',
-    'Expenses Admin', 'Complaints Admin', 'Announcements Admin'
+    'Expenses Admin', 'Complaints Admin', 'Announcements Admin', 'Requests Admin'
   ],
   user: ['Properties Viewer', 'Floors Viewer', 'Rooms Viewer', 'Beds Viewer', 'Allocations Viewer'],
 };

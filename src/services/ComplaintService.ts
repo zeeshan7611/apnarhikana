@@ -1,13 +1,16 @@
 import Complaint, { IComplaint } from '../models/Complaint';
 import TenantAllocation from '../models/TenantAllocation';
-import NotificationService, { NotificationType } from './NotificationService';
+import NotificationService, { NotificationScreen, NotificationType } from './NotificationService';
 
 export default class ComplaintService {
   static async createComplaint(data: any, creatorId?: string): Promise<IComplaint> {
-    if (data.type === 'self') {
+    // 'self' is treated as 'propertyUser' for backward compat
+    if (data.type === 'self' || data.type === 'propertyUser') {
+      data.type = 'propertyUser';
       data.tenantId = null;
-      data.sourceApp = 'landlord';
+      data.sourceApp = data.sourceApp || 'propertyManager';
       if (creatorId) {
+        data.propertyUserId = creatorId;
         data.assignedTo = creatorId;
       }
     } else {
@@ -31,15 +34,26 @@ export default class ComplaintService {
     
     const complaint = await Complaint.create(data);
 
-    // Notify tenant (only for tenant type complaints)
     if (data.type !== 'self' && complaint.tenantId) {
+      // Notify tenant: complaint registered
       await NotificationService.notifyTenant(
         complaint.tenantId.toString(),
         'Complaint Created',
         `Your complaint "${complaint.title}" has been registered.`,
         NotificationType.COMPLAINT,
-        { complaintId: complaint._id }
+        { screen: NotificationScreen.TENANT_COMPLAINT_DETAIL, complaintId: complaint._id }
       );
+
+      // Notify landlord managers: new complaint raised by tenant
+      if (complaint.propertyId) {
+        await NotificationService.notifyManagers(
+          complaint.propertyId.toString(),
+          'New Complaint Raised',
+          `A new complaint "${complaint.title}" has been submitted by a tenant.`,
+          NotificationType.COMPLAINT,
+          { screen: NotificationScreen.LANDLORD_COMPLAINT_DETAIL, complaintId: complaint._id }
+        );
+      }
     }
 
     return complaint;
@@ -50,6 +64,7 @@ export default class ComplaintService {
     const [data, total] = await Promise.all([
       Complaint.find(filters)
         .populate('tenantId', 'fullName phoneNumber')
+        .populate('propertyUserId', 'name phoneNumber')
         .populate('propertyId', 'name')
         .populate('assignedTo', 'name')
         .sort({ createdAt: -1 })
@@ -63,6 +78,7 @@ export default class ComplaintService {
   static async getComplaintById(id: string): Promise<IComplaint | null> {
     return Complaint.findById(id)
       .populate('tenantId', 'fullName phoneNumber')
+      .populate('propertyUserId', 'name phoneNumber')
       .populate('propertyId', 'name')
       .populate('assignedTo', 'name');
   }
@@ -76,7 +92,7 @@ export default class ComplaintService {
         'Complaint Update',
         `Status of your complaint "${complaint.title}" has been updated to ${complaint.status}.`,
         NotificationType.COMPLAINT,
-        { complaintId: complaint._id, status: complaint.status }
+        { screen: NotificationScreen.TENANT_COMPLAINT_DETAIL, complaintId: complaint._id, status: complaint.status }
       );
     }
 
@@ -90,6 +106,7 @@ export default class ComplaintService {
   static async getRecentComplaints(limit: number = 4): Promise<IComplaint[]> {
     return Complaint.find()
       .populate('tenantId', 'fullName phoneNumber')
+      .populate('propertyUserId', 'name phoneNumber')
       .populate('propertyId', 'name')
       .populate('assignedTo', 'name')
       .sort({ createdAt: -1 })

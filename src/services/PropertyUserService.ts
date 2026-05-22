@@ -141,6 +141,33 @@ export default class PropertyUserService {
       .sort({ createdAt: -1 });
   }
 
+  static async getRequestAccessUsersByProperty(propertyId: string): Promise<IPropertyUser[]> {
+    const Module = (await import("../models/Module")).default;
+    const Permission = (await import("../models/Permission")).default;
+    const Role = (await import("../models/Role")).default;
+
+    // Walk Module → Permission → Role to find all roles that have requests module access
+    const requestsModule = await Module.findOne({ key: 'requests' });
+    if (!requestsModule) return [];
+
+    const permissions = await Permission.find({ moduleId: requestsModule._id }).select('_id');
+    if (!permissions.length) return [];
+
+    const permissionIds = permissions.map((p) => p._id);
+    const roles = await Role.find({ permissionIds: { $in: permissionIds } }).select('_id');
+    if (!roles.length) return [];
+
+    const roleIds = roles.map((r) => r._id);
+
+    return PropertyUser.find({
+      roleIds: { $in: roleIds },
+      propertyId,
+      isActive: true,
+    })
+      .select("_id notficationToken")
+      .sort({ createdAt: -1 });
+  }
+
   static async login(email: string, password: string) {
     const user = await PropertyUser
       .findOne({ email })

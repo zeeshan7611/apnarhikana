@@ -10,6 +10,26 @@ export enum NotificationType {
   KYC = 'kyc',
 }
 
+// Screen tags consumed by both apps to navigate on notification tap
+export enum NotificationScreen {
+  // ── Tenant App ──────────────────────────────────────────────
+  TENANT_ANNOUNCEMENT       = 'tenant_announcement',
+  TENANT_RENT               = 'tenant_rent',
+  TENANT_COMPLAINT_DETAIL   = 'tenant_complaint_detail',
+  TENANT_TRANSACTION_DETAIL = 'tenant_transaction_detail',
+  TENANT_MOVE_OUT           = 'tenant_move_out',
+  TENANT_KYC                = 'tenant_kyc',
+
+  // ── Landlord App ─────────────────────────────────────────────
+  LANDLORD_COMPLAINT_DETAIL    = 'landlord_complaint_detail',
+  LANDLORD_KYC_DETAIL          = 'landlord_kyc_detail',
+  LANDLORD_TRANSACTION_DETAIL  = 'landlord_transaction_detail',
+  LANDLORD_CASH_PAYMENT        = 'landlord_cash_payment',
+  LANDLORD_NOTICE_REQUEST      = 'landlord_notice_request',
+  LANDLORD_MOVE_OUT_DETAIL     = 'landlord_move_out_detail',
+  LANDLORD_EXPENSE_DETAIL      = 'landlord_expense_detail',
+}
+
 export default class NotificationService {
   /**
    * Send notification to all managers of a property
@@ -141,6 +161,47 @@ export default class NotificationService {
   }
 
   /**
+   * Send notification to property users with the request_access role for a property
+   */
+  static async notifyRequestAccessUsers(
+    propertyId: string,
+    title: string,
+    message: string,
+    type: NotificationType,
+    data: any = {}
+  ) {
+    try {
+      const PropertyUserService = (await import('./PropertyUserService')).default;
+      const users = await PropertyUserService.getRequestAccessUsersByProperty(propertyId);
+      if (!users || users.length === 0) return;
+
+      const userIds = users.map((u) => u._id.toString());
+
+      await Notification.create({
+        propertyId,
+        title,
+        message,
+        type,
+        data,
+      });
+
+      const playerIds = users.map((u) => u.notficationToken).filter((id) => id) as string[];
+
+      if (playerIds.length > 0) {
+        return OneSignalService.sendToPlayerIds(playerIds, title, message, {
+          data: { ...data, type },
+        });
+      }
+
+      return OneSignalService.sendToUsers(userIds, title, message, {
+        data: { ...data, type },
+      });
+    } catch (err) {
+      console.error('Failed to notify request access users:', err);
+    }
+  }
+
+  /**
    * Send notification to a single property user and save to DB
    */
   static async notifyPropertyUser(propertyUserId: string, title: string, message: string, type: NotificationType, data: any = {}) {
@@ -179,6 +240,10 @@ export default class NotificationService {
   static async sendRentReminder(tenantId: string, month: string, amount: number) {
     const title = 'Rent Reminder';
     const message = `Friendly reminder: Your rent for ${month} of ₹${amount} is due. Please ignore if already paid.`;
-    return this.notifyTenant(tenantId, title, message, NotificationType.PAYMENT, { month, amount });
+    return this.notifyTenant(tenantId, title, message, NotificationType.PAYMENT, {
+      screen: NotificationScreen.TENANT_RENT,
+      month,
+      amount,
+    });
   }
 }

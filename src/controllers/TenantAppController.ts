@@ -172,7 +172,7 @@ export default class TenantAppController {
             await RentLedgerService.completePayment(transaction._id.toString());
             transaction.status = 'paid';
           } else if (smeStatus.payment_status === 'FAILED' || smeStatus.payment_status === 'EXPIRED') {
-            transaction.status = 'overdue'; // or map to appropriate local status
+            transaction.status = 'failed';
             await transaction.save();
           }
         } catch (err) {
@@ -296,8 +296,9 @@ export default class TenantAppController {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
       const status = req.query.status as string;
+      const month = req.query.month as string;  // format: YYYY-MM
 
-      const data = await TenantAppService.getTransactionHistory(tenantId, page, limit, status);
+      const data = await TenantAppService.getTransactionHistory(tenantId, page, limit, status, month);
       res.json({ success: true, ...data });
     } catch (err) {
       next(err);
@@ -398,7 +399,7 @@ export default class TenantAppController {
       // Trigger push notification to property manager (propertyUserId) that tenant has initiated a cash payment
       try {
         const NotificationService = (await import('../services/NotificationService')).default;
-        const { NotificationType } = await import('../services/NotificationService');
+        const { NotificationType, NotificationScreen } = await import('../services/NotificationService');
         const Tenant = (await import('../models/Tenant')).default;
         const tenant = await Tenant.findById(tenantId);
         if (tenant && result && result.transaction) {
@@ -408,7 +409,7 @@ export default class TenantAppController {
             'Cash Payment Pending Approval',
             `${tenant.fullName} has submitted a cash payment of ₹${amount} for ${typeStr} for your approval.`,
             NotificationType.PAYMENT,
-            { transactionId: result.transaction._id.toString(), tenantId }
+            { screen: NotificationScreen.LANDLORD_CASH_PAYMENT, transactionId: result.transaction._id.toString(), tenantId }
           );
         }
       } catch (notifyErr) {
@@ -529,11 +530,37 @@ export default class TenantAppController {
     }
   }
 
+  // GET /profile
+  static async getProfile(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tenantId = (req as any).user.id;
+      const Tenant = (await import('../models/Tenant')).default;
+      const tenant = await Tenant.findById(tenantId).select(
+        '-otp -otpExpiry -oneSignalId -createdById'
+      );
+      if (!tenant) return res.status(404).json({ success: false, message: 'Tenant not found' });
+      res.json({ success: true, data: tenant });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // GET /move-out-policy
+  static async getMoveOutPolicy(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tenantId = (req as any).user.id;
+      const data = await TenantAppService.getMoveOutPolicy(tenantId);
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   // POST /initiate-exit
   static async initiateExit(req: Request, res: Response, next: NextFunction) {
     try {
       const tenantId = (req as any).user.id;
-      const { exitDate, propertyUserId } = req.body;
+      const { exitDate } = req.body;
       if (!exitDate) {
         return res.status(400).json({ success: false, message: 'exitDate is required' });
       }
@@ -549,41 +576,31 @@ export default class TenantAppController {
       const updatedAllocation = await TenantAllocationService.initiateExit(
         allocation._id.toString(),
         exitDate,
-        propertyUserId
+        undefined,
+        'tenant'
       );
 
-      // Trigger push notification to property managers/user that tenant has scheduled an exit
       try {
         const NotificationService = (await import('../services/NotificationService')).default;
-        const { NotificationType } = await import('../services/NotificationService');
+        const { NotificationType, NotificationScreen } = await import('../services/NotificationService');
         const Tenant = (await import('../models/Tenant')).default;
         const tenant = await Tenant.findById(tenantId);
         if (tenant && updatedAllocation) {
           const dateStr = new Date(exitDate).toLocaleDateString();
           const title = 'Tenant Exit Scheduled';
           const message = `${tenant.fullName} has scheduled exit on ${dateStr}. Eligible refund: ${updatedAllocation.eligibleRefundPercentage}%.`;
-          const notificationData = { allocationId: updatedAllocation._id.toString(), tenantId };
+          const notificationData = { screen: NotificationScreen.LANDLORD_NOTICE_REQUEST, allocationId: updatedAllocation._id.toString(), tenantId };
 
-          if (propertyUserId) {
-            await NotificationService.notifyPropertyUser(
-              propertyUserId,
-              title,
-              message,
-              NotificationType.ALLOCATION,
-              notificationData
-            );
-          } else {
-            await NotificationService.notifyManagers(
-              updatedAllocation.propertyId.toString(),
-              title,
-              message,
-              NotificationType.ALLOCATION,
-              notificationData
-            );
-          }
+          await NotificationService.notifyRequestAccessUsers(
+            updatedAllocation.propertyId.toString(),
+            title,
+            message,
+            NotificationType.ALLOCATION,
+            notificationData
+          );
         }
       } catch (notifyErr) {
-        console.error('Failed to notify managers about scheduled exit:', notifyErr);
+        console.error('Failed to notify request access users about scheduled exit:', notifyErr);
       }
 
       res.json({ 

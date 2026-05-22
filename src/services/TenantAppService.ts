@@ -63,11 +63,27 @@ export default class TenantAppService {
       status: { $in: ['pending', 'partial', 'overdue', 'due'] }
     }).sort({ month: 1 });
 
+    // Fetch all initiated transactions for this tenant to determine item status
+    const initiatedTxns = await PaymentTransaction.find({ tenantId, status: 'initiated' as any });
+    const initiatedLedgerIds = new Set(
+      initiatedTxns.filter(t => t.rentLedgerId).map(t => t.rentLedgerId!.toString())
+    );
+    const hasInitiatedDeposit = initiatedTxns.some(t => t.paymentType === 'deposit');
+
+    const now = new Date();
+
+    const resolveStatus = (rentLedgerId: string | undefined, dueDate: Date | undefined, isDeposit = false): string => {
+      if (isDeposit) return hasInitiatedDeposit ? 'initiated' : (dueDate && dueDate < now ? 'overdue' : 'due');
+      if (rentLedgerId && initiatedLedgerIds.has(rentLedgerId)) return 'initiated';
+      return dueDate && dueDate < now ? 'overdue' : 'due';
+    };
+
     const response: any[] = [];
 
     // Helper to calculate installments
-    const getInstallments = (title: string, amount: number, type: string, ledgerId?: string, dueDate?: Date) => {
-      if (amount <= 9999) return [{ title, amount, type, rentLedgerId: ledgerId, dueDate }];
+    const getInstallments = (title: string, amount: number, type: string, ledgerId?: string, dueDate?: Date, isDeposit = false) => {
+      const status = resolveStatus(ledgerId, dueDate, isDeposit);
+      if (amount <= 9999) return [{ title, amount, type, rentLedgerId: ledgerId, dueDate, status }];
 
       const count = Math.ceil(amount / 10000);
       const installmentAmount = Math.round(amount / count);
@@ -79,7 +95,7 @@ export default class TenantAppService {
           type,
           rentLedgerId: ledgerId,
           dueDate,
-
+          status,
         });
       }
       return installments;
@@ -95,15 +111,14 @@ export default class TenantAppService {
     const remainingDeposit = Math.max(0, allocation.depositAmount - totalDepositPaid);
 
     if (remainingDeposit > 0) {
-      // For deposit, we use allocation startDate as the due date
-      response.push(...getInstallments('Security Deposit', remainingDeposit, 'deposit', undefined, allocation.startDate));
+      response.push(...getInstallments('Security Deposit', remainingDeposit, 'deposit', undefined, allocation.startDate, true));
     }
 
     // 2. Process Ledgers — include itemized extra charges (without double-counting)
     for (const ledger of ledgers) {
       let remaining = ledger.pendingAmount || 0;
+      const ledgerId = ledger._id.toString();
 
-      // If there are extra charges on the ledger, push them as separate items up to the remaining amount
       if (ledger.extraCharges && ledger.extraCharges.length > 0) {
         for (const charge of ledger.extraCharges) {
           if (remaining <= 0) break;
@@ -113,18 +128,18 @@ export default class TenantAppService {
               title: charge.title || `Extra: ${charge.type}`,
               amount: chargePending,
               type: 'extra_charge',
-              rentLedgerId: ledger._id.toString(),
+              rentLedgerId: ledgerId,
               dueDate: ledger.dueDate,
-              extraType: charge.type
+              extraType: charge.type,
+              status: resolveStatus(ledgerId, ledger.dueDate),
             });
             remaining -= chargePending;
           }
         }
       }
 
-      // Remaining amount (after accounting for extra charges) belongs to rent — split into installments if needed
       if (remaining > 0) {
-        response.push(...getInstallments(`Rent - ${ledger.month}`, remaining, 'rent', ledger._id.toString(), ledger.dueDate));
+        response.push(...getInstallments(`Rent - ${ledger.month}`, remaining, 'rent', ledgerId, ledger.dueDate));
       }
     }
 
@@ -189,7 +204,7 @@ export default class TenantAppService {
     page: number = 1,
     limit: number = 10,
     filters: { status?: string; category?: string; priority?: string } = {}
-  ): Promise<{ complaints: IComplaint[]; total: number }> {
+  ): Promise<{ complaints: IComplaint[]; total: number; page: number; limit: number; totalPages: number }> {
     const skip = (page - 1) * limit;
 
     const query: any = { tenantId };
@@ -201,7 +216,58 @@ export default class TenantAppService {
       Complaint.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
       Complaint.countDocuments(query)
     ]);
-    return { complaints, total };
+    return { complaints, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
+  // ✅ 7a. Move-out Policy & Security Deposit Info
+  static async getMoveOutPolicy(tenantId: string): Promise<any> {
+    const allocation = await TenantAllocation.findOne({ tenantId, status: { $in: ['active', 'notice'] } });
+    if (!allocation) throw new Error('No active allocation found');
+
+    // How much deposit has been paid so far
+    const depositPayments = await PaymentTransaction.find({ tenantId, paymentType: 'deposit', status: 'paid' as any });
+    const depositPaid = depositPayments.reduce((sum, p) => sum + p.amount, 0);
+    const depositRemaining = Math.max(0, allocation.depositAmount - depositPaid);
+
+    const NOTICE_PERIOD_DAYS = 30;
+
+    const refundPolicy = [
+      { minDays: 30, maxDays: null,  refundPercentage: 100, label: `${NOTICE_PERIOD_DAYS}+ days notice — Full refund` },
+      { minDays: 22, maxDays: 29,    refundPercentage: 75,  label: '22–29 days notice — 75% refund' },
+      { minDays: 15, maxDays: 21,    refundPercentage: 50,  label: '15–21 days notice — 50% refund' },
+      { minDays: 8,  maxDays: 14,    refundPercentage: 25,  label: '8–14 days notice — 25% refund' },
+      { minDays: 0,  maxDays: 7,     refundPercentage: 0,   label: '0–7 days notice — No refund' },
+    ];
+
+    const result: any = {
+      depositAmount: allocation.depositAmount,
+      depositPaid,
+      depositRemaining,
+      noticePeriodDays: NOTICE_PERIOD_DAYS,
+      refundPolicy,
+    };
+
+    // If exit has already been initiated, include current status
+    if (allocation.exitInitiatedAt) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const exitDate = allocation.endDate ? new Date(allocation.endDate) : null;
+      let noticePeriodServedDays: number | null = null;
+      if (exitDate) {
+        const diff = exitDate.getTime() - today.getTime();
+        noticePeriodServedDays = Math.max(0, Math.ceil(diff / (1000 * 3600 * 24)));
+      }
+
+      result.exitInfo = {
+        exitDate: allocation.endDate,
+        exitInitiatedAt: allocation.exitInitiatedAt,
+        eligibleRefundPercentage: allocation.eligibleRefundPercentage,
+        eligibleRefundAmount: allocation.eligibleRefundAmount,
+        noticePeriodServedDays,
+      };
+    }
+
+    return result;
   }
 
   // ✅ 8. Get Payment Transaction History (Tenant Wise with Pagination)
@@ -209,13 +275,27 @@ export default class TenantAppService {
     tenantId: string,
     page: number = 1,
     limit: number = 10,
-    status?: string
+    status?: string,
+    month?: string  // format: YYYY-MM
   ): Promise<{ transactions: any[]; total: number }> {
     const skip = (page - 1) * limit;
-    const query: any = { tenantId: new mongoose.Types.ObjectId(tenantId), status: { $in: ['partial', 'paid', 'overdue', 'due'] } };
-    if (status) query.status = status;
+    const ALLOWED_STATUSES = ['initiated', 'paid', 'failed'];
 
-    console.log(`[DEBUG] Fetching transactions for tenant ${tenantId}, status: ${status || 'all'}`);
+    const query: any = {
+      tenantId: new mongoose.Types.ObjectId(tenantId),
+      status: { $in: ALLOWED_STATUSES }
+    };
+
+    if (status && ALLOWED_STATUSES.includes(status)) {
+      query.status = status;
+    }
+
+    if (month) {
+      const [year, mon] = month.split('-').map(Number);
+      const start = new Date(year, mon - 1, 1);
+      const end = new Date(year, mon, 1);
+      query.createdAt = { $gte: start, $lt: end };
+    }
 
     const [transactions, total] = await Promise.all([
       PaymentTransaction.find(query)
@@ -226,7 +306,6 @@ export default class TenantAppService {
       PaymentTransaction.countDocuments(query)
     ]);
 
-    console.log(`[DEBUG] Found ${transactions.length} transactions (Total: ${total})`);
     return { transactions, total };
   }
 
@@ -374,7 +453,7 @@ export default class TenantAppService {
       try {
         const TenantAllocation = (await import('../models/TenantAllocation')).default;
         const NotificationService = (await import('./NotificationService')).default;
-        const { NotificationType } = await import('./NotificationService');
+        const { NotificationType, NotificationScreen } = await import('./NotificationService');
 
         const activeAllocation = await TenantAllocation.findOne({ tenantId, status: { $in: ['active', 'notice'] } });
         const propertyId = activeAllocation?.propertyId?.toString();
@@ -382,9 +461,9 @@ export default class TenantAppService {
           await NotificationService.notifyManagers(
             propertyId,
             'KYC Document Uploaded',
-            `Tenant ${updatedTenant.fullName} has uploaded KYC documents.`,
+            `Tenant ${updatedTenant.fullName} has uploaded KYC documents for review.`,
             NotificationType.KYC,
-            { tenantId: updatedTenant._id }
+            { screen: NotificationScreen.LANDLORD_KYC_DETAIL, tenantId: updatedTenant._id }
           );
         }
       } catch (notifyErr) {

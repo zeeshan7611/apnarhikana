@@ -172,9 +172,8 @@ export default class TenantService {
     // Notification Flow: When landlord reject or approve “Tenant App” get notification.
     if (updatedTenant) {
       try {
-        const NotificationService = (await import("./NotificationService"))
-          .default;
-        const { NotificationType } = await import("./NotificationService");
+        const NotificationService = (await import("./NotificationService")).default;
+        const { NotificationType, NotificationScreen } = await import("./NotificationService");
 
         const title = action === "approve" ? "KYC Approved" : "KYC Rejected";
         const message =
@@ -187,7 +186,7 @@ export default class TenantService {
           title,
           message,
           NotificationType.KYC,
-          { status: updatedTenant.kyc?.status },
+          { screen: NotificationScreen.TENANT_KYC, status: updatedTenant.kyc?.status },
         );
       } catch (notifyErr) {
         console.error("Failed to notify tenant of KYC update:", notifyErr);
@@ -201,7 +200,7 @@ export default class TenantService {
 
   // Fetch tenant
   const tenant: any = await Tenant.findById(tenantId)
-    .select("fullName phoneNumber email kyc _id")
+    .select("fullName phoneNumber email kyc _id ")
     .lean();
 
   if (!tenant) {
@@ -210,16 +209,13 @@ export default class TenantService {
 
   // Fetch active allocation with property & room
   const allocation: any = await TenantAllocation.findOne({
-    tenantId,
+    tenantId : tenantId,
     status: "active",
-  })
-    .populate("propertyId", "name")
-    .populate("roomId", "name")
+  }) 
     .lean();
-
+console.log("Allocation in getTenantKYC:", allocation);
   return {
     ...tenant,
-
     property: allocation?.propertyId
       ? {
           _id: allocation.propertyId._id,

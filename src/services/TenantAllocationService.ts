@@ -338,7 +338,8 @@ export default class TenantAllocationService {
   static async initiateExit(
     id: string,
     exitDate: Date | string,
-    propertyUserId?: string
+    propertyUserId?: string,
+    initiatedBy: 'tenant' | 'landlord' = 'landlord'
   ): Promise<ITenantAllocation | null> {
     const allocation = await TenantAllocation.findById(id);
     if (!allocation) throw new Error('Allocation not found');
@@ -370,6 +371,12 @@ export default class TenantAllocationService {
     allocation.exitInitiatedAt = new Date();
     allocation.eligibleRefundPercentage = refundPercentage;
     allocation.eligibleRefundAmount = (refundPercentage / 100) * (allocation.depositAmount || 0);
+    allocation.moveOutInitiatedBy = initiatedBy;
+    // Landlord-initiated exits are auto-acknowledged; tenant-initiated need landlord acknowledgement
+    allocation.moveOutStatus = initiatedBy === 'landlord' ? 'acknowledged' : 'pending';
+    if (initiatedBy === 'landlord') {
+      allocation.moveOutAcknowledgedAt = new Date();
+    }
 
     if (propertyUserId) {
       const mongoose = await import('mongoose');
@@ -377,5 +384,106 @@ export default class TenantAllocationService {
     }
 
     return allocation.save();
+  }
+
+  // ✅ Move-out List (Landlord) — paginated with filters
+  static async getMoveOutList(filters: {
+    propertyId?: string;
+    moveOutStatus?: string;
+    page: number;
+    limit: number;
+  }): Promise<{ data: ITenantAllocation[]; total: number; page: number; limit: number; totalPages: number }> {
+    const query: any = { exitInitiatedAt: { $exists: true } };
+
+    if (filters.propertyId) query.propertyId = filters.propertyId;
+    if (filters.moveOutStatus) query.moveOutStatus = filters.moveOutStatus;
+
+    const skip = (filters.page - 1) * filters.limit;
+
+    const [data, total] = await Promise.all([
+      TenantAllocation.find(query)
+        .populate('tenantId', 'fullName phoneNumber email profileImage')
+        .populate('propertyId', 'name')
+        .populate('roomId', 'name keyNumber')
+        .populate('bedId', 'name keyNumber')
+        .sort({ exitInitiatedAt: -1 })
+        .skip(skip)
+        .limit(filters.limit),
+      TenantAllocation.countDocuments(query),
+    ]);
+
+    return {
+      data,
+      total,
+      page: filters.page,
+      limit: filters.limit,
+      totalPages: Math.ceil(total / filters.limit),
+    };
+  }
+
+  // ✅ Move-out Detail (Landlord)
+  static async getMoveOutDetail(allocationId: string): Promise<ITenantAllocation | null> {
+    return TenantAllocation.findById(allocationId)
+      .populate('tenantId', 'fullName phoneNumber email profileImage kyc')
+      .populate('propertyId', 'name address')
+      .populate('roomId', 'name keyNumber')
+      .populate('bedId', 'name keyNumber')
+      .populate('floorId', 'name keyNumber')
+      .populate('createdById', 'name');
+  }
+
+  // ✅ Approve Move-out (Landlord)
+  static async approveMoveOut(allocationId: string): Promise<ITenantAllocation | null> {
+    const allocation = await TenantAllocation.findById(allocationId);
+    if (!allocation) throw new Error('Allocation not found');
+    if (!allocation.exitInitiatedAt) throw new Error('No move-out request found for this allocation');
+
+    allocation.moveOutStatus = 'approved';
+    const updated = await allocation.save();
+
+    try {
+      const NotificationService = (await import('./NotificationService')).default;
+      const { NotificationType, NotificationScreen } = await import('./NotificationService');
+      await NotificationService.notifyTenant(
+        allocation.tenantId.toString(),
+        'Move-out Approved',
+        `Your move-out request has been approved. Exit date: ${allocation.endDate ? new Date(allocation.endDate).toLocaleDateString() : 'N/A'}.`,
+        NotificationType.ALLOCATION,
+        { screen: NotificationScreen.TENANT_MOVE_OUT, allocationId }
+      );
+    } catch (err) {
+      console.error('Failed to notify tenant of move-out approval:', err);
+    }
+
+    return updated;
+  }
+
+  // ✅ Reject Move-out (Landlord)
+  static async rejectMoveOut(allocationId: string, reason?: string): Promise<ITenantAllocation | null> {
+    const allocation = await TenantAllocation.findById(allocationId);
+    if (!allocation) throw new Error('Allocation not found');
+    if (!allocation.exitInitiatedAt) throw new Error('No move-out request found for this allocation');
+
+    allocation.moveOutStatus = 'rejected';
+    if (reason) allocation.moveOutRejectionReason = reason;
+    const updated = await allocation.save();
+
+    try {
+      const NotificationService = (await import('./NotificationService')).default;
+      const { NotificationType, NotificationScreen } = await import('./NotificationService');
+      await NotificationService.notifyTenant(
+        allocation.tenantId.toString(),
+        'Move-out Rejected',
+        reason
+          ? `Your move-out request was rejected. Reason: ${reason}`
+          : 'Your move-out request was rejected by the landlord.',
+        NotificationType.ALLOCATION,
+        { screen: NotificationScreen.TENANT_MOVE_OUT, allocationId }
+      );
+    } catch (err) {
+      console.error('Failed to notify tenant of move-out rejection:', err);
+    }
+
+    return updated;
   }
 }

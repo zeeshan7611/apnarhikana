@@ -139,6 +139,10 @@ router.post('/payment-webhook', Controller.paymentWebhook);
  *                     enum: ["rent","deposit","extra_charge"]
  *                   rentLedgerId: { type: string, nullable: true }
  *                   dueDate: { type: string, format: date-time, nullable: true }
+ *                   status:
+ *                     type: string
+ *                     enum: ["initiated","due","overdue"]
+ *                     description: "initiated = payment pending approval; overdue = past due date; due = not yet due"
  */
 router.get('/rent-detail', jwtAuth, Controller.getRentDetail);
 
@@ -261,6 +265,7 @@ router.get('/check-payment-status', jwtAuth, Controller.checkPaymentStatus);
  * /api/tenant-app/transactions:
  *   get:
  *     summary: Payment transaction history
+ *     description: Returns only initiated, paid, and failed transactions. Supports optional month filter.
  *     tags: [TenantApp]
  *     security:
  *       - bearerAuth: []
@@ -269,10 +274,20 @@ router.get('/check-payment-status', jwtAuth, Controller.checkPaymentStatus);
  *         name: page
  *         schema: { type: integer, default: 1 }
  *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 10 }
+ *       - in: query
  *         name: status
  *         schema:
  *           type: string
- *           enum: ["pending","partial","paid","overdue","due"]
+ *           enum: ["initiated","paid","failed"]
+ *         description: Filter by transaction status
+ *       - in: query
+ *         name: month
+ *         schema:
+ *           type: string
+ *           example: "2026-05"
+ *         description: Filter by month in YYYY-MM format
  *     responses:
  *       200:
  *         description: List of transactions
@@ -287,10 +302,13 @@ router.get('/check-payment-status', jwtAuth, Controller.checkPaymentStatus);
  *                   items:
  *                     type: object
  *                     properties:
- *                       id: { type: string }
+ *                       _id: { type: string }
  *                       amount: { type: number }
- *                       status: { type: string }
+ *                       status:
+ *                         type: string
+ *                         enum: ["initiated","paid","failed"]
  *                       paymentMethod: { type: string }
+ *                       paymentType: { type: string }
  *                       createdAt: { type: string, format: date-time }
  *                 total: { type: number }
  */
@@ -425,13 +443,29 @@ router.post('/complaint', jwtAuth, Controller.createComplaint);
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 10 }
+ *       - in: query
  *         name: status
  *         schema:
  *           type: string
  *           enum: ["open","in-progress","resolved","closed"]
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *           enum: ["plumbing","electrical","cleaning","maintenance","other"]
+ *       - in: query
+ *         name: priority
+ *         schema:
+ *           type: string
+ *           enum: ["low","medium","high"]
  *     responses:
  *       200:
- *         description: List of tenant complaints
+ *         description: Paginated list of tenant complaints
  *         content:
  *           application/json:
  *             schema:
@@ -448,6 +482,9 @@ router.post('/complaint', jwtAuth, Controller.createComplaint);
  *                       status: { type: string }
  *                       priority: { type: string }
  *                 total: { type: number }
+ *                 page: { type: integer }
+ *                 limit: { type: integer }
+ *                 totalPages: { type: integer }
  */
 router.get('/complaints', jwtAuth, Controller.getComplaints);
 
@@ -873,6 +910,45 @@ router.get('/property-users', jwtAuth, Controller.getPropertyUsers);
 
 /**
  * @swagger
+ * /api/tenant-app/profile:
+ *   get:
+ *     summary: Get my profile
+ *     description: Returns the authenticated tenant's profile details extracted from the JWT token.
+ *     tags: [TenantApp]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Tenant profile details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id: { type: string }
+ *                     fullName: { type: string }
+ *                     phoneNumber: { type: string }
+ *                     email: { type: string }
+ *                     joiningDate: { type: string, format: date-time }
+ *                     alternateNumber: { type: string }
+ *                     emergencyContactNumber: { type: string }
+ *                     homeContactNumber: { type: string }
+ *                     profileImage: { type: string }
+ *                     isAgreementAccepted: { type: boolean }
+ *                     agreementVersion: { type: string }
+ *                     kyc:
+ *                       type: object
+ *                       properties:
+ *                         status: { type: string, enum: ["pending","uploaded","approved","rejected"] }
+ */
+router.get('/profile', jwtAuth, Controller.getProfile);
+
+/**
+ * @swagger
  * /api/tenant-app/update-profile:
  *   put:
  *     summary: Update tenant profile details
@@ -909,6 +985,54 @@ router.put('/update-profile', jwtAuth, Controller.updateProfile);
 
 /**
  * @swagger
+ * /api/tenant-app/move-out-policy:
+ *   get:
+ *     summary: Move-out policy, security deposit & refund details
+ *     description: Returns the tenant's security deposit status, default notice period (30 days), the full 5-tier refund policy, and current exit info if an exit has already been initiated.
+ *     tags: [TenantApp]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Move-out policy and deposit info
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     depositAmount: { type: number, description: "Total security deposit agreed at onboarding" }
+ *                     depositPaid: { type: number, description: "Amount already paid" }
+ *                     depositRemaining: { type: number, description: "Remaining deposit to be paid" }
+ *                     noticePeriodDays: { type: integer, example: 30, description: "Required notice period for full refund" }
+ *                     refundPolicy:
+ *                       type: array
+ *                       description: "Refund tiers based on days of notice given"
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           minDays: { type: integer }
+ *                           maxDays: { type: integer, nullable: true }
+ *                           refundPercentage: { type: integer }
+ *                           label: { type: string, example: "30+ days notice — Full refund" }
+ *                     exitInfo:
+ *                       type: object
+ *                       nullable: true
+ *                       description: "Present only if exit has been initiated"
+ *                       properties:
+ *                         exitDate: { type: string, format: date-time }
+ *                         exitInitiatedAt: { type: string, format: date-time }
+ *                         eligibleRefundPercentage: { type: integer }
+ *                         eligibleRefundAmount: { type: number }
+ *                         noticePeriodServedDays: { type: integer }
+ */
+router.get('/move-out-policy', jwtAuth, Controller.getMoveOutPolicy);
+
+/**
+ * @swagger
  * /api/tenant-app/initiate-exit:
  *   post:
  *     summary: Schedule move-out and calculate security deposit refund
@@ -925,7 +1049,6 @@ router.put('/update-profile', jwtAuth, Controller.updateProfile);
  *             required: [exitDate]
  *             properties:
  *               exitDate: { type: string, format: date, example: "2026-06-30", description: "The scheduled departure date" }
- *               propertyUserId: { type: string, description: "The unique ID of the property manager (user) to be notified" }
  *     responses:
  *       200:
  *         description: Exit initiated and refund eligibility calculated successfully
