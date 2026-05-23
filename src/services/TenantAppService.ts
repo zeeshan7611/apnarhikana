@@ -159,11 +159,37 @@ export default class TenantAppService {
     const activeAllocation = await TenantAllocation.findOne({ tenantId, status: { $in: ['active', 'notice'] } });
     if (!activeAllocation) throw new Error('No active allocation found for tenant');
 
-    return Complaint.create({
+    const propertyId = activeAllocation.propertyId.toString();
+
+    const complaint = await Complaint.create({
       ...data,
       tenantId,
-      propertyId: activeAllocation.propertyId,
+      propertyId,
+      type: 'tenant',
+      sourceApp: 'tenant',
     });
+
+    await complaint.populate([
+      { path: 'tenantId', select: 'fullName phoneNumber' },
+      { path: 'propertyId', select: 'name' },
+    ]);
+
+    try {
+      const NotificationService = (await import('./NotificationService')).default;
+      const { NotificationType, NotificationScreen } = await import('./NotificationService');
+
+      await NotificationService.notifyManagers(
+        propertyId,
+        'New Complaint Raised',
+        `A new complaint "${complaint.title}" has been submitted by a tenant.`,
+        NotificationType.COMPLAINT,
+        { screen: NotificationScreen.LANDLORD_COMPLAINT_DETAIL, complaintId: complaint._id.toString() }
+      );
+    } catch (notifyErr) {
+      console.error('Failed to notify managers about new complaint:', notifyErr);
+    }
+
+    return complaint;
   }
 
   // ✅ 5. Get Complete Allocation Detail
