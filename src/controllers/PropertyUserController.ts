@@ -107,4 +107,31 @@ export default class PropertyUserController {
       next(err);
     }
   }
+
+  // PATCH /update-notification-token
+  static async updateNotificationToken(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user?.id;
+      const { notificationToken } = req.body;
+
+      if (!notificationToken) {
+        return res.status(400).json({ success: false, message: 'notificationToken is required' });
+      }
+
+      const PropertyUser = (await import('../models/PropertyUser')).default;
+      const user = await PropertyUser.findByIdAndUpdate(
+        userId,
+        { notficationToken: notificationToken },
+        { new: true }
+      ).select('-passwordHash');
+
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+
+      res.json({ success: true, message: 'Notification token updated successfully', data: user });
+    } catch (err) {
+      next(err);
+    }
+  }
 }

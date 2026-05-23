@@ -252,4 +252,34 @@ router.get("/get-users-by-property", authorizePermissions("users:read"), Control
  */
 router.get("/get-request-access-users", authorizePermissions("users:read"), Controller.getRequestAccessUsers);
 
+/**
+ * @swagger
+ * /api/property-users/update-notification-token:
+ *   patch:
+ *     summary: Update the device notification token for the logged-in property user
+ *     description: Call this after login or whenever the device FCM/OneSignal token changes. The token is used to send push notifications to this property user.
+ *     tags: [PropertyUsers]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [notificationToken]
+ *             properties:
+ *               notificationToken:
+ *                 type: string
+ *                 description: OneSignal subscription/player ID for this device
+ *     responses:
+ *       200:
+ *         description: Token updated successfully
+ *       400:
+ *         description: notificationToken is required
+ *       404:
+ *         description: User not found
+ */
+router.patch("/update-notification-token", jwtAuth, Controller.updateNotificationToken);
+
 export default router;
