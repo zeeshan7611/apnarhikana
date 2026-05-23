@@ -97,4 +97,91 @@ export default class ComplaintController {
       next(err);
     }
   }
+
+  // GET /get-categories
+  static async getCategories(req: Request, res: Response) {
+    const categories = [
+      {
+        id: 'maintenance',
+        label: 'Maintenance',
+        subcategories: [
+          { id: 'plumbing', label: 'Plumbing' },
+          { id: 'electrical', label: 'Electrical' },
+          { id: 'furniture', label: 'Furniture' },
+          { id: 'appliances', label: 'Appliances' },
+          { id: 'structural', label: 'Structural (Wall / Floor / Ceiling)' },
+          { id: 'door_window', label: 'Door / Window' },
+        ],
+      },
+      {
+        id: 'cleaning',
+        label: 'Cleaning',
+        subcategories: [
+          { id: 'room_cleaning', label: 'Room Cleaning' },
+          { id: 'common_area', label: 'Common Area' },
+          { id: 'washroom', label: 'Washroom / Bathroom' },
+          { id: 'kitchen', label: 'Kitchen' },
+          { id: 'garbage', label: 'Garbage / Waste Disposal' },
+        ],
+      },
+      {
+        id: 'water_supply',
+        label: 'Water Supply',
+        subcategories: [
+          { id: 'no_water', label: 'No Water Supply' },
+          { id: 'low_pressure', label: 'Low Water Pressure' },
+          { id: 'hot_water', label: 'Hot Water / Geyser Issue' },
+          { id: 'water_quality', label: 'Water Quality' },
+        ],
+      },
+      {
+        id: 'wifi_internet',
+        label: 'Wi-Fi / Internet',
+        subcategories: [
+          { id: 'no_connection', label: 'No Connection' },
+          { id: 'slow_speed', label: 'Slow Speed' },
+          { id: 'router_issue', label: 'Router / Equipment Issue' },
+          { id: 'wifi_password', label: 'Password / Access Issue' },
+        ],
+      },
+      {
+        id: 'security',
+        label: 'Security',
+        subcategories: [
+          { id: 'lock_key', label: 'Lock / Key Issue' },
+          { id: 'cctv', label: 'CCTV / Camera Issue' },
+          { id: 'unauthorized_entry', label: 'Unauthorized Entry' },
+          { id: 'safety_concern', label: 'Safety Concern' },
+        ],
+      },
+      {
+        id: 'noise',
+        label: 'Noise',
+        subcategories: [
+          { id: 'loud_music', label: 'Loud Music' },
+          { id: 'noisy_neighbours', label: 'Noisy Neighbours' },
+          { id: 'construction_noise', label: 'Construction / External Noise' },
+        ],
+      },
+      {
+        id: 'staff_behaviour',
+        label: 'Staff Behaviour',
+        subcategories: [
+          { id: 'rude_behaviour', label: 'Rude Behaviour' },
+          { id: 'unprofessional', label: 'Unprofessional Conduct' },
+          { id: 'delayed_response', label: 'Delayed Response' },
+        ],
+      },
+      {
+        id: 'other',
+        label: 'Other',
+        subcategories: [
+          { id: 'general', label: 'General Complaint' },
+          { id: 'suggestion', label: 'Suggestion / Feedback' },
+        ],
+      },
+    ];
+
+    res.json({ success: true, data: categories });
+  }
 }

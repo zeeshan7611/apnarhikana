@@ -305,4 +305,37 @@ router.post('/approve-or-reject-kyc', authorizePermissions('tenants:write'), Ten
  */
 router.get('/get-tenant-kyc', authorizePermissions('tenants:read'), TenantController.getTenantKYC);
 
+/**
+ * @swagger
+ * /api/tenants/search-tenants:
+ *   get:
+ *     summary: Search tenants by name or phone number
+ *     description: Returns tenants whose fullName or phoneNumber matches the search query (case-insensitive). Optionally filter results to tenants belonging to a specific property.
+ *     tags: [Tenants]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         required: true
+ *         schema: { type: string }
+ *         description: Search string matched against fullName and phoneNumber
+ *       - in: query
+ *         name: propertyId
+ *         schema: { type: string }
+ *         description: Optional — restrict results to tenants allocated in this property
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Paginated list of matching tenants
+ *       400:
+ *         description: q is required
+ */
+router.get('/search-tenants', authorizePermissions('tenants:read'), TenantController.search);
+
 export default router;

@@ -372,8 +372,8 @@ export default class TenantAllocationService {
     allocation.eligibleRefundPercentage = refundPercentage;
     allocation.eligibleRefundAmount = (refundPercentage / 100) * (allocation.depositAmount || 0);
     allocation.moveOutInitiatedBy = initiatedBy;
-    // Landlord-initiated exits are auto-acknowledged; tenant-initiated need landlord acknowledgement
-    allocation.moveOutStatus = initiatedBy === 'landlord' ? 'acknowledged' : 'pending';
+    // Landlord-initiated exits are auto-approved; tenant-initiated need landlord approval
+    allocation.moveOutStatus = initiatedBy === 'landlord' ? 'approved' : 'pending';
     if (initiatedBy === 'landlord') {
       allocation.moveOutAcknowledgedAt = new Date();
     }
@@ -464,7 +464,7 @@ export default class TenantAllocationService {
     if (!allocation) throw new Error('Allocation not found');
     if (!allocation.exitInitiatedAt) throw new Error('No move-out request found for this allocation');
 
-    allocation.moveOutStatus = 'rejected';
+    allocation.moveOutStatus = 'revoked';
     if (reason) allocation.moveOutRejectionReason = reason;
     const updated = await allocation.save();
 

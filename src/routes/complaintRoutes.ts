@@ -228,4 +228,39 @@ router.delete('/delete-complaint', authorizePermissions('complaints:delete'), Co
  */
 router.get('/get-open-complaints-count', authorizePermissions('complaints:read'), ComplaintController.getOpenCount);
 
+/**
+ * @swagger
+ * /api/complaints/get-categories:
+ *   get:
+ *     summary: Get complaint categories and subcategories
+ *     description: Returns a static list of complaint categories, each with their subcategories. Use these values for the category and subcategory fields when creating a complaint.
+ *     tags: [Complaints]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of complaint categories with subcategories
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string }
+ *                       label: { type: string }
+ *                       subcategories:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id: { type: string }
+ *                             label: { type: string }
+ */
+router.get('/get-categories', authorizePermissions('complaints:read'), ComplaintController.getCategories);
+
 export default router;

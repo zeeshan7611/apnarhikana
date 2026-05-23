@@ -261,6 +261,9 @@ export default class TenantAppService {
       result.exitInfo = {
         exitDate: allocation.endDate,
         exitInitiatedAt: allocation.exitInitiatedAt,
+        moveOutStatus: allocation.moveOutStatus,
+        moveOutInitiatedBy: allocation.moveOutInitiatedBy,
+        moveOutRejectionReason: allocation.moveOutRejectionReason,
         eligibleRefundPercentage: allocation.eligibleRefundPercentage,
         eligibleRefundAmount: allocation.eligibleRefundAmount,
         noticePeriodServedDays,

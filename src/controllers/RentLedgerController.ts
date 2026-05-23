@@ -464,6 +464,20 @@ export default class RentLedgerController {
     }
   }
 
+  // GET /get-cash-payment-request-detail
+  static async getCashPaymentRequestDetail(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { transactionId } = req.query;
+      if (!transactionId) {
+        return res.status(400).json({ success: false, message: 'transactionId is required' });
+      }
+      const transaction = await RentLedgerService.getCashPaymentRequestDetail(transactionId as string);
+      res.json({ success: true, data: transaction });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   // GET /get-cash-payment-requests
   static async getCashPaymentRequests(req: Request, res: Response, next: NextFunction) {
     try {

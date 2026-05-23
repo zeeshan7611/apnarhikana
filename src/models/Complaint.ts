@@ -36,6 +36,8 @@ const ComplaintSchema: Schema = new Schema({
   type: { type: String, enum: ['propertyUser', 'tenant'], default: 'tenant' },
 }, {
   timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true },
 });
 
 export default mongoose.model<IComplaint>('Complaint', ComplaintSchema);

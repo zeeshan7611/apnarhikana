@@ -307,7 +307,7 @@ router.post('/initiate-exit', authorizePermissions('allocations:write'), TenantA
  *         name: moveOutStatus
  *         schema:
  *           type: string
- *           enum: ["pending","acknowledged","approved","rejected"]
+ *           enum: ["pending","approved","revoked"]
  *         description: Filter by move-out request status
  *     responses:
  *       200:
@@ -330,7 +330,7 @@ router.post('/initiate-exit', authorizePermissions('allocations:write'), TenantA
  *                       endDate: { type: string, format: date-time }
  *                       moveOutStatus:
  *                         type: string
- *                         enum: ["pending","acknowledged","approved","rejected"]
+ *                         enum: ["pending","approved","revoked"]
  *                       moveOutInitiatedBy:
  *                         type: string
  *                         enum: ["tenant","landlord"]
@@ -374,10 +374,10 @@ router.get('/move-out-detail', authorizePermissions('allocations:read'), TenantA
 
 /**
  * @swagger
- * /api/tenant-allocations/approve-move-out:
+ * /api/tenant-allocations/action-move-out:
  *   patch:
- *     summary: Approve a tenant's move-out request (Landlord)
- *     description: Marks the move-out as approved and notifies the tenant.
+ *     summary: Approve or Revoke a tenant's move-out request (Landlord)
+ *     description: Handles move-out actions in one endpoint. Use action "approve" to confirm the move-out or "revoke" to cancel it (with an optional reason).
  *     tags: [TenantAllocations]
  *     security:
  *       - bearerAuth: []
@@ -387,12 +387,21 @@ router.get('/move-out-detail', authorizePermissions('allocations:read'), TenantA
  *         application/json:
  *           schema:
  *             type: object
- *             required: [id]
+ *             required: [id, action]
  *             properties:
- *               id: { type: string, description: "TenantAllocation ID" }
+ *               id:
+ *                 type: string
+ *                 description: TenantAllocation ID
+ *               action:
+ *                 type: string
+ *                 enum: ["approve", "revoke"]
+ *                 description: Action to perform on the move-out request
+ *               reason:
+ *                 type: string
+ *                 description: Optional reason (used when action is "revoke")
  *     responses:
  *       200:
- *         description: Move-out approved and tenant notified
+ *         description: Move-out action applied successfully
  *         content:
  *           application/json:
  *             schema:
@@ -401,40 +410,11 @@ router.get('/move-out-detail', authorizePermissions('allocations:read'), TenantA
  *                 success: { type: boolean }
  *                 message: { type: string }
  *                 data: { type: object }
+ *       400:
+ *         description: Missing or invalid action
+ *       404:
+ *         description: Allocation not found
  */
-router.patch('/approve-move-out', authorizePermissions('allocations:write'), TenantAllocationController.approveMoveOut);
-
-/**
- * @swagger
- * /api/tenant-allocations/reject-move-out:
- *   patch:
- *     summary: Reject a tenant's move-out request (Landlord)
- *     description: Marks the move-out as rejected and notifies the tenant with an optional reason.
- *     tags: [TenantAllocations]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [id]
- *             properties:
- *               id: { type: string, description: "TenantAllocation ID" }
- *               reason: { type: string, description: "Optional reason for rejection" }
- *     responses:
- *       200:
- *         description: Move-out rejected and tenant notified
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean }
- *                 message: { type: string }
- *                 data: { type: object }
- */
-router.patch('/reject-move-out', authorizePermissions('allocations:write'), TenantAllocationController.rejectMoveOut);
+router.patch('/action-move-out', authorizePermissions('allocations:write'), TenantAllocationController.actionMoveOut);
 
 export default router;

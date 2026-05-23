@@ -648,7 +648,15 @@ export default class RentLedgerService {
     page?: number;
     limit?: number;
   }): Promise<{ data: IPaymentTransaction[]; total: number }> {
-    const query: any = { paymentMethod: 'cash', status: 'initiated' };
+    const query: any = { paymentMethod: 'cash' };
+
+    const allowedStatuses = ['initiated', 'approved', 'rejected'];
+    if (filters.status && allowedStatuses.includes(filters.status)) {
+      query.status = filters.status;
+    } else {
+      query.status = 'initiated';
+    }
+
     if (filters.propertyId) query.propertyId = new mongoose.Types.ObjectId(filters.propertyId);
     if (filters.tenantId) query.tenantId = new mongoose.Types.ObjectId(filters.tenantId);
 
@@ -667,6 +675,7 @@ export default class RentLedgerService {
         .populate('tenantId', 'fullName phoneNumber email')
         .populate('rentLedgerId', 'month totalAmount paidAmount rentAmount')
         .populate('propertyId', 'name')
+        .populate('createdById', 'name')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
@@ -674,5 +683,19 @@ export default class RentLedgerService {
     ]);
 
     return { data, total };
+  }
+
+  static async getCashPaymentRequestDetail(transactionId: string): Promise<IPaymentTransaction> {
+    const transaction = await PaymentTransaction.findOne({
+      _id: transactionId,
+      paymentMethod: 'cash',
+    })
+      .populate('tenantId', 'fullName phoneNumber email')
+      .populate('rentLedgerId', 'month totalAmount paidAmount rentAmount')
+      .populate('propertyId', 'name')
+      .populate('createdById', 'name');
+
+    if (!transaction) throw new Error('Cash payment request not found');
+    return transaction;
   }
 }

@@ -2,6 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface INotification extends Document {
   tenantId?: mongoose.Types.ObjectId;
+  propertyUserId?: mongoose.Types.ObjectId;
   propertyId?: mongoose.Types.ObjectId;
   title: string;
   message: string;
@@ -14,6 +15,7 @@ export interface INotification extends Document {
 
 const NotificationSchema: Schema = new Schema({
   tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', index: true },
+  propertyUserId: { type: Schema.Types.ObjectId, ref: 'PropertyUser', index: true },
   propertyId: { type: Schema.Types.ObjectId, ref: 'Property', index: true },
   title: { type: String, required: true },
   message: { type: String, required: true },

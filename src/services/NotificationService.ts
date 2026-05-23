@@ -46,23 +46,26 @@ export default class NotificationService {
 
       const managerIds = managers.map(m => m._id.toString());
 
-      await Notification.create({
-        propertyId,
-        title,
-        message,
-        type,
-        data,
-      });
+      await Notification.insertMany(
+        managers.map(m => ({
+          propertyUserId: m._id,
+          propertyId,
+          title,
+          message,
+          type,
+          data,
+        }))
+      );
 
       const playerIds = managers.map(m => m.notficationToken).filter(id => id) as string[];
 
       if (playerIds.length > 0) {
-        return OneSignalService.sendToPlayerIds(playerIds, title, message, {
+        return OneSignalService.sendToPropertyUserPlayerIds(playerIds, title, message, {
           data: { ...data, type },
         });
       }
 
-      return OneSignalService.sendToUsers(managerIds, title, message, {
+      return OneSignalService.sendToPropertyUserExternalIds(managerIds, title, message, {
         data: { ...data, type },
       });
     } catch (err) {
@@ -177,23 +180,26 @@ export default class NotificationService {
 
       const userIds = users.map((u) => u._id.toString());
 
-      await Notification.create({
-        propertyId,
-        title,
-        message,
-        type,
-        data,
-      });
+      await Notification.insertMany(
+        users.map(u => ({
+          propertyUserId: u._id,
+          propertyId,
+          title,
+          message,
+          type,
+          data,
+        }))
+      );
 
       const playerIds = users.map((u) => u.notficationToken).filter((id) => id) as string[];
 
       if (playerIds.length > 0) {
-        return OneSignalService.sendToPlayerIds(playerIds, title, message, {
+        return OneSignalService.sendToPropertyUserPlayerIds(playerIds, title, message, {
           data: { ...data, type },
         });
       }
 
-      return OneSignalService.sendToUsers(userIds, title, message, {
+      return OneSignalService.sendToPropertyUserExternalIds(userIds, title, message, {
         data: { ...data, type },
       });
     } catch (err) {
@@ -213,6 +219,7 @@ export default class NotificationService {
       const propertyId = user.propertyId && user.propertyId.length > 0 ? user.propertyId[0].toString() : undefined;
 
       await Notification.create({
+        propertyUserId: user._id,
         propertyId,
         title,
         message,
@@ -221,12 +228,12 @@ export default class NotificationService {
       });
 
       if (user.notficationToken) {
-        return OneSignalService.sendToPlayerIds([user.notficationToken], title, message, {
+        return OneSignalService.sendToPropertyUserPlayerIds([user.notficationToken], title, message, {
           data: { ...data, type, propertyUserId },
         });
       }
 
-      return OneSignalService.sendToUsers([propertyUserId], title, message, {
+      return OneSignalService.sendToPropertyUserExternalIds([propertyUserId], title, message, {
         data: { ...data, type, propertyUserId },
       });
     } catch (err) {

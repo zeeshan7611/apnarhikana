@@ -34,6 +34,37 @@ export default class TenantService {
     return Tenant.findByIdAndDelete(id);
   }
 
+  static async searchTenants(
+    q: string,
+    propertyId?: string,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<{ data: ITenant[]; total: number }> {
+    const skip = (page - 1) * limit;
+    const regex = new RegExp(q, 'i');
+
+    const query: any = {
+      $or: [{ fullName: regex }, { phoneNumber: regex }],
+    };
+
+    if (propertyId) {
+      const allocations = await TenantAllocation.find({ propertyId }).select('tenantId').lean();
+      const tenantIds = allocations.map((a) => a.tenantId);
+      query._id = { $in: tenantIds };
+    }
+
+    const [data, total] = await Promise.all([
+      Tenant.find(query)
+        .select('fullName phoneNumber email profileImage joiningDate kyc.status')
+        .sort({ fullName: 1 })
+        .skip(skip)
+        .limit(limit),
+      Tenant.countDocuments(query),
+    ]);
+
+    return { data, total };
+  }
+
   // ─── KYC Methods ────────────────────────────────────────────────────────
   static async getKYCDetails(
     limit: number,

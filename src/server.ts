@@ -22,6 +22,7 @@ import tenantAppRoutes from './routes/tenantAppRoutes';
 import uploadRoutes from './routes/uploadRoutes';
 import wifiRoutes from './routes/wifiRoutes';
 import agreementRoutes from './routes/agreementRoutes';
+import notificationRoutes from './routes/notificationRoutes';
 
 import { jwtAuth } from './middleware/jwtAuth';
 import RbacService from './services/RbacService';
@@ -89,6 +90,9 @@ app.use('/api/tenant-app', tenantAppRoutes);
 app.use('/api/upload', jwtAuth, uploadRoutes);
 // WiFi routes
 app.use('/api/wifi', jwtAuth, wifiRoutes);
+
+// Notification routes (Protected)
+app.use('/api/notifications', jwtAuth, notificationRoutes);
 
 
 // Connect to DB and start server

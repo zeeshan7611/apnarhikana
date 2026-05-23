@@ -56,6 +56,13 @@ export default class ComplaintService {
       }
     }
 
+    await complaint.populate([
+      { path: 'tenantId', select: 'fullName phoneNumber' },
+      { path: 'propertyUserId', select: 'name phoneNumber' },
+      { path: 'propertyId', select: 'name' },
+      { path: 'assignedTo', select: 'name' },
+    ]);
+
     return complaint;
   }
 

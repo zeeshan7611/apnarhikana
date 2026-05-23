@@ -150,4 +150,30 @@ export default class TenantController {
       next(err);
     }
   }
+
+  static async search(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { q, propertyId } = req.query;
+      if (!q || (q as string).trim() === '') {
+        return res.status(400).json({ success: false, message: 'q (search query) is required' });
+      }
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const { data, total } = await TenantService.searchTenants(
+        (q as string).trim(),
+        propertyId as string | undefined,
+        page,
+        limit,
+      );
+
+      res.json({
+        success: true,
+        data,
+        pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
 }

@@ -612,4 +612,66 @@ export default class TenantAppController {
       next(err);
     }
   }
+
+  // GET /property-policy
+  static async getPropertyPolicy(req: Request, res: Response) {
+    const policy = {
+      notice: {
+        title: 'Important Notice',
+        text: 'Violation of any policy rules may result in warnings, fines, or termination of stay. For any clarifications, please contact the property management.',
+      },
+      sections: [
+        {
+          title: 'House Rules',
+          type: 'bullets',
+          items: [
+            { text: 'Keep your room and common areas clean', allowed: true },
+            { text: 'Use dustbins for waste disposal', allowed: true },
+            { text: 'Treat all residents and staff with respect', allowed: true },
+            { text: 'No smoking inside the premises', allowed: false },
+            { text: 'No loud music after 10 PM', allowed: false },
+            { text: 'No unauthorized guests overnight', allowed: false },
+          ],
+        },
+        {
+          title: 'Quiet Hours',
+          type: 'text',
+          content:
+            'Quiet hours are from 10 PM to 7 AM daily. Please keep noise levels to a minimum during these hours. Avoid playing loud music, using washing machines, or having loud conversations in common areas.',
+        },
+        {
+          title: 'Visitor Policy',
+          type: 'text',
+          content:
+            'Visitors are allowed between 8 AM to 9 PM. All visitors must register at the reception with valid ID. Overnight guests require prior approval from management. Maximum 2 visitors per resident at a time.',
+        },
+        {
+          title: 'Safety Guidelines',
+          type: 'bullets',
+          items: [
+            { text: 'Keep your room locked when leaving', allowed: true },
+            { text: 'Report any suspicious activity immediately', allowed: true },
+            { text: 'Know the location of fire exits and extinguishers', allowed: true },
+            { text: 'No cooking in rooms (use common kitchen only)', allowed: false },
+            { text: 'No use of high-wattage electrical appliances', allowed: false },
+            { text: 'Do not block fire exits or emergency routes', allowed: false },
+          ],
+        },
+        {
+          title: 'Check-in / Check-out',
+          type: 'text',
+          content:
+            'Check-in time: 12 PM onwards. Check-out time: 11 AM. Early check-in or late check-out may be available on request (subject to availability and charges). Please ensure all dues are cleared before check-out.',
+        },
+        {
+          title: 'Notice Period & Exit',
+          type: 'text',
+          content:
+            'Residents must provide 30 days written notice before vacating. Security deposit will be refunded within 15 days after check-out, subject to room inspection and clearance of all dues. Deductions may apply for damages.',
+        },
+      ],
+    };
+
+    res.json({ success: true, data: policy });
+  }
 }

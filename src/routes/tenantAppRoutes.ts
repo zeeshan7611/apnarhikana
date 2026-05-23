@@ -1063,4 +1063,47 @@ router.get('/move-out-policy', jwtAuth, Controller.getMoveOutPolicy);
  */
 router.post('/initiate-exit', jwtAuth, Controller.initiateExit);
 
+/**
+ * @swagger
+ * /api/tenant-app/property-policy:
+ *   get:
+ *     summary: Get property policy
+ *     description: Returns the static property policy including house rules, quiet hours, visitor policy, safety guidelines, check-in/check-out times, and notice period. Also includes the important notice banner.
+ *     tags: [TenantApp]
+ *     responses:
+ *       200:
+ *         description: Property policy data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     notice:
+ *                       type: object
+ *                       properties:
+ *                         title: { type: string }
+ *                         text: { type: string }
+ *                     sections:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           title: { type: string }
+ *                           type: { type: string, enum: ["text", "bullets"] }
+ *                           content: { type: string, description: "Present when type is text" }
+ *                           items:
+ *                             type: array
+ *                             description: Present when type is bullets
+ *                             items:
+ *                               type: object
+ *                               properties:
+ *                                 text: { type: string }
+ *                                 allowed: { type: boolean }
+ */
+router.get('/property-policy', Controller.getPropertyPolicy);
+
 export default router;

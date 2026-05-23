@@ -244,10 +244,35 @@ router.post('/complete-payment', authorizePermissions('payments:write'), Control
 
 /**
  * @swagger
+ * /api/rent-ledger/get-cash-payment-request-detail:
+ *   get:
+ *     summary: Get a single cash payment request detail
+ *     description: Returns full detail of a cash payment transaction including tenant, ledger, property, and handover person.
+ *     tags: [RentLedger]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: transactionId
+ *         required: true
+ *         schema: { type: string }
+ *         description: ID of the cash payment transaction
+ *     responses:
+ *       200:
+ *         description: Cash payment request detail
+ *       400:
+ *         description: transactionId is required
+ *       404:
+ *         description: Cash payment request not found
+ */
+router.get('/get-cash-payment-request-detail', authorizePermissions('payments:read'), Controller.getCashPaymentRequestDetail);
+
+/**
+ * @swagger
  * /api/rent-ledger/get-cash-payment-requests:
  *   get:
  *     summary: Get cash payment requests
- *     description: Returns cash payment transactions with optional filters for property, tenant, status, and date range.
+ *     description: Returns cash payment transactions with optional filters for property, tenant, status, and date range. Defaults to "initiated" when no status is provided.
  *     tags: [RentLedger]
  *     security:
  *       - bearerAuth: []
@@ -262,7 +287,8 @@ router.post('/complete-payment', authorizePermissions('payments:write'), Control
  *         name: status
  *         schema:
  *           type: string
- *           enum: ["initiated"]
+ *           enum: ["initiated", "approved", "rejected"]
+ *         description: Filter by status. Defaults to "initiated" if omitted.
  *       - in: query
  *         name: from
  *         schema: { type: string }
