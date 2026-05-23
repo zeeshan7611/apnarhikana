@@ -591,7 +591,7 @@ export default class TenantAppController {
           const message = `${tenant.fullName} has scheduled exit on ${dateStr}. Eligible refund: ${updatedAllocation.eligibleRefundPercentage}%.`;
           const notificationData = { screen: NotificationScreen.LANDLORD_NOTICE_REQUEST, allocationId: updatedAllocation._id.toString(), tenantId };
 
-          await NotificationService.notifyRequestAccessUsers(
+          await NotificationService.notifyManagers(
             updatedAllocation.propertyId.toString(),
             title,
             message,
@@ -600,7 +600,7 @@ export default class TenantAppController {
           );
         }
       } catch (notifyErr) {
-        console.error('Failed to notify request access users about scheduled exit:', notifyErr);
+        console.error('Failed to notify property users about scheduled exit:', notifyErr);
       }
 
       res.json({ 
