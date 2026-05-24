@@ -30,15 +30,28 @@ export default class OneSignalService {
     notification: OneSignal.Notification
   ) {
     if (!appId || !apiKey) {
-      console.warn('OneSignal credentials missing. Skipping notification.');
+      console.error('[OneSignal] CREDENTIALS MISSING — appId:', appId ? '✓ set' : '✗ MISSING', '| apiKey:', apiKey ? '✓ set' : '✗ MISSING');
       return null;
     }
     try {
       notification.app_id = appId;
+      console.log('[OneSignal] Sending notification — appId:', appId, '| include_subscription_ids:', (notification as any).include_subscription_ids, '| include_aliases:', (notification as any).include_aliases, '| contents:', notification.contents);
       const response = await client.createNotification(notification);
+      console.log('[OneSignal] Response:', JSON.stringify(response));
       return response;
     } catch (error: any) {
-      console.error('OneSignal Notification Error:', error.body || error.message);
+      console.error('[OneSignal] Notification Error:');
+      console.error('  message   :', error.message);
+      console.error('  httpCode  :', error.code ?? error.status ?? error.statusCode);
+      console.error('  appId used:', appId);
+      // body is a lazy Response object — read the actual text
+      try {
+        const bodyText = typeof error.body?.text === 'function' ? await error.body.text() : JSON.stringify(error.body);
+        console.error('  body text :', bodyText);
+      } catch (_) {
+        console.error('  body      :', error.body);
+      }
+      console.error('  stack     :', error.stack);
       return null;
     }
   }

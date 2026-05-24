@@ -42,9 +42,11 @@ export default class NotificationService {
         isActive: true
       }).select('_id notficationToken');
 
+      console.log(`[NotificationService.notifyManagers] propertyId=${propertyId} | found ${managers?.length ?? 0} managers`);
+
       if (!managers || managers.length === 0) return;
 
-      const managerIds = managers.map(m => m._id.toString());
+      managers.forEach(m => console.log(`  manager _id=${m._id} | notficationToken=${m.notficationToken ?? 'MISSING'}`));
 
       await Notification.insertMany(
         managers.map(m => ({
@@ -60,6 +62,9 @@ export default class NotificationService {
       const playerIds = managers.map(m => m.notficationToken).filter(Boolean) as string[];
       const missingTokenIds = managers.filter(m => !m.notficationToken).map(m => m._id.toString());
 
+      console.log(`[NotificationService.notifyManagers] playerIds (token):`, playerIds);
+      console.log(`[NotificationService.notifyManagers] missingTokenIds (externalId):`, missingTokenIds);
+
       if (playerIds.length > 0) {
         await OneSignalService.sendToPropertyUserPlayerIds(playerIds, title, message, {
           data: { ...data, type },
@@ -72,7 +77,7 @@ export default class NotificationService {
         });
       }
     } catch (err) {
-      console.error('Failed to notify managers:', err);
+      console.error('[NotificationService.notifyManagers] Error:', err);
     }
   }
 
@@ -197,6 +202,9 @@ export default class NotificationService {
       const playerIds = users.map((u) => u.notficationToken).filter(Boolean) as string[];
       const missingTokenIds = users.filter(u => !u.notficationToken).map(u => u._id.toString());
 
+      console.log(`[NotificationService.notifyRequestAccessUsers] playerIds (token):`, playerIds);
+      console.log(`[NotificationService.notifyRequestAccessUsers] missingTokenIds (externalId):`, missingTokenIds);
+
       if (playerIds.length > 0) {
         await OneSignalService.sendToPropertyUserPlayerIds(playerIds, title, message, {
           data: { ...data, type },
@@ -209,7 +217,7 @@ export default class NotificationService {
         });
       }
     } catch (err) {
-      console.error('Failed to notify request access users:', err);
+      console.error('[NotificationService.notifyRequestAccessUsers] Error:', err);
     }
   }
 
@@ -220,7 +228,13 @@ export default class NotificationService {
     try {
       const PropertyUser = (await import('../models/PropertyUser')).default;
       const user = await PropertyUser.findById(propertyUserId);
-      if (!user) return;
+
+      console.log(`[NotificationService.notifyPropertyUser] propertyUserId=${propertyUserId} | found=${!!user} | notficationToken=${user?.notficationToken ?? 'MISSING'}`);
+
+      if (!user) {
+        console.error(`[NotificationService.notifyPropertyUser] PropertyUser not found for id=${propertyUserId}`);
+        return;
+      }
 
       const propertyId = user.propertyId && user.propertyId.length > 0 ? user.propertyId[0].toString() : undefined;
 
@@ -234,16 +248,18 @@ export default class NotificationService {
       });
 
       if (user.notficationToken) {
+        console.log(`[NotificationService.notifyPropertyUser] Sending via playerIds token: ${user.notficationToken}`);
         await OneSignalService.sendToPropertyUserPlayerIds([user.notficationToken], title, message, {
           data: { ...data, type, propertyUserId },
         });
       } else {
+        console.log(`[NotificationService.notifyPropertyUser] No token — falling back to externalId: ${propertyUserId}`);
         await OneSignalService.sendToPropertyUserExternalIds([propertyUserId], title, message, {
           data: { ...data, type, propertyUserId },
         });
       }
     } catch (err) {
-      console.error('Failed to notify property user:', err);
+      console.error('[NotificationService.notifyPropertyUser] Error:', err);
     }
   }
 
