@@ -26,7 +26,7 @@ const router = Router();
  *         application/json:
  *           schema:
  *             type: object
- *             required: [category, title, description, sourceApp]
+ *             required: [category, title, description, sourceApp, type]
  *             properties:
  *               tenantId: { type: string, description: "Required if type is tenant, otherwise ignored/null" }
  *               propertyId: { type: string }

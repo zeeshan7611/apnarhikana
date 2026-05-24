@@ -215,7 +215,7 @@ export default class RentLedgerService {
     if (action === 'approve') {
       transaction.status = 'paid';
     } else {
-      transaction.status = 'pending';
+      transaction.status = 'rejected';
     }
     await transaction.save();
 
@@ -245,7 +245,7 @@ export default class RentLedgerService {
           'Cash Payment Rejected',
           `Your cash payment of ${amountStr} for ${paymentTypeStr} was rejected by the manager. Please make the payment again.`,
           NotificationType.PAYMENT,
-          { screen: NotificationScreen.TENANT_TRANSACTION_DETAIL, transactionId: transaction._id.toString(), status: 'pending' }
+          { screen: NotificationScreen.TENANT_TRANSACTION_DETAIL, transactionId: transaction._id.toString(), status: 'rejected' }
         );
       }
     } catch (notificationErr) {
