@@ -18,7 +18,16 @@ export default class TenantController {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
-      const { data, total } = await TenantService.getAllTenants(page, limit);
+      const name = req.query.name as string | undefined;
+      const status = req.query.status as string | undefined;
+      const propertyId = req.query.propertyId as string | undefined;
+
+      const allowedStatuses = ['active', 'notice', 'upcoming', 'exited'];
+      if (status && !allowedStatuses.includes(status)) {
+        return res.status(400).json({ success: false, message: `status must be one of: ${allowedStatuses.join(', ')}` });
+      }
+
+      const { data, total } = await TenantService.getAllTenants(page, limit, name, status, propertyId);
       res.json({ 
         success: true, 
         data,

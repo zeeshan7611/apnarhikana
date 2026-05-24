@@ -9,15 +9,40 @@ export default class TenantService {
   static async getAllTenants(
     page: number = 1,
     limit: number = 10,
+    name?: string,
+    status?: string,
+    propertyId?: string,
   ): Promise<{ data: ITenant[]; total: number }> {
     const skip = (page - 1) * limit;
+    const query: any = {};
+    if (name) query.fullName = { $regex: name, $options: 'i' };
+
+    if (status || propertyId) {
+      const now = new Date();
+      let allocationQuery: any = {};
+
+      if (propertyId) allocationQuery.propertyId = propertyId;
+
+      if (status) {
+        switch (status) {
+          case 'active':   Object.assign(allocationQuery, { status: 'active', startDate: { $lte: now } }); break;
+          case 'notice':   allocationQuery.status = 'notice'; break;
+          case 'upcoming': Object.assign(allocationQuery, { status: 'active', startDate: { $gt: now } }); break;
+          case 'exited':   allocationQuery.status = { $in: ['terminated', 'inactive'] }; break;
+        }
+      }
+
+      const allocations = await TenantAllocation.find(allocationQuery).select('tenantId').lean();
+      query._id = { $in: allocations.map(a => a.tenantId) };
+    }
+
     const [data, total] = await Promise.all([
-      Tenant.find()
+      Tenant.find(query)
         .populate("createdById", "name email")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
-      Tenant.countDocuments(),
+      Tenant.countDocuments(query),
     ]);
     return { data, total };
   }

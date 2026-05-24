@@ -103,7 +103,10 @@ router.get('/get-transaction', authorizePermissions('payments:read'), Controller
  *         schema: { type: string }
  *       - in: query
  *         name: status
- *         schema: { type: string }
+ *         schema:
+ *           type: string
+ *           enum: [paid, overdue, due]
+ *         description: Filter by payment status
  *       - in: query
  *         name: paymentType
  *         schema: { type: string }

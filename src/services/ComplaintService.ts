@@ -3,6 +3,19 @@ import TenantAllocation from '../models/TenantAllocation';
 import NotificationService, { NotificationScreen, NotificationType } from './NotificationService';
 
 export default class ComplaintService {
+  private static formatPropertyUser(complaint: IComplaint): any {
+    const obj = complaint.toObject({ virtuals: true });
+    if (obj.type === 'propertyUser' && obj.propertyUserId) {
+      const pu = obj.propertyUserId as any;
+      obj.propertyUserId = {
+        id: (pu._id || pu.id)?.toString(),
+        fullName: pu.fullName || pu.name,
+        phoneNumber: pu.phoneNumber,
+      };
+    }
+    return obj;
+  }
+
   static async createComplaint(data: any, creatorId?: string): Promise<IComplaint> {
     // 'self' is treated as 'propertyUser' for backward compat
     if (data.type === 'self' || data.type === 'propertyUser') {
@@ -63,12 +76,12 @@ export default class ComplaintService {
       { path: 'assignedTo', select: 'name' },
     ]);
 
-    return complaint;
+    return ComplaintService.formatPropertyUser(complaint);
   }
 
   static async getAllComplaints(filters: any = {}, page: number = 1, limit: number = 10): Promise<{ data: IComplaint[], total: number }> {
     const skip = (page - 1) * limit;
-    const [data, total] = await Promise.all([
+    const [raw, total] = await Promise.all([
       Complaint.find(filters)
         .populate('tenantId', 'fullName phoneNumber')
         .populate('propertyUserId', 'name phoneNumber')
@@ -79,15 +92,17 @@ export default class ComplaintService {
         .limit(limit),
       Complaint.countDocuments(filters)
     ]);
+    const data = raw.map(c => ComplaintService.formatPropertyUser(c));
     return { data, total };
   }
 
   static async getComplaintById(id: string): Promise<IComplaint | null> {
-    return Complaint.findById(id)
+    const complaint = await Complaint.findById(id)
       .populate('tenantId', 'fullName phoneNumber')
       .populate('propertyUserId', 'name phoneNumber')
       .populate('propertyId', 'name')
       .populate('assignedTo', 'name');
+    return complaint ? ComplaintService.formatPropertyUser(complaint) : null;
   }
 
   static async updateComplaint(id: string, data: any): Promise<IComplaint | null> {
@@ -111,13 +126,14 @@ export default class ComplaintService {
   }
 
   static async getRecentComplaints(limit: number = 4): Promise<IComplaint[]> {
-    return Complaint.find()
+    const complaints = await Complaint.find()
       .populate('tenantId', 'fullName phoneNumber')
       .populate('propertyUserId', 'name phoneNumber')
       .populate('propertyId', 'name')
       .populate('assignedTo', 'name')
       .sort({ createdAt: -1 })
       .limit(limit);
+    return complaints.map(c => ComplaintService.formatPropertyUser(c));
   }
 
   static async getOpenComplaintCount(propertyId?: string): Promise<{ totalOpen: number }> {

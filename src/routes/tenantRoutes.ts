@@ -53,6 +53,27 @@ router.post('/create-tenant', authorizePermissions('tenants:write'), TenantContr
  *     tags: [Tenants]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: name
+ *         schema: { type: string }
+ *         description: Filter by tenant name (case-insensitive partial match)
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [active, notice, upcoming, exited]
+ *         description: Filter by tenant allocation status
+ *       - in: query
+ *         name: propertyId
+ *         schema: { type: string }
+ *         description: Filter tenants belonging to a specific property
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer }
  *     responses:
  *       200:
  *         description: List of tenants

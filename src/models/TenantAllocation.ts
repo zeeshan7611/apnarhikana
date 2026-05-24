@@ -1,5 +1,16 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+export interface IExitLogEntry {
+  exitDate?: Date;
+  exitInitiatedAt: Date;
+  moveOutStatus: 'pending' | 'approved' | 'revoked';
+  moveOutInitiatedBy: 'tenant' | 'landlord';
+  moveOutRejectionReason?: string;
+  eligibleRefundPercentage?: number;
+  eligibleRefundAmount?: number;
+  moveOutAcknowledgedAt?: Date;
+}
+
 export interface ITenantAllocation extends Document {
   tenantId: mongoose.Types.ObjectId;
   inventoryAllocationId: mongoose.Types.ObjectId;
@@ -23,6 +34,7 @@ export interface ITenantAllocation extends Document {
   moveOutInitiatedBy?: 'tenant' | 'landlord';
   moveOutRejectionReason?: string;
   moveOutAcknowledgedAt?: Date;
+  exitLog: IExitLogEntry[];
 }
 
 const TenantAllocationSchema: Schema = new Schema({
@@ -52,6 +64,16 @@ const TenantAllocationSchema: Schema = new Schema({
   moveOutInitiatedBy: { type: String, enum: ['tenant', 'landlord'] },
   moveOutRejectionReason: { type: String },
   moveOutAcknowledgedAt: { type: Date },
+  exitLog: [{
+    exitDate: { type: Date },
+    exitInitiatedAt: { type: Date, required: true },
+    moveOutStatus: { type: String, enum: ['pending', 'approved', 'revoked'], required: true },
+    moveOutInitiatedBy: { type: String, enum: ['tenant', 'landlord'], required: true },
+    moveOutRejectionReason: { type: String },
+    eligibleRefundPercentage: { type: Number },
+    eligibleRefundAmount: { type: Number },
+    moveOutAcknowledgedAt: { type: Date },
+  }],
 }, {
   timestamps: true,
 });

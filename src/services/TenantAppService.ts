@@ -265,36 +265,25 @@ export default class TenantAppService {
       { minDays: 0,  maxDays: 7,     refundPercentage: 0,   label: '0–7 days notice — No refund' },
     ];
 
+    // Current active exit notice period served days
+    let noticePeriodServedDays: number | null = null;
+    if (allocation.exitInitiatedAt && allocation.endDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const diff = new Date(allocation.endDate).getTime() - today.getTime();
+      noticePeriodServedDays = Math.max(0, Math.ceil(diff / (1000 * 3600 * 24)));
+    }
+
     const result: any = {
       depositAmount: allocation.depositAmount,
       depositPaid,
       depositRemaining,
       noticePeriodDays: NOTICE_PERIOD_DAYS,
       refundPolicy,
+      currentMoveOutStatus: allocation.moveOutStatus || null,
+      noticePeriodServedDays,
+      exitInfo: allocation.exitLog || [],
     };
-
-    // If exit has already been initiated, include current status
-    if (allocation.exitInitiatedAt) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const exitDate = allocation.endDate ? new Date(allocation.endDate) : null;
-      let noticePeriodServedDays: number | null = null;
-      if (exitDate) {
-        const diff = exitDate.getTime() - today.getTime();
-        noticePeriodServedDays = Math.max(0, Math.ceil(diff / (1000 * 3600 * 24)));
-      }
-
-      result.exitInfo = {
-        exitDate: allocation.endDate,
-        exitInitiatedAt: allocation.exitInitiatedAt,
-        moveOutStatus: allocation.moveOutStatus,
-        moveOutInitiatedBy: allocation.moveOutInitiatedBy,
-        moveOutRejectionReason: allocation.moveOutRejectionReason,
-        eligibleRefundPercentage: allocation.eligibleRefundPercentage,
-        eligibleRefundAmount: allocation.eligibleRefundAmount,
-        noticePeriodServedDays,
-      };
-    }
 
     return result;
   }

@@ -215,7 +215,7 @@ export default class RentLedgerService {
     if (action === 'approve') {
       transaction.status = 'paid';
     } else {
-      transaction.status = 'rejected';
+      transaction.status = 'pending';
     }
     await transaction.save();
 
@@ -243,9 +243,9 @@ export default class RentLedgerService {
         await NotificationService.notifyTenant(
           transaction.tenantId.toString(),
           'Cash Payment Rejected',
-          `Your cash payment of ${amountStr} for ${paymentTypeStr} was rejected by the manager. Please contact them.`,
+          `Your cash payment of ${amountStr} for ${paymentTypeStr} was rejected by the manager. Please make the payment again.`,
           NotificationType.PAYMENT,
-          { screen: NotificationScreen.TENANT_TRANSACTION_DETAIL, transactionId: transaction._id.toString(), status: 'rejected' }
+          { screen: NotificationScreen.TENANT_TRANSACTION_DETAIL, transactionId: transaction._id.toString(), status: 'pending' }
         );
       }
     } catch (notificationErr) {
@@ -380,9 +380,10 @@ export default class RentLedgerService {
     page?: number;
     limit?: number;
   }): Promise<{ data: IPaymentTransaction[]; total: number }> {
-    const query: any = { status: 'paid' };
+    const query: any = {};
     if (filters.propertyId) query.propertyId = new mongoose.Types.ObjectId(filters.propertyId);
     if (filters.tenantId) query.tenantId = new mongoose.Types.ObjectId(filters.tenantId);
+    if (filters.status) query.status = filters.status;
     if (filters.paymentType) query.paymentType = filters.paymentType;
 
     if (filters.from || filters.to) {

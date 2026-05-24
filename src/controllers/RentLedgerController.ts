@@ -148,6 +148,11 @@ export default class RentLedgerController {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
 
+      const allowedStatuses = ['paid', 'overdue', 'due'];
+      if (status && !allowedStatuses.includes(status as string)) {
+        return res.status(400).json({ success: false, message: `status must be one of: ${allowedStatuses.join(', ')}` });
+      }
+
       const { data, total } = await RentLedgerService.getPropertyTransactions({
         propertyId: propertyId as string,
         tenantId: tenantId as string,

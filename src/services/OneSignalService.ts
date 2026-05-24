@@ -105,6 +105,7 @@ export default class OneSignalService {
     notification.headings = { en: title };
     notification.contents = { en: message };
     notification.include_aliases = { external_id: userIds };
+    (notification as any).target_channel = 'push';
     Object.assign(notification, options);
     return this.sendNotificationToPropertyUser(notification);
   }

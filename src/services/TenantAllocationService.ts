@@ -367,21 +367,36 @@ export default class TenantAllocationService {
       refundPercentage = 0;
     }
 
+    const now = new Date();
+    const refundAmount = (refundPercentage / 100) * (allocation.depositAmount || 0);
+    const isLandlord = initiatedBy === 'landlord';
+
     allocation.endDate = targetExitDate;
-    allocation.exitInitiatedAt = new Date();
+    allocation.exitInitiatedAt = now;
     allocation.eligibleRefundPercentage = refundPercentage;
-    allocation.eligibleRefundAmount = (refundPercentage / 100) * (allocation.depositAmount || 0);
+    allocation.eligibleRefundAmount = refundAmount;
     allocation.moveOutInitiatedBy = initiatedBy;
-    // Landlord-initiated exits are auto-approved; tenant-initiated need landlord approval
-    allocation.moveOutStatus = initiatedBy === 'landlord' ? 'approved' : 'pending';
-    if (initiatedBy === 'landlord') {
-      allocation.moveOutAcknowledgedAt = new Date();
+    allocation.moveOutStatus = isLandlord ? 'approved' : 'pending';
+    if (isLandlord) {
+      allocation.moveOutAcknowledgedAt = now;
     }
 
     if (propertyUserId) {
       const mongoose = await import('mongoose');
       allocation.propertyUserId = new mongoose.default.Types.ObjectId(propertyUserId);
     }
+
+    // Append to exit journey log
+    const logEntry: any = {
+      exitDate: targetExitDate,
+      exitInitiatedAt: now,
+      moveOutStatus: isLandlord ? 'approved' : 'pending',
+      moveOutInitiatedBy: initiatedBy,
+      eligibleRefundPercentage: refundPercentage,
+      eligibleRefundAmount: refundAmount,
+      ...(isLandlord ? { moveOutAcknowledgedAt: now } : {}),
+    };
+    allocation.exitLog = [...(allocation.exitLog || []), logEntry];
 
     return allocation.save();
   }
@@ -439,6 +454,16 @@ export default class TenantAllocationService {
     if (!allocation.exitInitiatedAt) throw new Error('No move-out request found for this allocation');
 
     allocation.moveOutStatus = 'approved';
+    allocation.moveOutAcknowledgedAt = new Date();
+
+    // Update last exitLog entry to approved
+    if (allocation.exitLog && allocation.exitLog.length > 0) {
+      const last = allocation.exitLog.length - 1;
+      allocation.exitLog[last].moveOutStatus = 'approved';
+      allocation.exitLog[last].moveOutAcknowledgedAt = allocation.moveOutAcknowledgedAt;
+      allocation.markModified('exitLog');
+    }
+
     const updated = await allocation.save();
 
     try {
@@ -464,8 +489,24 @@ export default class TenantAllocationService {
     if (!allocation) throw new Error('Allocation not found');
     if (!allocation.exitInitiatedAt) throw new Error('No move-out request found for this allocation');
 
-    allocation.moveOutStatus = 'revoked';
-    if (reason) allocation.moveOutRejectionReason = reason;
+    // Update last exitLog entry to revoked
+    if (allocation.exitLog && allocation.exitLog.length > 0) {
+      const last = allocation.exitLog.length - 1;
+      allocation.exitLog[last].moveOutStatus = 'revoked';
+      if (reason) allocation.exitLog[last].moveOutRejectionReason = reason;
+      allocation.markModified('exitLog');
+    }
+
+    // Reset root-level exit fields so tenant can raise a new request
+    allocation.exitInitiatedAt = undefined;
+    allocation.moveOutStatus = undefined;
+    allocation.moveOutInitiatedBy = undefined;
+    allocation.moveOutRejectionReason = undefined;
+    allocation.moveOutAcknowledgedAt = undefined;
+    allocation.endDate = undefined;
+    allocation.eligibleRefundPercentage = 0;
+    allocation.eligibleRefundAmount = 0;
+
     const updated = await allocation.save();
 
     try {

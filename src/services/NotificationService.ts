@@ -57,17 +57,20 @@ export default class NotificationService {
         }))
       );
 
-      const playerIds = managers.map(m => m.notficationToken).filter(id => id) as string[];
+      const playerIds = managers.map(m => m.notficationToken).filter(Boolean) as string[];
+      const missingTokenIds = managers.filter(m => !m.notficationToken).map(m => m._id.toString());
 
       if (playerIds.length > 0) {
-        return OneSignalService.sendToPropertyUserPlayerIds(playerIds, title, message, {
+        await OneSignalService.sendToPropertyUserPlayerIds(playerIds, title, message, {
           data: { ...data, type },
         });
       }
 
-      return OneSignalService.sendToPropertyUserExternalIds(managerIds, title, message, {
-        data: { ...data, type },
-      });
+      if (missingTokenIds.length > 0) {
+        await OneSignalService.sendToPropertyUserExternalIds(missingTokenIds, title, message, {
+          data: { ...data, type },
+        });
+      }
     } catch (err) {
       console.error('Failed to notify managers:', err);
     }
@@ -191,17 +194,20 @@ export default class NotificationService {
         }))
       );
 
-      const playerIds = users.map((u) => u.notficationToken).filter((id) => id) as string[];
+      const playerIds = users.map((u) => u.notficationToken).filter(Boolean) as string[];
+      const missingTokenIds = users.filter(u => !u.notficationToken).map(u => u._id.toString());
 
       if (playerIds.length > 0) {
-        return OneSignalService.sendToPropertyUserPlayerIds(playerIds, title, message, {
+        await OneSignalService.sendToPropertyUserPlayerIds(playerIds, title, message, {
           data: { ...data, type },
         });
       }
 
-      return OneSignalService.sendToPropertyUserExternalIds(userIds, title, message, {
-        data: { ...data, type },
-      });
+      if (missingTokenIds.length > 0) {
+        await OneSignalService.sendToPropertyUserExternalIds(missingTokenIds, title, message, {
+          data: { ...data, type },
+        });
+      }
     } catch (err) {
       console.error('Failed to notify request access users:', err);
     }
@@ -228,14 +234,14 @@ export default class NotificationService {
       });
 
       if (user.notficationToken) {
-        return OneSignalService.sendToPropertyUserPlayerIds([user.notficationToken], title, message, {
+        await OneSignalService.sendToPropertyUserPlayerIds([user.notficationToken], title, message, {
+          data: { ...data, type, propertyUserId },
+        });
+      } else {
+        await OneSignalService.sendToPropertyUserExternalIds([propertyUserId], title, message, {
           data: { ...data, type, propertyUserId },
         });
       }
-
-      return OneSignalService.sendToPropertyUserExternalIds([propertyUserId], title, message, {
-        data: { ...data, type, propertyUserId },
-      });
     } catch (err) {
       console.error('Failed to notify property user:', err);
     }
