@@ -4,6 +4,7 @@ export interface IComplaint extends Document {
   tenantId?: mongoose.Types.ObjectId;
   propertyUserId?: mongoose.Types.ObjectId;
   category: string;
+  subCategory?: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   title: string;
   description: string;
@@ -24,6 +25,7 @@ const ComplaintSchema: Schema = new Schema({
   propertyUserId: { type: Schema.Types.ObjectId, ref: 'PropertyUser', index: true },
   propertyId: { type: Schema.Types.ObjectId, ref: 'Property', required: true, index: true },
   category: { type: String, required: true },
+  subCategory: { type: String },
   priority: { type: String, enum: ['low', 'medium', 'high', 'urgent'], default: 'medium' },
   title: { type: String, required: true },
   description: { type: String, required: true },

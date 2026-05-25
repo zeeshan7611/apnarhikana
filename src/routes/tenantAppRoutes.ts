@@ -393,6 +393,41 @@ router.post('/initiate-cash-payment', jwtAuth, Controller.initiateCashPayment);
 
 /**
  * @swagger
+ * /api/tenant-app/complaint-categories:
+ *   get:
+ *     summary: Get complaint categories and subcategories
+ *     description: Returns a static list of complaint categories with their subcategories. Use the `id` values for the `category` and `subCategory` fields when raising a complaint.
+ *     tags: [TenantApp]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of complaint categories with subcategories
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string }
+ *                       label: { type: string }
+ *                       subcategories:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id: { type: string }
+ *                             label: { type: string }
+ */
+router.get('/complaint-categories', jwtAuth, Controller.getComplaintCategories);
+
+/**
+ * @swagger
  * /api/tenant-app/complaint:
  *   post:
  *     summary: Raise a new complaint
@@ -408,9 +443,8 @@ router.post('/initiate-cash-payment', jwtAuth, Controller.initiateCashPayment);
  *             required: [title, category, description]
  *             properties:
  *               title: { type: string }
- *               category:
- *                 type: string
- *                 enum: ["plumbing","electrical","cleaning","maintenance","other"]
+ *               category: { type: string, description: "Category id from /complaint-categories" }
+ *               subCategory: { type: string, description: "Subcategory id from /complaint-categories" }
  *               description: { type: string }
  *               imageUrl: { type: string }
  *               resolutionURI: { type: string }
