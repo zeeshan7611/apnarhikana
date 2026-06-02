@@ -205,7 +205,12 @@ export default class TenantAllocationService {
       bedId: input.bedId,
     });
 
-    const tenant = await Tenant.create({
+    const existingTenant = input.phoneNumber
+      ? await Tenant.findOne({ phoneNumber: input.phoneNumber })
+      : null;
+
+    const tenantCreatedNow = !existingTenant;
+    const tenant = existingTenant ?? await Tenant.create({
       fullName: input.fullName,
       phoneNumber: input.phoneNumber,
       email: input.email,
@@ -234,23 +239,20 @@ export default class TenantAllocationService {
         createdById,
       });
 
-      // ✅ Auto-generate initial RentLedgers (from joining month to current month)
       try {
         await RentLedgerService.generateInitialLedgers(
           allocation._id.toString(),
           createdById
         );
       } catch (ledgerErr: any) {
-        // Rollback allocation if ledger generation fails (rare but possible)
-        await Tenant.findByIdAndDelete(tenant._id);
+        if (tenantCreatedNow) await Tenant.findByIdAndDelete(tenant._id);
         await TenantAllocation.findByIdAndDelete(allocation._id);
         throw ledgerErr;
       }
 
       return { tenant, allocation, inventoryAllocation };
     } catch (error) {
-      // Rollback: Delete the created tenant if allocation fails
-      await Tenant.findByIdAndDelete(tenant._id);
+      if (tenantCreatedNow) await Tenant.findByIdAndDelete(tenant._id);
       throw error;
     }
   }

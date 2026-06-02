@@ -159,8 +159,8 @@ export default class RentLedgerService {
       createdById: data.createdById
     });
 
-    // Recalculate ledger only for rent payments
-    if (!isDeposit && data.rentLedgerId) {
+    // Recalculate ledger only for confirmed rent payments (not pending gateway transactions)
+    if (!isDeposit && data.rentLedgerId && status === 'paid') {
       ledger = await this.recalculateLedger(data.rentLedgerId);
       if (!ledger) throw new Error('Failed to update ledger after recording payment');
     }
@@ -219,10 +219,14 @@ export default class RentLedgerService {
     }
     await transaction.save();
 
-    // Recalculate ledger if associated
+    // Recalculate ledger if associated; demote transaction to partial if ledger is not fully paid
     let ledger: IRentLedger | null = null;
     if (transaction.rentLedgerId) {
       ledger = await this.recalculateLedger(transaction.rentLedgerId.toString());
+      if (action === 'approve' && ledger && ledger.status === 'partial') {
+        transaction.status = 'partial';
+        await transaction.save();
+      }
     }
 
     // Trigger Notification to Tenant
@@ -260,13 +264,23 @@ export default class RentLedgerService {
     const transaction = await PaymentTransaction.findById(transactionId);
     if (!transaction) throw new Error('Transaction not found');
 
-    transaction.status = 'paid';
-    await transaction.save();
-
     // Only recalculate ledger for rent payments
     let ledger: IRentLedger | null = null;
     if (transaction.rentLedgerId) {
+      // Mark transaction paid first so recalculation counts it
+      transaction.status = 'paid';
+      await transaction.save();
+
       ledger = await this.recalculateLedger(transaction.rentLedgerId.toString());
+
+      // If ledger is still partially paid, demote transaction status to partial
+      if (ledger && ledger.status === 'partial') {
+        transaction.status = 'partial';
+        await transaction.save();
+      }
+    } else {
+      transaction.status = 'paid';
+      await transaction.save();
     }
 
     // Notify landlord managers: rent/deposit paid online
@@ -480,35 +494,27 @@ export default class RentLedgerService {
     if (!alloc) throw new Error('Tenant allocation not found');
 
     const startDate = new Date(alloc.startDate);
-    const now = new Date();
-    let current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
-    const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = current > currentMonth ? current : currentMonth;
+    const monthStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
+    const dueDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 5);
 
-    let createdCount = 0;
-    while (current <= end) {
-      const monthStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
-      const dueDate = new Date(current.getFullYear(), current.getMonth() + 1, 5);
-      try {
-        await RentLedger.create({
-          tenantId: alloc.tenantId,
-          propertyId: alloc.propertyId,
-          tenantAllocationId: alloc._id,
-          month: monthStr,
-          rentAmount: alloc.rentAmount,
-          totalAmount: alloc.rentAmount,
-          pendingAmount: alloc.rentAmount,
-          dueDate,
-          status: 'pending',
-          isLocked: false
-        });
-        createdCount++;
-      } catch (err: any) {
-        if (err.code !== 11000) throw err;
-      }
-      current.setMonth(current.getMonth() + 1);
+    try {
+      await RentLedger.create({
+        tenantId: alloc.tenantId,
+        propertyId: alloc.propertyId,
+        tenantAllocationId: alloc._id,
+        month: monthStr,
+        rentAmount: alloc.rentAmount,
+        totalAmount: alloc.rentAmount,
+        pendingAmount: alloc.rentAmount,
+        dueDate,
+        status: 'due',
+        isLocked: false
+      });
+      return 1;
+    } catch (err: any) {
+      if (err.code === 11000) return 0;
+      throw err;
     }
-    return createdCount;
   }
 
   // ─── 10. Get Current Month Revenue ──────────────────────────────────────────

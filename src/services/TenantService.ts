@@ -3,6 +3,10 @@ import TenantAllocation from "../models/TenantAllocation";
 
 export default class TenantService {
   static async createTenant(data: any): Promise<ITenant> {
+    if (data.phoneNumber) {
+      const existing = await Tenant.findOne({ phoneNumber: data.phoneNumber });
+      if (existing) return existing;
+    }
     return Tenant.create(data);
   }
 
