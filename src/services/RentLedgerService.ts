@@ -668,12 +668,13 @@ export default class RentLedgerService {
     const query: any = { paymentMethod: 'cash' };
 
     const allowedStatuses = ['initiated', 'rejected', 'paid'];
-    if(filters.status == 'approved')
-       filters.status = 'paid';
+    if(filters.status == 'approved'){
+       filters.status = 'paid'
+    }
     if (filters.status && allowedStatuses.includes(filters.status)) {
       query.status = filters.status;
     } else {
-      query.status = 'initiated';
+      query.status = allowedStatuses
     }
 
     if (filters.propertyId) query.propertyId = new mongoose.Types.ObjectId(filters.propertyId);
