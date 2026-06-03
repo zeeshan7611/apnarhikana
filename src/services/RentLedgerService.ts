@@ -667,7 +667,9 @@ export default class RentLedgerService {
   }): Promise<{ data: IPaymentTransaction[]; total: number }> {
     const query: any = { paymentMethod: 'cash' };
 
-    const allowedStatuses = ['initiated', 'approved', 'rejected'];
+    const allowedStatuses = ['initiated', 'rejected', 'paid'];
+    if(filters.status == 'approved')
+       filters.status = 'paid';
     if (filters.status && allowedStatuses.includes(filters.status)) {
       query.status = filters.status;
     } else {

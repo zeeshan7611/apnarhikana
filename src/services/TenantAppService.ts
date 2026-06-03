@@ -86,30 +86,39 @@ export default class TenantAppService {
 
     const response: any[] = [];
 
-    // Helper to calculate installments with per-part status tracking
-    const getInstallments = (title: string, amount: number, type: string, ledgerId?: string, dueDate?: Date, isDeposit = false) => {
-      // Mutable initiated budget for this ledger/deposit split
+    // Splits totalAmount into installments, marks parts as 'paid'/'initiated'/'due'/'overdue'
+    // Always returns all parts (including paid) so numbering stays consistent.
+    const getInstallments = (
+      title: string,
+      totalAmount: number,
+      paidAmount: number,
+      type: string,
+      ledgerId?: string,
+      dueDate?: Date,
+      isDeposit = false
+    ) => {
+      let paidBudget = paidAmount;
       let initiatedBudget = isDeposit
         ? initiatedDepositAmount
         : (ledgerId ? (initiatedAmountByLedger.get(ledgerId) || 0) : 0);
 
       const resolvePartStatus = (partAmount: number): string => {
-        if (initiatedBudget >= partAmount) {
-          initiatedBudget -= partAmount;
-          return 'initiated';
-        }
+        if (paidBudget >= partAmount) { paidBudget -= partAmount; return 'paid'; }
+        if (initiatedBudget >= partAmount) { initiatedBudget -= partAmount; return 'initiated'; }
         return baseStatus(dueDate);
       };
 
-      if (amount <= 9999) {
-        return [{ title, amount, type, rentLedgerId: ledgerId, dueDate, status: resolvePartStatus(amount) }];
+      // No split needed — show only if not fully paid
+      if (totalAmount <= 9999) {
+        if (paidAmount >= totalAmount) return [];
+        return [{ title, amount: totalAmount - paidAmount, type, rentLedgerId: ledgerId, dueDate, status: resolvePartStatus(totalAmount - paidAmount) }];
       }
 
-      const count = Math.ceil(amount / 10000);
-      const installmentAmount = Math.round(amount / count);
+      const count = Math.ceil(totalAmount / 10000);
+      const installmentAmount = Math.round(totalAmount / count);
       const installments = [];
       for (let i = 1; i <= count; i++) {
-        const partAmount = i === count ? amount - (installmentAmount * (count - 1)) : installmentAmount;
+        const partAmount = i === count ? totalAmount - (installmentAmount * (count - 1)) : installmentAmount;
         installments.push({
           title: `${title} (Part ${i}/${count})`,
           amount: partAmount,
@@ -129,13 +138,12 @@ export default class TenantAppService {
       status: 'paid' as any
     });
     const totalDepositPaid = depositPayments.reduce((sum, p) => sum + p.amount, 0);
-    const remainingDeposit = Math.max(0, allocation.depositAmount - totalDepositPaid);
 
-    if (remainingDeposit > 0) {
-      response.push(...getInstallments('Security Deposit', remainingDeposit, 'deposit', undefined, allocation.startDate, true));
+    if (totalDepositPaid < allocation.depositAmount) {
+      response.push(...getInstallments('Security Deposit', allocation.depositAmount, totalDepositPaid, 'deposit', undefined, allocation.startDate, true));
     }
 
-    // 2. Process Ledgers — include itemized extra charges (without double-counting)
+    // 2. Process Ledgers — extra charges first, then rent installments
     for (const ledger of ledgers) {
       let remaining = ledger.pendingAmount || 0;
       const ledgerId = ledger._id.toString();
@@ -159,8 +167,13 @@ export default class TenantAppService {
         }
       }
 
-      if (remaining > 0) {
-        response.push(...getInstallments(`Rent - ${ledger.month}`, remaining, 'rent', ledgerId, ledger.dueDate));
+      // Use rentAmount (original) + rentPaid to show consistent part numbering
+      // and mark paid parts as 'paid' instead of hiding them.
+      if (ledger.rentAmount > 0) {
+        const rentPaid = Math.max(0, ledger.paidAmount - ledger.extraChargesAmount);
+        if (rentPaid < ledger.rentAmount) {
+          response.push(...getInstallments(`Rent - ${ledger.month}`, ledger.rentAmount, rentPaid, 'rent', ledgerId, ledger.dueDate));
+        }
       }
     }
 
