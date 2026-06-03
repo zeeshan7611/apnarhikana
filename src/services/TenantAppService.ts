@@ -66,37 +66,57 @@ export default class TenantAppService {
 
     // Fetch all initiated transactions for this tenant to determine item status
     const initiatedTxns = await PaymentTransaction.find({ tenantId, status: 'initiated' as any });
-    const initiatedLedgerIds = new Set(
-      initiatedTxns.filter(t => t.rentLedgerId).map(t => t.rentLedgerId!.toString())
-    );
-    const hasInitiatedDeposit = initiatedTxns.some(t => t.paymentType === 'deposit');
+
+    // Map of ledgerId -> total initiated amount (to assign status part-by-part)
+    const initiatedAmountByLedger = new Map<string, number>();
+    initiatedTxns.forEach(t => {
+      if (t.rentLedgerId) {
+        const key = t.rentLedgerId.toString();
+        initiatedAmountByLedger.set(key, (initiatedAmountByLedger.get(key) || 0) + t.amount);
+      }
+    });
+    const initiatedDepositAmount = initiatedTxns
+      .filter(t => t.paymentType === 'deposit')
+      .reduce((sum, t) => sum + t.amount, 0);
 
     const now = new Date();
 
-    const resolveStatus = (rentLedgerId: string | undefined, dueDate: Date | undefined, isDeposit = false): string => {
-      if (isDeposit) return hasInitiatedDeposit ? 'initiated' : (dueDate && dueDate < now ? 'overdue' : 'due');
-      if (rentLedgerId && initiatedLedgerIds.has(rentLedgerId)) return 'initiated';
-      return dueDate && dueDate < now ? 'overdue' : 'due';
-    };
+    const baseStatus = (dueDate: Date | undefined): string =>
+      dueDate && dueDate < now ? 'overdue' : 'due';
 
     const response: any[] = [];
 
-    // Helper to calculate installments
+    // Helper to calculate installments with per-part status tracking
     const getInstallments = (title: string, amount: number, type: string, ledgerId?: string, dueDate?: Date, isDeposit = false) => {
-      const status = resolveStatus(ledgerId, dueDate, isDeposit);
-      if (amount <= 9999) return [{ title, amount, type, rentLedgerId: ledgerId, dueDate, status }];
+      // Mutable initiated budget for this ledger/deposit split
+      let initiatedBudget = isDeposit
+        ? initiatedDepositAmount
+        : (ledgerId ? (initiatedAmountByLedger.get(ledgerId) || 0) : 0);
+
+      const resolvePartStatus = (partAmount: number): string => {
+        if (initiatedBudget >= partAmount) {
+          initiatedBudget -= partAmount;
+          return 'initiated';
+        }
+        return baseStatus(dueDate);
+      };
+
+      if (amount <= 9999) {
+        return [{ title, amount, type, rentLedgerId: ledgerId, dueDate, status: resolvePartStatus(amount) }];
+      }
 
       const count = Math.ceil(amount / 10000);
       const installmentAmount = Math.round(amount / count);
       const installments = [];
       for (let i = 1; i <= count; i++) {
+        const partAmount = i === count ? amount - (installmentAmount * (count - 1)) : installmentAmount;
         installments.push({
           title: `${title} (Part ${i}/${count})`,
-          amount: i === count ? amount - (installmentAmount * (count - 1)) : installmentAmount,
+          amount: partAmount,
           type,
           rentLedgerId: ledgerId,
           dueDate,
-          status,
+          status: resolvePartStatus(partAmount),
         });
       }
       return installments;
@@ -132,7 +152,7 @@ export default class TenantAppService {
               rentLedgerId: ledgerId,
               dueDate: ledger.dueDate,
               extraType: charge.type,
-              status: resolveStatus(ledgerId, ledger.dueDate),
+              status: (initiatedAmountByLedger.get(ledgerId) || 0) > 0 ? 'initiated' : baseStatus(ledger.dueDate),
             });
             remaining -= chargePending;
           }
