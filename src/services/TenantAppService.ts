@@ -409,20 +409,48 @@ export default class TenantAppService {
     const user = await PropertyUser.findById(data.propertyUserId);
     if (!user) throw new AppError('Property Manager not found', 404);
 
-    // Resolve propertyId
+    // Resolve propertyId and auto-generate part label
     let propertyId = '';
+    let partLabel = '';
     const isDeposit = data.paymentType === 'deposit';
     if (isDeposit) {
       const TenantAllocation = (await import('../models/TenantAllocation')).default;
       const allocation = await TenantAllocation.findOne({ tenantId: data.tenantId, status: { $in: ['active', 'notice'] } });
       if (!allocation) throw new AppError('No active allocation found', 404);
       propertyId = allocation.propertyId.toString();
+
+      const depositPaid = await PaymentTransaction.find({ tenantId: data.tenantId, paymentType: 'deposit', status: 'paid' as any });
+      const totalDepositPaid = depositPaid.reduce((s, p) => s + p.amount, 0);
+      const remainingDeposit = Math.max(0, allocation.depositAmount - totalDepositPaid);
+      if (remainingDeposit > 9999) {
+        const count = Math.ceil(remainingDeposit / 10000);
+        const inProgress = await PaymentTransaction.countDocuments({
+          tenantId: data.tenantId, paymentType: 'deposit', status: { $in: ['pending', 'initiated'] }
+        });
+        partLabel = `Security Deposit (Part ${inProgress + 1}/${count})`;
+      } else {
+        partLabel = 'Security Deposit';
+      }
     } else {
       if (!data.rentLedgerId) throw new AppError('rentLedgerId is required', 400);
       const ledger = await RentLedger.findOne({ _id: data.rentLedgerId, tenantId: data.tenantId });
       if (!ledger) throw new AppError('Rent ledger not found or access denied', 404);
       propertyId = ledger.propertyId.toString();
+
+      if (ledger.pendingAmount > 9999) {
+        const count = Math.ceil(ledger.pendingAmount / 10000);
+        const inProgress = await PaymentTransaction.countDocuments({
+          rentLedgerId: data.rentLedgerId, status: { $in: ['pending', 'initiated'] }
+        });
+        partLabel = `Rent - ${ledger.month} (Part ${inProgress + 1}/${count})`;
+      } else {
+        partLabel = `Rent - ${ledger.month}`;
+      }
     }
+
+    const notes = data.notes
+      ? `${partLabel} — ${data.notes}`
+      : `${partLabel} — Cash payment submitted by tenant to manager ${user.name}`;
 
     // Mark as pending transaction
     const RentLedgerService = (await import('../services/RentLedgerService')).default;
@@ -434,7 +462,7 @@ export default class TenantAppService {
       paymentMethod: 'cash',
       paymentType: data.paymentType || 'rent',
       status: 'initiated', // Initiated by tenant
-      notes: data.notes || `Cash payment submitted by tenant to manager ${user.name}`,
+      notes,
       createdById: data.propertyUserId
     });
   }

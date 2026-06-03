@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import TenantAppService from '../services/TenantAppService';
 import RentLedger from '../models/RentLedger';
+import PaymentTransaction from '../models/PaymentTransaction';
 
 export default class TenantAppController {
   // POST /send-otp
@@ -75,6 +76,7 @@ export default class TenantAppController {
       if (!tenant) throw new Error('Tenant details not found');
 
       let propertyId: string;
+      let paymentNotes: string | undefined;
 
       if (isDeposit) {
         // For deposit: get propertyId from active allocation (no ledger needed)
@@ -84,6 +86,20 @@ export default class TenantAppController {
           return res.status(404).json({ success: false, message: 'No active allocation found' });
         }
         propertyId = allocation.propertyId.toString();
+
+        // Auto-label deposit installment
+        const depositPaid = await PaymentTransaction.find({ tenantId, paymentType: 'deposit', status: 'paid' as any });
+        const totalDepositPaid = depositPaid.reduce((s, p) => s + p.amount, 0);
+        const remainingDeposit = Math.max(0, allocation.depositAmount - totalDepositPaid);
+        if (remainingDeposit > 9999) {
+          const count = Math.ceil(remainingDeposit / 10000);
+          const inProgress = await PaymentTransaction.countDocuments({
+            tenantId, paymentType: 'deposit', status: { $in: ['pending', 'initiated'] }
+          });
+          paymentNotes = `Security Deposit (Part ${inProgress + 1}/${count})`;
+        } else {
+          paymentNotes = 'Security Deposit';
+        }
       } else {
         // For rent: validate ledger belongs to this tenant
         const ledger = await RentLedger.findOne({ _id: rentLedgerId, tenantId });
@@ -91,6 +107,17 @@ export default class TenantAppController {
           return res.status(404).json({ success: false, message: 'Rent ledger not found or access denied' });
         }
         propertyId = ledger.propertyId.toString();
+
+        // Auto-label rent installment
+        if (ledger.pendingAmount > 9999) {
+          const count = Math.ceil(ledger.pendingAmount / 10000);
+          const inProgress = await PaymentTransaction.countDocuments({
+            rentLedgerId, status: { $in: ['pending', 'initiated'] }
+          });
+          paymentNotes = `Rent - ${ledger.month} (Part ${inProgress + 1}/${count})`;
+        } else {
+          paymentNotes = `Rent - ${ledger.month}`;
+        }
       }
 
       // 2. Create Pending Transaction in our DB
@@ -102,7 +129,8 @@ export default class TenantAppController {
         amount,
         paymentMethod: 'upi',
         paymentType: paymentType || (isDeposit ? 'deposit' : 'rent'),
-        status: 'pending'
+        status: 'pending',
+        notes: paymentNotes
       });
 
       // 3. Create SmePay Order
@@ -129,7 +157,6 @@ export default class TenantAppController {
       }
 
       // 5. Save Slug and Gateway Transaction ID to our DB
-      const PaymentTransaction = (await import('../models/PaymentTransaction')).default;
       await PaymentTransaction.findByIdAndUpdate(transaction._id, {
         smePaySlug: orderResponse.order_slug,
         gatewayTransactionId: paymentResponse.transaction_id
@@ -157,7 +184,6 @@ export default class TenantAppController {
   static async checkPaymentStatus(req: Request, res: Response, next: NextFunction) {
     try {
       const { transactionId } = req.query;
-      const PaymentTransaction = (await import('../models/PaymentTransaction')).default;
       const transaction = await PaymentTransaction.findById(transactionId as string);
       
       if (!transaction) return res.status(404).json({ success: false, message: 'Transaction not found' });
