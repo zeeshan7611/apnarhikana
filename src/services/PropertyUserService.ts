@@ -1,6 +1,7 @@
 import { generateToken } from "../middleware/jwtAuth";
 import PropertyUser, { IPropertyUser } from "../models/PropertyUser";
 import bcrypt from "bcryptjs";
+import { AppError } from "../utils/AppError";
 
 export default class PropertyUserService {
   // ✅ Create User
@@ -24,7 +25,7 @@ export default class PropertyUserService {
   }): Promise<IPropertyUser> {
     const existing = await PropertyUser.findOne({ email: data.email });
     if (existing) {
-      throw new Error("User already exists with this email");
+      throw new AppError("User already exists with this email", 409);
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -60,7 +61,7 @@ export default class PropertyUserService {
       .populate("propertyId", "name id")
       .select("-passwordHash");
     if (!user) {
-      throw new Error("User not found");
+      throw new AppError("User not found", 404);
     }
     return user;
   }
@@ -103,7 +104,7 @@ export default class PropertyUserService {
       .select("-passwordHash");
 
     if (!user) {
-      throw new Error("User not found");
+      throw new AppError("User not found", 404);
     }
 
     return user;
@@ -113,7 +114,7 @@ export default class PropertyUserService {
   static async deleteUser(id: string): Promise<IPropertyUser> {
     const user = await PropertyUser.findByIdAndDelete(id);
     if (!user) {
-      throw new Error("User not found");
+      throw new AppError("User not found", 404);
     }
     return user;
   }
@@ -176,12 +177,12 @@ export default class PropertyUserService {
       .populate("propertyId", "name id");
 
     if (!user || !user.passwordHash) {
-      throw new Error("Invalid credentials");
+      throw new AppError("Invalid credentials", 401);
     }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
-      throw new Error("Invalid credentials");
+      throw new AppError("Invalid credentials", 401);
     }
 
     const token = generateToken({

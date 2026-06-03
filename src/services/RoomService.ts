@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Room, { IRoom } from "../models/Room";
+import { AppError } from "../utils/AppError";
 
 export default class RoomService {
   // Create Room
@@ -11,7 +12,7 @@ export default class RoomService {
   }): Promise<IRoom> {
     const existing = await Room.findOne({ name: data.name });
     if (existing) {
-      throw new Error("Room with this name already exists");
+      throw new AppError("Room with this name already exists", 409);
     }
 
     return Room.create(data);
@@ -50,7 +51,7 @@ export default class RoomService {
     const Property = mongoose.model("Property");
     const property: any = await Property.findById(propertyId);
     if (!property) {
-      throw new Error("Property not found");
+      throw new AppError("Property not found", 404);
     }
 
     const rooms = await Room.find({ isActive: true }).sort({ keyNumber: 1 });

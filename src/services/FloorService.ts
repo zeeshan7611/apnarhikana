@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Floor, { IFloor } from "../models/Floor";
+import { AppError } from "../utils/AppError";
 
 export default class FloorService {
   // Create Floor
@@ -10,7 +11,7 @@ export default class FloorService {
   }): Promise<IFloor> {
     const existing = await Floor.findOne({ name: data.name });
     if (existing) {
-      throw new Error("Floor with this name already exists");
+      throw new AppError("Floor with this name already exists", 409);
     }
 
     return Floor.create(data);
@@ -55,7 +56,7 @@ export default class FloorService {
     const Property = mongoose.model("Property");
     const property: any = await Property.findById(propertyId);
     if (!property) {
-      throw new Error("Property not found");
+      throw new AppError("Property not found", 404);
     }
 
     const floors = await Floor.find().sort({ keyNumber: 1 });

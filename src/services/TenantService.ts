@@ -1,5 +1,6 @@
 import Tenant, { ITenant } from "../models/Tenant";
 import TenantAllocation from "../models/TenantAllocation";
+import { AppError } from "../utils/AppError";
 
 export default class TenantService {
   static async createTenant(data: any): Promise<ITenant> {
@@ -182,7 +183,7 @@ export default class TenantService {
     rejectionReason?: string,
   ): Promise<ITenant | null> {
     if (action !== "approve" && action !== "reject") {
-      throw new Error('Action must be either "approve" or "reject"');
+      throw new AppError('Action must be either "approve" or "reject"', 400);
     }
 
     const tenant = await Tenant.findById(tenantId);

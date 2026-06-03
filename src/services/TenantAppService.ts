@@ -3,6 +3,7 @@ import Tenant, { ITenant } from '../models/Tenant';
 import TenantAllocation, { ITenantAllocation } from '../models/TenantAllocation';
 import RentLedger, { IRentLedger } from '../models/RentLedger';
 import Complaint, { IComplaint } from '../models/Complaint';
+import { AppError } from '../utils/AppError';
 import Announcement, { IAnnouncement } from '../models/Announcement';
 import PaymentTransaction from '../models/PaymentTransaction';
 import Property from '../models/Property';
@@ -13,7 +14,7 @@ export default class TenantAppService {
   // ✅ 1. Send OTP
   static async sendOTP(phoneNumber: string): Promise<{ message: string; otp: string }> {
     const tenant = await Tenant.findOne({ phoneNumber });
-    if (!tenant) throw new Error('Tenant not found with this mobile number');
+    if (!tenant) throw new AppError('Tenant not found with this mobile number', 404);
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 mins expiry
@@ -31,10 +32,10 @@ export default class TenantAppService {
   // ✅ 2. Verify OTP & Login
   static async verifyOTP(phoneNumber: string, otp: string): Promise<{ tenant: ITenant; allocation: ITenantAllocation | null; token: string }> {
     const tenant = await Tenant.findOne({ phoneNumber });
-    if (!tenant) throw new Error('Tenant not found');
+    if (!tenant) throw new AppError('Tenant not found', 404);
 
-    if (!tenant.otp || tenant.otp !== otp) throw new Error('Invalid OTP');
-    if (!tenant.otpExpiry || tenant.otpExpiry < new Date()) throw new Error('OTP expired');
+    if (!tenant.otp || tenant.otp !== otp) throw new AppError('Invalid OTP', 400);
+    if (!tenant.otpExpiry || tenant.otpExpiry < new Date()) throw new AppError('OTP expired', 400);
 
     // Clear OTP after verification
     tenant.otp = undefined;
@@ -56,7 +57,7 @@ export default class TenantAppService {
   // ✅ 3. Get Rent Details with Installment Breakdown
   static async getRentDetail(tenantId: string): Promise<any> {
     const allocation = await TenantAllocation.findOne({ tenantId, status: { $in: ['active', 'notice'] } }).populate('propertyId');
-    if (!allocation) throw new Error('No active allocation found');
+    if (!allocation) throw new AppError('No active allocation found', 404);
 
     const ledgers = await RentLedger.find({
       tenantId: new mongoose.Types.ObjectId(tenantId),
@@ -150,14 +151,14 @@ export default class TenantAppService {
   static async getRentLedgerById(tenantId: string, ledgerId: string): Promise<any> {
     const ledger = await RentLedger.findOne({ _id: ledgerId, tenantId })
       .populate('propertyId', 'name address contacts');
-    if (!ledger) throw new Error('Ledger not found or access denied');
+    if (!ledger) throw new AppError('Ledger not found or access denied', 404);
     return ledger;
   }
 
   // ✅ 4. Create Complaint (delegates to Complaint model)
   static async createComplaint(tenantId: string, data: any): Promise<IComplaint> {
     const activeAllocation = await TenantAllocation.findOne({ tenantId, status: { $in: ['active', 'notice'] } });
-    if (!activeAllocation) throw new Error('No active allocation found for tenant');
+    if (!activeAllocation) throw new AppError('No active allocation found for tenant', 404);
 
     const propertyId = activeAllocation.propertyId.toString();
 
@@ -248,7 +249,7 @@ export default class TenantAppService {
   // ✅ 7a. Move-out Policy & Security Deposit Info
   static async getMoveOutPolicy(tenantId: string): Promise<any> {
     const allocation = await TenantAllocation.findOne({ tenantId, status: { $in: ['active', 'notice'] } });
-    if (!allocation) throw new Error('No active allocation found');
+    if (!allocation) throw new AppError('No active allocation found', 404);
 
     // How much deposit has been paid so far
     const depositPayments = await PaymentTransaction.find({ tenantId, paymentType: 'deposit', status: 'paid' as any });
@@ -332,14 +333,14 @@ export default class TenantAppService {
     const transaction = await PaymentTransaction.findOne({ _id: transactionId, tenantId })
       .populate('propertyId', 'name address')
       .populate('createdById', 'name email');
-    if (!transaction) throw new Error('Transaction not found or access denied');
+    if (!transaction) throw new AppError('Transaction not found or access denied', 404);
     return transaction;
   }
 
   // ✅ 9. Get Property Contact Details
   static async getPropertyContactDetails(propertyId: string): Promise<any> {
     const property = await Property.findById(propertyId).select('contacts name address');
-    if (!property) throw new Error('Property not found');
+    if (!property) throw new AppError('Property not found', 404);
     return property;
   }
 
@@ -386,7 +387,7 @@ export default class TenantAppService {
   }): Promise<any> {
     const PropertyUser = (await import('../models/PropertyUser')).default;
     const user = await PropertyUser.findById(data.propertyUserId);
-    if (!user) throw new Error('Property Manager not found');
+    if (!user) throw new AppError('Property Manager not found', 404);
 
     // Resolve propertyId
     let propertyId = '';
@@ -394,12 +395,12 @@ export default class TenantAppService {
     if (isDeposit) {
       const TenantAllocation = (await import('../models/TenantAllocation')).default;
       const allocation = await TenantAllocation.findOne({ tenantId: data.tenantId, status: { $in: ['active', 'notice'] } });
-      if (!allocation) throw new Error('No active allocation found');
+      if (!allocation) throw new AppError('No active allocation found', 404);
       propertyId = allocation.propertyId.toString();
     } else {
-      if (!data.rentLedgerId) throw new Error('rentLedgerId is required');
+      if (!data.rentLedgerId) throw new AppError('rentLedgerId is required', 400);
       const ledger = await RentLedger.findOne({ _id: data.rentLedgerId, tenantId: data.tenantId });
-      if (!ledger) throw new Error('Rent ledger not found or access denied');
+      if (!ledger) throw new AppError('Rent ledger not found or access denied', 404);
       propertyId = ledger.propertyId.toString();
     }
 
@@ -530,7 +531,7 @@ export default class TenantAppService {
   static async getPropertyUsersForTenant(tenantId: string): Promise<any[]> {
     const TenantAllocation = (await import('../models/TenantAllocation')).default;
     const allocation = await TenantAllocation.findOne({ tenantId, status: { $in: ['active', 'notice'] } });
-    if (!allocation) throw new Error('No active allocation found for this tenant');
+    if (!allocation) throw new AppError('No active allocation found for this tenant', 404);
 
     const PropertyUser = (await import('../models/PropertyUser')).default;
     const users = await PropertyUser.find({
@@ -560,7 +561,7 @@ export default class TenantAppService {
       { $set: updateData },
       { new: true }
     );
-    if (!updatedTenant) throw new Error('Tenant not found');
+    if (!updatedTenant) throw new AppError('Tenant not found', 404);
     return updatedTenant;
   }
 }

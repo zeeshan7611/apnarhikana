@@ -7,6 +7,7 @@ import Floor from "../models/Floor";
 import Room from "../models/Room";
 import Bed from "../models/Bed";
 import RoomCategory from "../models/RoomCategory";
+import { AppError } from "../utils/AppError";
 
 export default class PropertyInventoryAllocationService {
   // ✅ Create Inventory Allocation
@@ -21,19 +22,19 @@ export default class PropertyInventoryAllocationService {
   }): Promise<IPropertyInventoryAllocation> {
     // 1️⃣ Validate Property
     const property = await Property.findById(data.propertyId);
-    if (!property) throw new Error("Property not found");
+    if (!property) throw new AppError("Property not found", 404);
 
     // 2️⃣ Validate Floor
     const floor = await Floor.findById(data.floorId);
-    if (!floor) throw new Error("Floor not found");
+    if (!floor) throw new AppError("Floor not found", 404);
 
     // 3️⃣ Validate Room
     const room = await Room.findById(data.roomId);
-    if (!room) throw new Error("Room not found");
+    if (!room) throw new AppError("Room not found", 404);
 
     // 4️⃣ Validate Bed
     const bed = await Bed.findById(data.bedId);
-    if (!bed) throw new Error("Bed not found");
+    if (!bed) throw new AppError("Bed not found", 404);
 
     // 🔥 Optional: Prevent duplicate allocation
     const existing = await PropertyInventoryAllocation.findOne({
@@ -45,7 +46,7 @@ export default class PropertyInventoryAllocationService {
     });
 
     if (existing) {
-      throw new Error("This bed is already allocated in inventory");
+      throw new AppError("This bed is already allocated in inventory", 409);
     }
 
     return PropertyInventoryAllocation.create(data);

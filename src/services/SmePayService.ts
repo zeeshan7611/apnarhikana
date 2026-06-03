@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { AppError } from '../utils/AppError';
 
 /**
  * Service for SmePay Payment Gateway Integration
@@ -42,7 +43,7 @@ export default class SmePayService {
       return access_token;
     } catch (error: any) {
       console.error('SmePay Auth Error:', error.response?.data || error.message);
-      throw new Error(error.response?.data?.message || 'Failed to authenticate with SmePay');
+      throw new AppError(error.response?.data?.message || 'Failed to authenticate with SmePay', 502);
     }
   }
 
@@ -89,7 +90,7 @@ export default class SmePayService {
       return response.data; // { status, order_id, slug, message }
     } catch (error: any) {
       console.error('SmePay Create Order Error:', error.response?.data || error.message);
-      throw new Error(error.response?.data?.message || 'Failed to create SmePay order');
+      throw new AppError(error.response?.data?.message || 'Failed to create SmePay order', 502);
     }
   }
 
@@ -110,7 +111,7 @@ export default class SmePayService {
       return response.data;
     } catch (error: any) {
       console.error('SmePay Initiate Payment Error:', error.response?.data || error.message);
-      throw new Error(error.response?.data?.message || 'Failed to initiate SmePay payment');
+      throw new AppError(error.response?.data?.message || 'Failed to initiate SmePay payment', 502);
     }
   }
 
@@ -133,7 +134,7 @@ export default class SmePayService {
       return response.data;
     } catch (error: any) {
       console.error('SmePay Check Status Error:', error.response?.data || error.message);
-      throw new Error(error.response?.data?.message || 'Failed to check SmePay status');
+      throw new AppError(error.response?.data?.message || 'Failed to check SmePay status', 502);
     }
   }
 }

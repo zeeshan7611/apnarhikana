@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import RentLedger, { IRentLedger, IExtraChargeItem } from '../models/RentLedger';
 import PaymentTransaction, { IPaymentTransaction } from '../models/PaymentTransaction';
+import { AppError } from '../utils/AppError';
 
 export default class RentLedgerService {
 
@@ -78,8 +79,8 @@ export default class RentLedgerService {
     performedById: string;
   }): Promise<IRentLedger> {
     const ledger = await RentLedger.findById(data.rentLedgerId);
-    if (!ledger) throw new Error('Rent ledger not found');
-    if (ledger.isLocked) throw new Error('Ledger is locked');
+    if (!ledger) throw new AppError('Rent ledger not found', 404);
+    if (ledger.isLocked) throw new AppError('Ledger is locked', 400);
 
     ledger.extraCharges.push({
       title: data.title,
@@ -93,7 +94,7 @@ export default class RentLedgerService {
 
     // Recalculate totals
     const updatedLedger = await this.recalculateLedger(data.rentLedgerId);
-    if (!updatedLedger) throw new Error('Failed to update ledger after adding charge');
+    if (!updatedLedger) throw new AppError('Failed to update ledger after adding charge', 500);
 
     return updatedLedger;
   }
@@ -101,17 +102,17 @@ export default class RentLedgerService {
   // ─── 3. Remove Extra Charge ─────────────────────────────────────────────────
   static async removeExtraCharge(rentLedgerId: string, chargeId: string): Promise<IRentLedger> {
     const ledger = await RentLedger.findById(rentLedgerId);
-    if (!ledger) throw new Error('Rent ledger not found');
-    if (ledger.isLocked) throw new Error('Ledger is locked');
+    if (!ledger) throw new AppError('Rent ledger not found', 404);
+    if (ledger.isLocked) throw new AppError('Ledger is locked', 400);
 
     const chargeIndex = (ledger.extraCharges as any).findIndex((c: any) => c._id.toString() === chargeId);
-    if (chargeIndex === -1) throw new Error('Extra charge not found');
+    if (chargeIndex === -1) throw new AppError('Extra charge not found', 404);
 
     ledger.extraCharges.splice(chargeIndex, 1);
     await ledger.save();
 
     const updatedLedger = await this.recalculateLedger(rentLedgerId);
-    if (!updatedLedger) throw new Error('Failed to update ledger after removing charge');
+    if (!updatedLedger) throw new AppError('Failed to update ledger after removing charge', 500);
 
     return updatedLedger;
   }
@@ -135,10 +136,10 @@ export default class RentLedgerService {
 
     let ledger: IRentLedger | null = null;
     if (!isDeposit) {
-      if (!data.rentLedgerId) throw new Error('rentLedgerId is required for rent payments');
+      if (!data.rentLedgerId) throw new AppError('rentLedgerId is required for rent payments', 400);
       ledger = await RentLedger.findById(data.rentLedgerId);
-      if (!ledger) throw new Error('Rent ledger not found');
-      if (ledger.isLocked) throw new Error('Ledger is locked');
+      if (!ledger) throw new AppError('Rent ledger not found', 404);
+      if (ledger.isLocked) throw new AppError('Ledger is locked', 400);
     }
 
     const status = data.status || 'pending';
@@ -162,7 +163,7 @@ export default class RentLedgerService {
     // Recalculate ledger only for confirmed rent payments (not pending gateway transactions)
     if (!isDeposit && data.rentLedgerId && status === 'paid') {
       ledger = await this.recalculateLedger(data.rentLedgerId);
-      if (!ledger) throw new Error('Failed to update ledger after recording payment');
+      if (!ledger) throw new AppError('Failed to update ledger after recording payment', 500);
     }
 
     return { ledger, transaction };
@@ -187,7 +188,7 @@ export default class RentLedgerService {
       month: data.month
     });
 
-    if (!ledger) throw new Error('Rent ledger not found for the specified month');
+    if (!ledger) throw new AppError('Rent ledger not found for the specified month', 404);
 
     return this.recordPayment({
       rentLedgerId: ledger._id.toString(),
@@ -207,9 +208,9 @@ export default class RentLedgerService {
   // ─── 5. Process Cash Payment Request (Approve / Reject) ──────────────────────
   static async processCashPaymentRequest(transactionId: string, action: 'approve' | 'reject'): Promise<{ ledger: IRentLedger | null; transaction: IPaymentTransaction }> {
     const transaction = await PaymentTransaction.findById(transactionId);
-    if (!transaction) throw new Error('Transaction not found');
+    if (!transaction) throw new AppError('Transaction not found', 404);
     if (transaction.status !== 'pending' && transaction.status !== 'initiated') {
-      throw new Error('Only pending or initiated transactions can be processed');
+      throw new AppError('Only pending or initiated transactions can be processed', 400);
     }
 
     if (action === 'approve') {
@@ -262,7 +263,7 @@ export default class RentLedgerService {
   // ─── 6b. Complete Payment (Gateway/Webhook) ─────────────────────────────────
   static async completePayment(transactionId: string): Promise<{ ledger: IRentLedger | null; transaction: IPaymentTransaction }> {
     const transaction = await PaymentTransaction.findById(transactionId);
-    if (!transaction) throw new Error('Transaction not found');
+    if (!transaction) throw new AppError('Transaction not found', 404);
 
     // Only recalculate ledger for rent payments
     let ledger: IRentLedger | null = null;
@@ -308,7 +309,7 @@ export default class RentLedgerService {
       .populate('tenantId', 'fullName phoneNumber')
       .populate('propertyId', 'name')
       .populate('tenantAllocationId');
-    if (!ledger) throw new Error('Rent ledger not found');
+    if (!ledger) throw new AppError('Rent ledger not found', 404);
     return ledger;
   }
 
@@ -440,7 +441,7 @@ export default class RentLedgerService {
       .populate('tenantId', 'fullName phoneNumber email')
       .populate('rentLedgerId', 'month totalAmount paidAmount rentAmount')
       .populate('propertyId', 'name');
-    if (!transaction) throw new Error('Transaction not found or not paid');
+    if (!transaction) throw new AppError('Transaction not found or not paid', 404);
     return transaction;
   }
 
@@ -449,7 +450,13 @@ export default class RentLedgerService {
   static async generateMonthlyLedgers(performedById: string, targetMonth?: string): Promise<{ created: number; skipped: number }> {
     const TenantAllocation = (await import('../models/TenantAllocation')).default;
     const now = new Date();
-    const month = targetMonth ?? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const month = targetMonth ?? currentMonth;
+
+    if (month > currentMonth) {
+      throw new AppError(`Cannot generate ledgers for a future month (${month}). Only current or past months are allowed.`, 400);
+    }
+
     const [y, m] = month.split('-').map(Number);
     const dueDate = new Date(y, m, 5); // 5th of next month
 
@@ -491,9 +498,12 @@ export default class RentLedgerService {
   static async generateInitialLedgers(allocationId: string, createdById: string): Promise<number> {
     const TenantAllocation = (await import('../models/TenantAllocation')).default;
     const alloc = await TenantAllocation.findById(allocationId);
-    if (!alloc) throw new Error('Tenant allocation not found');
+    if (!alloc) throw new AppError('Tenant allocation not found', 404);
 
     const startDate = new Date(alloc.startDate);
+    if (isNaN(startDate.getTime()) || startDate.getFullYear() < 2000 || startDate.getFullYear() > 2100) {
+      throw new AppError(`Allocation ${allocationId} has an invalid startDate: ${alloc.startDate}`, 400);
+    }
     const monthStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
     const dueDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 5);
 
@@ -702,7 +712,7 @@ export default class RentLedgerService {
       .populate('propertyId', 'name')
       .populate('createdById', 'name');
 
-    if (!transaction) throw new Error('Cash payment request not found');
+    if (!transaction) throw new AppError('Cash payment request not found', 404);
     return transaction;
   }
 }

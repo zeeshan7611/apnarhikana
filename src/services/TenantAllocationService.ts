@@ -2,6 +2,7 @@ import Tenant, { ITenant } from '../models/Tenant';
 import TenantAllocation, { ITenantAllocation } from '../models/TenantAllocation';
 import PropertyInventoryAllocation, { IPropertyInventoryAllocation } from '../models/PropertyInventoryAllocation';
 import RentLedgerService from './RentLedgerService';
+import { AppError } from '../utils/AppError';
 
 type TenantAllocationCreateInput = {
   tenantId: string;
@@ -68,7 +69,7 @@ export default class TenantAllocationService {
     });
 
     if (occupiedAllocation) {
-      throw new Error('This inventory allocation is already assigned to an active tenant');
+      throw new AppError('This inventory allocation is already assigned to an active tenant', 409);
     }
 
     return TenantAllocation.create({
@@ -101,7 +102,7 @@ export default class TenantAllocationService {
       .populate('roomCategoryId');
 
     if (!inventoryAllocation) {
-      throw new Error('Selected bed is not available in property inventory');
+      throw new AppError('Selected bed is not available in property inventory', 404);
     }
 
     const occupiedAllocation = await TenantAllocation.findOne({
@@ -110,7 +111,7 @@ export default class TenantAllocationService {
     });
 
     if (occupiedAllocation) {
-      throw new Error('Selected bed is already occupied');
+      throw new AppError('Selected bed is already occupied', 409);
     }
 
     return inventoryAllocation;
@@ -198,6 +199,13 @@ export default class TenantAllocationService {
     input: CreateTenantAllocationInput,
     createdById: string,
   ): Promise<{ tenant: ITenant; allocation: ITenantAllocation; inventoryAllocation: IPropertyInventoryAllocation }> {
+    const rawDate = input.startDate || input.joiningDate;
+    const parsedDate = new Date(rawDate);
+    const year = parsedDate.getFullYear();
+    if (isNaN(parsedDate.getTime()) || year < 2000 || year > 2100) {
+      throw new AppError(`Invalid startDate/joiningDate: "${rawDate}". Must be a valid date between 2000 and 2100.`, 400);
+    }
+
     const inventoryAllocation = await this.resolveInventoryAllocation({
       inventoryAllocationId: input.inventoryAllocationId,
       propertyId: input.propertyId,
@@ -344,7 +352,7 @@ export default class TenantAllocationService {
     initiatedBy: 'tenant' | 'landlord' = 'landlord'
   ): Promise<ITenantAllocation | null> {
     const allocation = await TenantAllocation.findById(id);
-    if (!allocation) throw new Error('Allocation not found');
+    if (!allocation) throw new AppError('Allocation not found', 404);
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -452,8 +460,8 @@ export default class TenantAllocationService {
   // ✅ Approve Move-out (Landlord)
   static async approveMoveOut(allocationId: string): Promise<ITenantAllocation | null> {
     const allocation = await TenantAllocation.findById(allocationId);
-    if (!allocation) throw new Error('Allocation not found');
-    if (!allocation.exitInitiatedAt) throw new Error('No move-out request found for this allocation');
+    if (!allocation) throw new AppError('Allocation not found', 404);
+    if (!allocation.exitInitiatedAt) throw new AppError('No move-out request found for this allocation', 404);
 
     allocation.moveOutStatus = 'approved';
     allocation.moveOutAcknowledgedAt = new Date();
@@ -488,8 +496,8 @@ export default class TenantAllocationService {
   // ✅ Reject Move-out (Landlord)
   static async rejectMoveOut(allocationId: string, reason?: string): Promise<ITenantAllocation | null> {
     const allocation = await TenantAllocation.findById(allocationId);
-    if (!allocation) throw new Error('Allocation not found');
-    if (!allocation.exitInitiatedAt) throw new Error('No move-out request found for this allocation');
+    if (!allocation) throw new AppError('Allocation not found', 404);
+    if (!allocation.exitInitiatedAt) throw new AppError('No move-out request found for this allocation', 404);
 
     // Update last exitLog entry to revoked
     if (allocation.exitLog && allocation.exitLog.length > 0) {

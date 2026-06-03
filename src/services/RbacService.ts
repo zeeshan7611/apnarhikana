@@ -2,6 +2,7 @@ import Permission from '../models/Permission';
 import Role from '../models/Role';
 import User from '../models/PropertyUser';
 import Module from '../models/Module';
+import { AppError } from '../utils/AppError';
 
 const DEFAULT_PERMISSIONS = [
   { name: 'Properties Admin', moduleKey: 'properties', actions: ['read', 'write', 'update', 'delete'] },
@@ -90,7 +91,7 @@ class RbacService {
     if (roles.length !== normalized.length) {
       const found = new Set(roles.map((role) => role.name));
       const missing = normalized.filter((name) => !found.has(name));
-      throw new Error(`Invalid role(s): ${missing.join(', ')}`);
+      throw new AppError(`Invalid role(s): ${missing.join(', ')}`, 400);
     }
     return roles.map((role) => role._id);
   }
@@ -196,7 +197,7 @@ class RbacService {
   async bindPermissionToRole(moduleId: string, actions: string[], roleId: string) {
     // 1. Find or create the permission
     const module = await Module.findById(moduleId);
-    if (!module) throw new Error('Module not found');
+    if (!module) throw new AppError('Module not found', 404);
 
     const permissionName = `${module.key} [${[...actions].sort().join(',')}]`;
     let permission = await Permission.findOne({ name: permissionName });

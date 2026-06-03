@@ -1,4 +1,5 @@
 import Bed, { IBed } from "../models/Bed";
+import { AppError } from "../utils/AppError";
 
 export default class BedService {
   // Create Bed
@@ -9,7 +10,7 @@ export default class BedService {
   }): Promise<IBed> {
     const existing = await Bed.findOne({ name: data.name });
     if (existing) {
-      throw new Error("Bed with this name already exists");
+      throw new AppError("Bed with this name already exists", 409);
     }
 
     return Bed.create(data);

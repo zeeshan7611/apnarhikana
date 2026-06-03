@@ -25,6 +25,7 @@ import agreementRoutes from './routes/agreementRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 
 import { jwtAuth } from './middleware/jwtAuth';
+import { errorHandler } from './middleware/errorHandler';
 import RbacService from './services/RbacService';
 
 import setupSwagger from './swagger';
@@ -94,6 +95,9 @@ app.use('/api/wifi', jwtAuth, wifiRoutes);
 // Notification routes (Protected)
 app.use('/api/notifications', jwtAuth, notificationRoutes);
 
+
+// Global error handler (must be last)
+app.use(errorHandler);
 
 // Connect to DB and start server
 connectDB().then(() => {

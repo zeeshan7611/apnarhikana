@@ -1,6 +1,7 @@
 import Property, { IProperty } from "../models/Property";
 import PropertyInventoryAllocation from "../models/PropertyInventoryAllocation";
 import TenantAllocation from "../models/TenantAllocation";
+import { AppError } from "../utils/AppError";
 
 export default class PropertyService {
   // Create Property
@@ -21,7 +22,7 @@ export default class PropertyService {
   }): Promise<IProperty> {
     const existing = await Property.findOne({ name: data.name });
     if (existing) {
-      throw new Error("Property with this name already exists");
+      throw new AppError("Property with this name already exists", 409);
     }
 
     return Property.create(data);
