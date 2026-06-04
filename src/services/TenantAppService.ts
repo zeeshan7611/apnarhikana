@@ -384,14 +384,10 @@ export default class TenantAppService {
   static async getNotifications(tenantId: string, page: number = 1, limit: number = 10): Promise<{ notifications: INotification[]; total: number }> {
     const skip = (page - 1) * limit;
 
-    const allocation = await TenantAllocation.findOne({ tenantId, status: { $in: ['active', 'notice'] } });
-
-    const orConditions: any[] = [{ tenantId: new mongoose.Types.ObjectId(tenantId) }];
-    if (allocation?.propertyId) {
-      // Property-wide announcements (no tenantId set) e.g. from notifyProperty
-      orConditions.push({ propertyId: allocation.propertyId, tenantId: { $exists: false } });
-    }
-    const query = { sourceApp: 'landlord', $or: orConditions };
+    const query = {
+      sourceApp: 'landlord',
+      tenantId: new mongoose.Types.ObjectId(tenantId),
+    };
 
     const [notifications, total] = await Promise.all([
       Notification.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),

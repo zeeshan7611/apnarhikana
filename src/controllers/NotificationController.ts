@@ -15,7 +15,10 @@ export default class NotificationController {
       const limit = parseInt(req.query.limit as string) || 20;
       const skip = (page - 1) * limit;
 
-      const query = { propertyUserId: new mongoose.Types.ObjectId(propertyUserId as string), sourceApp: 'tenant' };
+      const query = {
+        propertyUserId: new mongoose.Types.ObjectId(propertyUserId as string),
+        $or: [{ sourceApp: 'tenant' }, { sourceApp: { $exists: false } }],
+      };
 
       const [data, total, unreadCount] = await Promise.all([
         Notification.find(query)
