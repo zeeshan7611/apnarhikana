@@ -86,8 +86,8 @@ export default class TenantAppService {
 
     const response: any[] = [];
 
-    // Splits totalAmount into installments, marks parts as 'paid'/'initiated'/'due'/'overdue'
-    // Always returns all parts (including paid) so numbering stays consistent.
+    // Splits totalAmount into installments. Paid parts are excluded from the result.
+    // Only the first unpaid part can be 'initiated' — paying/initiating Part 1 never cascades to Part 2.
     const getInstallments = (
       title: string,
       totalAmount: number,
@@ -101,10 +101,11 @@ export default class TenantAppService {
       let initiatedBudget = isDeposit
         ? initiatedDepositAmount
         : (ledgerId ? (initiatedAmountByLedger.get(ledgerId) || 0) : 0);
+      let initiatedAssigned = false;
 
       const resolvePartStatus = (partAmount: number): string => {
         if (paidBudget >= partAmount) { paidBudget -= partAmount; return 'paid'; }
-        if (initiatedBudget >= partAmount) { initiatedBudget -= partAmount; return 'initiated'; }
+        if (!initiatedAssigned && initiatedBudget > 0) { initiatedAssigned = true; return 'initiated'; }
         return baseStatus(dueDate);
       };
 
@@ -119,13 +120,15 @@ export default class TenantAppService {
       const installments = [];
       for (let i = 1; i <= count; i++) {
         const partAmount = i === count ? totalAmount - (installmentAmount * (count - 1)) : installmentAmount;
+        const status = resolvePartStatus(partAmount);
+        if (status === 'paid') continue;
         installments.push({
           title: `${title} (Part ${i}/${count})`,
           amount: partAmount,
           type,
           rentLedgerId: ledgerId,
           dueDate,
-          status: resolvePartStatus(partAmount),
+          status,
         });
       }
       return installments;
@@ -381,16 +384,14 @@ export default class TenantAppService {
   static async getNotifications(tenantId: string, page: number = 1, limit: number = 10): Promise<{ notifications: INotification[]; total: number }> {
     const skip = (page - 1) * limit;
 
-    // Get active allocation to check property-wide notifications
     const allocation = await TenantAllocation.findOne({ tenantId, status: { $in: ['active', 'notice'] } });
 
-    const query = {
-      $or: [
-        { tenantId },
-        { propertyId: allocation?.propertyId },
-        { tenantId: { $exists: false }, propertyId: { $exists: false } } // Global notifications
-      ]
-    };
+    const orConditions: any[] = [{ tenantId: new mongoose.Types.ObjectId(tenantId) }];
+    if (allocation?.propertyId) {
+      // Property-wide announcements (no tenantId set) e.g. from notifyProperty
+      orConditions.push({ propertyId: allocation.propertyId, tenantId: { $exists: false } });
+    }
+    const query = { sourceApp: 'landlord', $or: orConditions };
 
     const [notifications, total] = await Promise.all([
       Notification.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),

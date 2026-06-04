@@ -6,7 +6,7 @@ export interface IPaymentTransaction extends Document {
   propertyId: mongoose.Types.ObjectId;
   amount: number;
   paymentMethod: 'cash' | 'upi' | 'bank_transfer' | 'cheque';
-  status: 'pending' | 'partial' | 'paid' | 'overdue' | 'due' | 'initiated' | 'rejected' | 'failed';
+  status: 'pending' | 'partial' | 'paid' | 'overdue' | 'due' | 'initiated' | 'rejected' | 'failed' | 'approved';
   paymentType: 'rent' | 'deposit' | 'extra_charge';
   referenceNumber?: string;
   utrNumber?: string;

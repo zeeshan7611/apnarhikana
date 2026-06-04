@@ -215,6 +215,7 @@ export default class RentLedgerService {
 
     if (action === 'approve') {
       transaction.status = 'paid';
+      transaction.paidAt = new Date();
     } else {
       transaction.status = 'rejected';
     }
@@ -505,7 +506,17 @@ export default class RentLedgerService {
       throw new AppError(`Allocation ${allocationId} has an invalid startDate: ${alloc.startDate}`, 400);
     }
     const monthStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
-    const dueDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 5);
+    // Due on the joining date itself (rent is taken in advance at move-in)
+    const dueDate = new Date(startDate);
+
+    // Prorate rent for the joining month.
+    // Joining on the 1st = full month. Otherwise charge only for days after joining day.
+    // e.g. joining 15th of a 30-day month: (30-15)/30 * rent = 15/30 = 50% of rent.
+    const joinDay = startDate.getDate();
+    const totalDaysInMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0).getDate();
+    const rentAmount = joinDay === 1
+      ? alloc.rentAmount
+      : Math.round(alloc.rentAmount * (totalDaysInMonth - joinDay) / totalDaysInMonth);
 
     try {
       await RentLedger.create({
@@ -513,9 +524,9 @@ export default class RentLedgerService {
         propertyId: alloc.propertyId,
         tenantAllocationId: alloc._id,
         month: monthStr,
-        rentAmount: alloc.rentAmount,
-        totalAmount: alloc.rentAmount,
-        pendingAmount: alloc.rentAmount,
+        rentAmount,
+        totalAmount: rentAmount,
+        pendingAmount: rentAmount,
         dueDate,
         status: 'due',
         isLocked: false
@@ -667,23 +678,25 @@ export default class RentLedgerService {
   }): Promise<{ data: IPaymentTransaction[]; total: number }> {
     const query: any = { paymentMethod: 'cash' };
 
-    const allowedStatuses = ['initiated', 'rejected', 'paid'];
-    if(filters.status == 'approved'){
-       filters.status = 'paid'
-    }
+    const allowedStatuses = ['initiated', 'pending', 'rejected', 'paid', 'partial'];
+    if (filters.status === 'approved') filters.status = 'paid';
     if (filters.status && allowedStatuses.includes(filters.status)) {
       query.status = filters.status;
     } else {
-      query.status = allowedStatuses
+      query.status = { $in: allowedStatuses };
     }
 
     if (filters.propertyId) query.propertyId = new mongoose.Types.ObjectId(filters.propertyId);
     if (filters.tenantId) query.tenantId = new mongoose.Types.ObjectId(filters.tenantId);
 
     if (filters.from || filters.to) {
-      query.paidAt = {};
-      if (filters.from) query.paidAt.$gte = new Date(filters.from);
-      if (filters.to) query.paidAt.$lte = new Date(filters.to);
+      query.createdAt = {};
+      if (filters.from) query.createdAt.$gte = new Date(filters.from);
+      if (filters.to) {
+        const toDate = new Date(filters.to);
+        toDate.setDate(toDate.getDate() + 1);
+        query.createdAt.$lt = toDate;
+      }
     }
 
     const page = filters.page || 1;

@@ -7,6 +7,7 @@ export interface INotification extends Document {
   title: string;
   message: string;
   type: 'announcement' | 'complaint' | 'payment' | 'allocation' | 'kyc';
+  sourceApp: 'tenant' | 'landlord';
   isRead: boolean;
   data?: any;
   createdAt: Date;
@@ -19,11 +20,12 @@ const NotificationSchema: Schema = new Schema({
   propertyId: { type: Schema.Types.ObjectId, ref: 'Property', index: true },
   title: { type: String, required: true },
   message: { type: String, required: true },
-  type: { 
-    type: String, 
-    enum: ['announcement', 'complaint', 'payment', 'allocation', 'kyc'], 
-    required: true 
+  type: {
+    type: String,
+    enum: ['announcement', 'complaint', 'payment', 'allocation', 'kyc'],
+    required: true
   },
+  sourceApp: { type: String, enum: ['tenant', 'landlord'], required: true },
   isRead: { type: Boolean, default: false },
   data: { type: Schema.Types.Mixed },
 }, { 

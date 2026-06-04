@@ -55,6 +55,7 @@ export default class NotificationService {
           title,
           message,
           type,
+          sourceApp: 'tenant',
           data,
         }))
       );
@@ -90,6 +91,7 @@ export default class NotificationService {
       title,
       message,
       type,
+      sourceApp: 'landlord',
       data,
     });
 
@@ -115,6 +117,7 @@ export default class NotificationService {
       title,
       message,
       type,
+      sourceApp: 'landlord',
       data,
     }));
 
@@ -147,6 +150,7 @@ export default class NotificationService {
       title,
       message,
       type,
+      sourceApp: 'landlord',
       data,
     });
 
@@ -163,6 +167,7 @@ export default class NotificationService {
       title,
       message,
       type,
+      sourceApp: 'landlord',
       data,
     });
 
@@ -195,6 +200,7 @@ export default class NotificationService {
           title,
           message,
           type,
+          sourceApp: 'tenant',
           data,
         }))
       );
@@ -244,6 +250,7 @@ export default class NotificationService {
         title,
         message,
         type,
+        sourceApp: 'tenant',
         data: { ...data, propertyUserId },
       });
 
