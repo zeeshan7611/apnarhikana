@@ -175,12 +175,14 @@ export default class TenantAllocationService {
       });
     }
 
-    // Convert map to array and sort by room.keyNumber
-    const result = Array.from(rooms.values()).sort((a, b) => {
-      const keyA = a.room?.keyNumber || 0;
-      const keyB = b.room?.keyNumber || 0;
-      return keyA - keyB;
-    });
+    // Convert map to array, drop rooms with no vacant beds, sort by room.keyNumber
+    const result = Array.from(rooms.values())
+      .filter((roomData) => roomData.vacantBeds.length > 0)
+      .sort((a, b) => {
+        const keyA = a.room?.keyNumber || 0;
+        const keyB = b.room?.keyNumber || 0;
+        return keyA - keyB;
+      });
 
     // Sort vacant beds within each room by bed.keyNumber
     result.forEach((roomData) => {
@@ -189,6 +191,98 @@ export default class TenantAllocationService {
         const keyB = (b.bedId as any)?.keyNumber || 0;
         return keyA - keyB;
       });
+    });
+
+    return result;
+  }
+
+  // ✅ Get All Inventory with Occupancy Status (Beds grouped by Rooms)
+  static async getInventoryWithOccupancy(propertyId: string): Promise<any[]> {
+    const inventoryAllocations = await PropertyInventoryAllocation.find({
+      propertyId,
+      status: 'active',
+    })
+      .populate('propertyId')
+      .populate('floorId')
+      .populate('roomId')
+      .populate('bedId')
+      .populate('roomCategoryId')
+      .sort({ createdAt: 1 });
+
+    const inventoryIds = inventoryAllocations.map((item) => item._id);
+
+    // Fetch all active/notice tenant allocations for these beds in one query
+    const activeTenantAllocations = await TenantAllocation.find({
+      inventoryAllocationId: { $in: inventoryIds },
+      status: { $in: ['active', 'notice'] },
+    })
+      .populate('tenantId', 'fullName phoneNumber email profileImage')
+      .lean();
+
+    // Map inventoryAllocationId → tenant allocation
+    const occupancyMap = new Map<string, any>();
+    for (const ta of activeTenantAllocations) {
+      occupancyMap.set(ta.inventoryAllocationId.toString(), ta);
+    }
+
+    const rooms = new Map<string, any>();
+
+    for (const item of inventoryAllocations) {
+      const inventoryAllocationId = item._id.toString();
+      const tenantAllocation = occupancyMap.get(inventoryAllocationId) || null;
+
+      const bed = {
+        inventoryAllocationId,
+        propertyId: item.propertyId,
+        floorId: item.floorId,
+        roomId: item.roomId,
+        bedId: item.bedId,
+        roomCategoryId: item.roomCategoryId,
+        notes: item.notes,
+        status: item.status,
+        isOccupied: !!tenantAllocation,
+        tenant: tenantAllocation
+          ? {
+              allocationId: tenantAllocation._id,
+              allocationStatus: tenantAllocation.status,
+              tenantId: tenantAllocation.tenantId,
+              rentAmount: tenantAllocation.rentAmount,
+              depositAmount: tenantAllocation.depositAmount,
+              startDate: tenantAllocation.startDate,
+            }
+          : null,
+      };
+
+      const roomId = (item.roomId as any)._id.toString();
+      const existingRoom = rooms.get(roomId);
+      if (existingRoom) {
+        existingRoom.beds.push(bed);
+      } else {
+        rooms.set(roomId, {
+          roomId,
+          room: item.roomId,
+          floor: item.floorId,
+          property: item.propertyId,
+          beds: [bed],
+        });
+      }
+    }
+
+    const result = Array.from(rooms.values()).sort((a, b) => {
+      const keyA = a.room?.keyNumber || 0;
+      const keyB = b.room?.keyNumber || 0;
+      return keyA - keyB;
+    });
+
+    result.forEach((roomData) => {
+      roomData.beds.sort((a: any, b: any) => {
+        const keyA = (a.bedId as any)?.keyNumber || 0;
+        const keyB = (b.bedId as any)?.keyNumber || 0;
+        return keyA - keyB;
+      });
+      roomData.totalBeds = roomData.beds.length;
+      roomData.occupiedBeds = roomData.beds.filter((b: any) => b.isOccupied).length;
+      roomData.vacantBeds = roomData.totalBeds - roomData.occupiedBeds;
     });
 
     return result;
@@ -350,9 +444,57 @@ export default class TenantAllocationService {
     exitDate: Date | string,
     propertyUserId?: string,
     initiatedBy: 'tenant' | 'landlord' = 'landlord'
-  ): Promise<ITenantAllocation | null> {
+  ): Promise<{ allocation: ITenantAllocation; depositNote: string | null }> {
     const allocation = await TenantAllocation.findById(id);
     if (!allocation) throw new AppError('Allocation not found', 404);
+
+    // ── Block if tenant has any unpaid dues ──────────────────────────────────
+    const RentLedger = (await import('../models/RentLedger')).default;
+    const pendingLedgers = await RentLedger.find({
+      tenantAllocationId: id,
+      pendingAmount: { $gt: 0 },
+    });
+    const totalPending = pendingLedgers.reduce((sum, l) => sum + l.pendingAmount, 0);
+
+    if (totalPending > 0) {
+      // Notify tenant that they must clear dues first
+      try {
+        const NotificationService = (await import('./NotificationService')).default;
+        const { NotificationType, NotificationScreen } = await import('./NotificationService');
+        await NotificationService.notifyTenant(
+          allocation.tenantId.toString(),
+          'Move-out Blocked — Pending Dues',
+          `You have ₹${totalPending} in pending dues. Please clear all outstanding dues before raising a move-out request.`,
+          NotificationType.PAYMENT,
+          { screen: NotificationScreen.TENANT_RENT }
+        );
+      } catch (err) {
+        console.error('Failed to notify tenant about pending dues on exit initiation:', err);
+      }
+
+      // Notify property managers about the blocked attempt
+      try {
+        const NotificationService = (await import('./NotificationService')).default;
+        const { NotificationType, NotificationScreen } = await import('./NotificationService');
+        const Tenant = (await import('../models/Tenant')).default;
+        const tenant = await Tenant.findById(allocation.tenantId).select('fullName');
+        const tenantName = tenant?.fullName ?? 'Tenant';
+        await NotificationService.notifyManagers(
+          allocation.propertyId.toString(),
+          'Move-out Request Blocked',
+          `${tenantName} requested move-out but has ₹${totalPending} in pending dues. Move-out has been blocked.`,
+          NotificationType.PAYMENT,
+          { screen: NotificationScreen.LANDLORD_TRANSACTION_DETAIL, allocationId: id }
+        );
+      } catch (err) {
+        console.error('Failed to notify managers about blocked exit due to pending dues:', err);
+      }
+
+      throw new AppError(
+        `Move-out cannot be initiated. Tenant has ₹${totalPending} in pending dues. All dues must be cleared before raising a move-out request.`,
+        400
+      );
+    }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -377,8 +519,25 @@ export default class TenantAllocationService {
       refundPercentage = 0;
     }
 
+    // Only refund what the tenant actually paid as deposit — not the agreed amount
+    const PaymentTransaction = (await import('../models/PaymentTransaction')).default;
+    const depositPayments = await PaymentTransaction.find({
+      tenantId: allocation.tenantId,
+      propertyId: allocation.propertyId,
+      paymentType: 'deposit',
+      status: 'paid',
+    });
+    const paidDepositAmount = depositPayments.reduce((sum, p) => sum + p.amount, 0);
+
+    // If tenant never paid any deposit, they are not eligible for any refund
+    let depositNote: string | null = null;
+    if (paidDepositAmount === 0) {
+      refundPercentage = 0;
+      depositNote = 'You have not paid the security deposit, so you are not eligible for a refund.';
+    }
+
     const now = new Date();
-    const refundAmount = (refundPercentage / 100) * (allocation.depositAmount || 0);
+    const refundAmount = (refundPercentage / 100) * paidDepositAmount;
     const isLandlord = initiatedBy === 'landlord';
 
     allocation.endDate = targetExitDate;
@@ -408,7 +567,8 @@ export default class TenantAllocationService {
     };
     allocation.exitLog = [...(allocation.exitLog || []), logEntry];
 
-    return allocation.save();
+    const saved = await allocation.save();
+    return { allocation: saved, depositNote };
   }
 
   // ✅ Move-out List (Landlord) — paginated with filters

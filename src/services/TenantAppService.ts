@@ -368,7 +368,8 @@ export default class TenantAppService {
   static async getTransactionById(tenantId: string, transactionId: string): Promise<any> {
     const transaction = await PaymentTransaction.findOne({ _id: transactionId, tenantId })
       .populate('propertyId', 'name address')
-      .populate('createdById', 'name email');
+      .populate('createdById', 'name email')
+      .populate('cashSubmitTo', 'name email phoneNumber');
     if (!transaction) throw new AppError('Transaction not found or access denied', 404);
     return transaction;
   }
@@ -473,7 +474,7 @@ export default class TenantAppService {
       paymentType: data.paymentType || 'rent',
       status: 'initiated', // Initiated by tenant
       notes,
-      createdById: data.propertyUserId
+      cashSubmitTo: data.propertyUserId,
     });
   }
 

@@ -17,17 +17,16 @@ export default class TenantService {
     name?: string,
     status?: string,
     propertyId?: string,
-  ): Promise<{ data: ITenant[]; total: number }> {
+  ): Promise<{ data: any[]; total: number }> {
     const skip = (page - 1) * limit;
-    const query: any = {};
-    if (name) query.fullName = { $regex: name, $options: 'i' };
+    const tenantQuery: any = {};
+    if (name) tenantQuery.fullName = { $regex: name, $options: 'i' };
 
+    // When status or propertyId filter is given, narrow tenantIds via TenantAllocation
     if (status || propertyId) {
       const now = new Date();
-      let allocationQuery: any = {};
-
+      const allocationQuery: any = {};
       if (propertyId) allocationQuery.propertyId = propertyId;
-
       if (status) {
         switch (status) {
           case 'active':   Object.assign(allocationQuery, { status: 'active', startDate: { $lte: now } }); break;
@@ -36,19 +35,55 @@ export default class TenantService {
           case 'exited':   allocationQuery.status = { $in: ['terminated', 'inactive'] }; break;
         }
       }
-
-      const allocations = await TenantAllocation.find(allocationQuery).select('tenantId').lean();
-      query._id = { $in: allocations.map(a => a.tenantId) };
+      const filtered = await TenantAllocation.find(allocationQuery).select('tenantId').lean();
+      tenantQuery._id = { $in: filtered.map(a => a.tenantId) };
     }
 
-    const [data, total] = await Promise.all([
-      Tenant.find(query)
-        .populate("createdById", "name email")
+    const [tenants, total] = await Promise.all([
+      Tenant.find(tenantQuery)
+        .populate('createdById', 'name email')
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(limit),
-      Tenant.countDocuments(query),
+        .limit(limit)
+        .lean(),
+      Tenant.countDocuments(tenantQuery),
     ]);
+
+    // Always enrich each tenant with their current active/notice allocation info
+    const tenantIds = tenants.map((t: any) => t._id);
+    const activeAllocations = await TenantAllocation.find({
+      tenantId: { $in: tenantIds },
+      status: { $in: ['active', 'notice'] },
+    })
+      .populate('propertyId', 'name')
+      .populate('roomId', 'name keyNumber')
+      .populate('bedId', 'name keyNumber')
+      .lean();
+
+    const allocationMap = new Map<string, any>();
+    (activeAllocations as any[]).forEach((a) => {
+      allocationMap.set(a.tenantId.toString(), a);
+    });
+
+    const data = (tenants as any[]).map((tenant) => {
+      const allocation = allocationMap.get(tenant._id.toString());
+      return {
+        ...tenant,
+        allocation: allocation
+          ? {
+              _id: allocation._id,
+              status: allocation.status,
+              property: allocation.propertyId,
+              room: allocation.roomId,
+              bed: allocation.bedId,
+              rentAmount: allocation.rentAmount,
+              depositAmount: allocation.depositAmount,
+              startDate: allocation.startDate,
+            }
+          : null,
+      };
+    });
+
     return { data, total };
   }
 

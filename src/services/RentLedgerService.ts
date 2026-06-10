@@ -131,6 +131,7 @@ export default class RentLedgerService {
     status?: 'pending' | 'partial' | 'paid' | 'overdue' | 'due' | 'initiated' | 'rejected';
     paymentType?: 'rent' | 'deposit' | 'extra_charge';
     createdById?: string;
+    cashSubmitTo?: string; // PropertyUser who receives cash (cash payments only)
   }): Promise<{ ledger: IRentLedger | null; transaction: IPaymentTransaction }> {
     const isDeposit = (data.paymentType === 'deposit');
 
@@ -157,7 +158,8 @@ export default class RentLedgerService {
       paymentScreenshotUrl: data.paymentScreenshotUrl,
       notes: data.notes,
       paidAt: new Date(),
-      createdById: data.createdById
+      createdById: data.createdById,
+      ...(data.cashSubmitTo ? { cashSubmitTo: data.cashSubmitTo } : {}),
     });
 
     // Recalculate ledger only for confirmed rent payments (not pending gateway transactions)
@@ -348,6 +350,9 @@ export default class RentLedgerService {
   }
 
   // ─── 8. Get Payment History ────────────────────────────────────────────────
+  // due/overdue → RentLedger (no PaymentTransaction exists for unpaid bills)
+  // paid/initiated/etc → PaymentTransaction
+  // no status → both collections merged, sorted by createdAt desc
   static async getPaymentHistory(filters: {
     propertyId?: string;
     tenantId?: string;
@@ -356,32 +361,72 @@ export default class RentLedgerService {
     to?: string;
     page?: number;
     limit?: number;
-  }): Promise<{ data: IPaymentTransaction[], total: number }> {
-    const query: any = { status: 'paid' };
-    if (filters.propertyId) query.propertyId = filters.propertyId;
-    if (filters.tenantId) query.tenantId = filters.tenantId;
-
-    if (filters.from || filters.to) {
-      query.paidAt = {};
-      if (filters.from) query.paidAt.$gte = new Date(filters.from);
-      if (filters.to) query.paidAt.$lte = new Date(filters.to);
-    }
-
+  }): Promise<{ data: any[], total: number }> {
     const page = filters.page || 1;
     const limit = filters.limit || 10;
     const skip = (page - 1) * limit;
 
+    const isLedgerStatus = filters.status === 'due' || filters.status === 'overdue';
+    const noStatusFilter = !filters.status;
+
+    // ── Helper: build shared property/tenant/date filter ──────────────────────
+    const baseFilter = (dateField: string) => {
+      const q: any = {};
+      if (filters.propertyId) q.propertyId = filters.propertyId;
+      if (filters.tenantId) q.tenantId = filters.tenantId;
+      if (filters.from || filters.to) {
+        q[dateField] = {};
+        if (filters.from) q[dateField].$gte = new Date(filters.from);
+        if (filters.to) q[dateField].$lte = new Date(filters.to);
+      }
+      return q;
+    };
+
+    // ── due / overdue → RentLedger only ───────────────────────────────────────
+    if (isLedgerStatus) {
+      const query = { ...baseFilter('dueDate'), status: filters.status };
+      const [data, total] = await Promise.all([
+        RentLedger.find(query)
+          .populate('tenantId', 'fullName phoneNumber email')
+          .populate('propertyId', 'name')
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit),
+        RentLedger.countDocuments(query),
+      ]);
+      return { data, total };
+    }
+
+    // ── specific transaction status → PaymentTransaction only ─────────────────
+    if (!noStatusFilter) {
+      const query = { ...baseFilter('paidAt'), status: filters.status };
+      const [data, total] = await Promise.all([
+        PaymentTransaction.find(query)
+          .populate('tenantId', 'fullName phoneNumber email')
+          .populate('rentLedgerId', 'month totalAmount paidAmount rentAmount')
+          .populate('propertyId', 'name')
+          .populate('cashSubmitTo', 'name email phoneNumber')
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit),
+        PaymentTransaction.countDocuments(query),
+      ]);
+      return { data, total };
+    }
+
+    // ── no status → default to paid PaymentTransactions ─────────────────────
+    const query = { ...baseFilter('paidAt'), status: 'paid' };
     const [data, total] = await Promise.all([
       PaymentTransaction.find(query)
         .populate('tenantId', 'fullName phoneNumber email')
         .populate('rentLedgerId', 'month totalAmount paidAmount rentAmount')
         .populate('propertyId', 'name')
+        .populate('cashSubmitTo', 'name email phoneNumber')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
-      PaymentTransaction.countDocuments(query)
+      PaymentTransaction.countDocuments(query),
     ]);
-
     return { data, total };
   }
 
@@ -432,7 +477,7 @@ export default class RentLedgerService {
       .populate('tenantId', 'fullName phoneNumber email')
       .populate('rentLedgerId', 'month totalAmount paidAmount rentAmount')
       .populate('propertyId', 'name')
-      .sort({ createdAt: -1 })
+      .sort({ paidAt: -1 })
       .limit(limit);
   }
 
@@ -441,7 +486,8 @@ export default class RentLedgerService {
     const transaction = await PaymentTransaction.findOne({ _id: id, status: 'paid' })
       .populate('tenantId', 'fullName phoneNumber email')
       .populate('rentLedgerId', 'month totalAmount paidAmount rentAmount')
-      .populate('propertyId', 'name');
+      .populate('propertyId', 'name')
+      .populate('cashSubmitTo', 'name email phoneNumber');
     if (!transaction) throw new AppError('Transaction not found or not paid', 404);
     return transaction;
   }
@@ -726,7 +772,7 @@ export default class RentLedgerService {
       .populate('tenantId', 'fullName phoneNumber email')
       .populate('rentLedgerId', 'month totalAmount paidAmount rentAmount')
       .populate('propertyId', 'name')
-      .populate('createdById', 'name');
+      .populate('cashSubmitTo', 'name email phoneNumber');
 
     if (!transaction) throw new AppError('Cash payment request not found', 404);
     return transaction;

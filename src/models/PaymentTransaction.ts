@@ -15,7 +15,8 @@ export interface IPaymentTransaction extends Document {
   paidAt: Date;
   smePaySlug?: string;
   gatewayTransactionId?: string;
-  createdById: mongoose.Types.ObjectId;
+  createdById?: mongoose.Types.ObjectId;
+  cashSubmitTo?: mongoose.Types.ObjectId; // PropertyUser who receives the cash (cash payments only)
   createdAt: Date;
   updatedAt: Date;
 }
@@ -49,6 +50,7 @@ const PaymentTransactionSchema: Schema = new Schema({
   smePaySlug: { type: String },
   gatewayTransactionId: { type: String },
   createdById: { type: Schema.Types.ObjectId, ref: 'PropertyUser' },
+  cashSubmitTo: { type: Schema.Types.ObjectId, ref: 'PropertyUser', default: null },
 }, { timestamps: true });
 
 export default mongoose.model<IPaymentTransaction>('PaymentTransaction', PaymentTransactionSchema);

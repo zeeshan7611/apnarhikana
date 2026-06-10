@@ -46,6 +46,21 @@ export default class FloorService {
 
   // Delete floor
   static async deleteFloor(id: string): Promise<IFloor | null> {
+    const floor = await Floor.findById(id);
+    if (!floor) return null;
+
+    // Find all properties that reference this floor via inventory allocations
+    const PropertyInventoryAllocation = (await import('../models/PropertyInventoryAllocation')).default;
+    const Property = (await import('../models/Property')).default;
+
+    const affectedAllocations = await PropertyInventoryAllocation.find({ floorId: id }).distinct('propertyId');
+    if (affectedAllocations.length > 0) {
+      await Property.updateMany(
+        { _id: { $in: affectedAllocations }, numberOfFloors: { $gt: 0 } },
+        { $inc: { numberOfFloors: -1 } }
+      );
+    }
+
     return Floor.findByIdAndDelete(id);
   }
 

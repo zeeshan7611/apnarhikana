@@ -135,6 +135,26 @@ router.get('/get-vacant-inventory', authorizePermissions('allocations:read'), Te
 
 /**
  * @swagger
+ * /api/tenant-allocations/get-inventory-with-occupancy:
+ *   get:
+ *     summary: Get all beds for a property with occupancy status (Grouped by Room)
+ *     description: Returns every bed in the property inventory — both vacant and occupied — with tenant details for occupied beds.
+ *     tags: [TenantAllocations]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: propertyId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: All beds grouped by room with occupancy info
+ */
+router.get('/get-inventory-with-occupancy', authorizePermissions('allocations:read'), TenantAllocationController.getInventoryWithOccupancy);
+
+/**
+ * @swagger
  * /api/tenant-allocations/get-allocations:
  *   get:
  *     summary: Get all tenant allocations

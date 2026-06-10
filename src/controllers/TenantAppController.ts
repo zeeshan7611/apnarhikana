@@ -599,7 +599,7 @@ export default class TenantAppController {
       }
 
       const TenantAllocationService = (await import('../services/TenantAllocationService')).default;
-      const updatedAllocation = await TenantAllocationService.initiateExit(
+      const { allocation: updatedAllocation, depositNote } = await TenantAllocationService.initiateExit(
         allocation._id.toString(),
         exitDate,
         undefined,
@@ -613,8 +613,11 @@ export default class TenantAppController {
         const tenant = await Tenant.findById(tenantId);
         if (tenant && updatedAllocation) {
           const dateStr = new Date(exitDate).toLocaleDateString();
+          const refundLine = depositNote
+            ? 'Security deposit not paid — no refund applicable.'
+            : `Eligible refund: ${updatedAllocation.eligibleRefundPercentage}%.`;
           const title = 'Tenant Exit Scheduled';
-          const message = `${tenant.fullName} has scheduled exit on ${dateStr}. Eligible refund: ${updatedAllocation.eligibleRefundPercentage}%.`;
+          const message = `${tenant.fullName} has scheduled exit on ${dateStr}. ${refundLine}`;
           const notificationData = { screen: NotificationScreen.LANDLORD_NOTICE_REQUEST, allocationId: updatedAllocation._id.toString(), tenantId };
 
           await NotificationService.notifyManagers(
@@ -629,10 +632,15 @@ export default class TenantAppController {
         console.error('Failed to notify property users about scheduled exit:', notifyErr);
       }
 
-      res.json({ 
-        success: true, 
-        message: 'Exit initiated successfully', 
-        data: updatedAllocation 
+      const responseMessage = depositNote
+        ? `Exit initiated successfully. ${depositNote}`
+        : 'Exit initiated successfully';
+
+      res.json({
+        success: true,
+        message: responseMessage,
+        data: updatedAllocation,
+        ...(depositNote ? { depositNote } : {}),
       });
     } catch (err) {
       next(err);

@@ -52,17 +52,17 @@ router.use(jwtAuth);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [name, email, password]
+ *             required: [name, email, password, phoneNumber, propertyId, roleIds, designation, joiningDate]
  *             properties:
  *               name: { type: string }
  *               email: { type: string }
  *               password: { type: string }
- *               roleIds: { type: array, items: { type: string } }
- *               propertyId: { type: array, items: { type: string } }
  *               phoneNumber: { type: string }
- *               education: { type: string }
+ *               propertyId: { type: array, items: { type: string } }
+ *               roleIds: { type: array, items: { type: string } }
  *               designation: { type: string }
  *               joiningDate: { type: string, format: date }
+ *               education: { type: string }
  *               monthlySalary: { type: number }
  *               isActive: { type: boolean }
  *               kycDocument:

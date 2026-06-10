@@ -43,6 +43,21 @@ export default class RoomService {
 
   // Delete room
   static async deleteRoom(id: string): Promise<IRoom | null> {
+    const room = await Room.findById(id);
+    if (!room) return null;
+
+    // Find all properties that reference this room via inventory allocations
+    const PropertyInventoryAllocation = (await import('../models/PropertyInventoryAllocation')).default;
+    const Property = (await import('../models/Property')).default;
+
+    const affectedAllocations = await PropertyInventoryAllocation.find({ roomId: id }).distinct('propertyId');
+    if (affectedAllocations.length > 0) {
+      await Property.updateMany(
+        { _id: { $in: affectedAllocations }, numberOfRooms: { $gt: 0 } },
+        { $inc: { numberOfRooms: -1 } }
+      );
+    }
+
     return Room.findByIdAndDelete(id);
   }
 

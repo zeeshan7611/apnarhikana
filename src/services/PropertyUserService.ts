@@ -9,12 +9,12 @@ export default class PropertyUserService {
     name: string;
     email: string;
     password: string;
-    roleIds?: string[];
-    propertyId?: string[];
-    phoneNumber?: string;
+    phoneNumber: string;
+    propertyId: string[];
+    roleIds: string[];
+    designation: string;
+    joiningDate: Date;
     education?: string;
-    designation?: string;
-    joiningDate?: Date;
     monthlySalary?: number;
     kycDocument?: {
       adharCard?: string;

@@ -184,13 +184,35 @@ export default class PropertyInventoryAllocationService {
       status: "active" | "inactive" | "terminated";
     }>
   ): Promise<IPropertyInventoryAllocation | null> {
-    return PropertyInventoryAllocation.findByIdAndUpdate(id, data, {
-      new: true,
+    const TenantAllocation = (await import('../models/TenantAllocation')).default;
+    const activeTenant = await TenantAllocation.findOne({
+      inventoryAllocationId: id,
+      status: { $in: ['active', 'notice'] },
     });
+    if (activeTenant) {
+      throw new AppError(
+        'Cannot update this allocation — a tenant is currently active in this bed. Please move out the tenant first.',
+        409
+      );
+    }
+
+    return PropertyInventoryAllocation.findByIdAndUpdate(id, data, { new: true });
   }
 
   // ✅ Delete
   static async delete(id: string) {
+    const TenantAllocation = (await import('../models/TenantAllocation')).default;
+    const activeTenant = await TenantAllocation.findOne({
+      inventoryAllocationId: id,
+      status: { $in: ['active', 'notice'] },
+    });
+    if (activeTenant) {
+      throw new AppError(
+        'Cannot delete this allocation — a tenant is currently active in this bed. Please move out the tenant first.',
+        409
+      );
+    }
+
     return PropertyInventoryAllocation.findByIdAndDelete(id);
   }
 }

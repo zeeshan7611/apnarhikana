@@ -38,6 +38,19 @@ export default class TenantAllocationController {
     }
   }
 
+  static async getInventoryWithOccupancy(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { propertyId } = req.query;
+      if (!propertyId) {
+        return res.status(400).json({ success: false, message: 'propertyId is required' });
+      }
+      const data = await TenantAllocationService.getInventoryWithOccupancy(propertyId as string);
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   static async getAll(req: Request, res: Response, next: NextFunction) {
     try {
       const page = parseInt(req.query.page as string) || 1;
@@ -126,8 +139,9 @@ export default class TenantAllocationController {
         return res.status(400).json({ message: "allocationId and exitDate are required" });
       }
       const propertyUserId = (req as any).user?.id;
-      const allocation = await TenantAllocationService.initiateExit(allocationId, exitDate, propertyUserId, 'landlord');
-      res.json({ success: true, data: allocation, message: "Exit initiated successfully" });
+      const { allocation, depositNote } = await TenantAllocationService.initiateExit(allocationId, exitDate, propertyUserId, 'landlord');
+      const message = depositNote ? `Exit initiated successfully. Note: ${depositNote}` : 'Exit initiated successfully';
+      res.json({ success: true, data: allocation, message, ...(depositNote ? { depositNote } : {}) });
     } catch (err) {
       next(err);
     }

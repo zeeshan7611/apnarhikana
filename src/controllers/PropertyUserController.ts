@@ -4,6 +4,19 @@ import PropertyUserService from "../services/PropertyUserService";
 export default class PropertyUserController {
   static async createUser(req: Request, res: Response, next: NextFunction) {
     try {
+      const { name, email, password, phoneNumber, propertyId, roleIds, designation, joiningDate } = req.body;
+
+      if (!name) return res.status(400).json({ success: false, message: "name is required" });
+      if (!email) return res.status(400).json({ success: false, message: "email is required" });
+      if (!password) return res.status(400).json({ success: false, message: "password is required" });
+      if (!phoneNumber) return res.status(400).json({ success: false, message: "phoneNumber is required" });
+      if (!propertyId || !Array.isArray(propertyId) || propertyId.length === 0)
+        return res.status(400).json({ success: false, message: "at least one propertyId is required" });
+      if (!roleIds || !Array.isArray(roleIds) || roleIds.length === 0)
+        return res.status(400).json({ success: false, message: "at least one roleId is required" });
+      if (!designation) return res.status(400).json({ success: false, message: "designation is required" });
+      if (!joiningDate) return res.status(400).json({ success: false, message: "joiningDate is required" });
+
       const user = await PropertyUserService.createUser(req.body);
       res.status(201).json({ success: true, data: user });
     } catch (err) {
