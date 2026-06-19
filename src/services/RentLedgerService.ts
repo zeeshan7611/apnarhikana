@@ -754,7 +754,7 @@ export default class RentLedgerService {
         .populate('tenantId', 'fullName phoneNumber email')
         .populate('rentLedgerId', 'month totalAmount paidAmount rentAmount')
         .populate('propertyId', 'name')
-        .populate('createdById', 'name')
+        .populate('cashSubmitTo', 'name')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),

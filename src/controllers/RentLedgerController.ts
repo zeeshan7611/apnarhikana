@@ -539,7 +539,7 @@ export default class RentLedgerController {
       }
 
       // Enforce action only by the selected manager who received the cash
-      if (!transaction.createdById || transaction.createdById.toString() !== loggedInUserId) {
+      if (!transaction.cashSubmitTo || transaction.cashSubmitTo.toString() !== loggedInUserId) {
         return res.status(403).json({ 
           success: false, 
           message: `Access denied: only the selected manager who received the cash can ${action} this payment` 
