@@ -35,6 +35,7 @@ export default class TenantService {
           case 'exited':   allocationQuery.status = { $in: ['terminated', 'inactive'] }; break;
         }
       }
+      console.log("TenantService.getAllTenants - allocationQuery:", allocationQuery);
       const filtered = await TenantAllocation.find(allocationQuery).select('tenantId').lean();
       tenantQuery._id = { $in: filtered.map(a => a.tenantId) };
     }

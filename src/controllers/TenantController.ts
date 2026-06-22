@@ -15,6 +15,7 @@ export default class TenantController {
   }
 
   static async getAll(req: Request, res: Response, next: NextFunction) {
+    console.log("TenantController.getAll - req.query:", req.query);
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
@@ -22,10 +23,10 @@ export default class TenantController {
       const status = req.query.status as string | undefined;
       const propertyId = req.query.propertyId as string | undefined;
 
-      const allowedStatuses = ['active', 'notice', 'upcoming', 'exited'];
-      if (status && !allowedStatuses.includes(status)) {
-        return res.status(400).json({ success: false, message: `status must be one of: ${allowedStatuses.join(', ')}` });
-      }
+      // const allowedStatuses = ['active', 'notice', 'upcoming', 'exited'];
+      // if (status && !allowedStatuses.includes(status)) {
+      //   return res.status(400).json({ success: false, message: `status must be one of: ${allowedStatuses.join(', ')}` });
+      // }
 
       const { data, total } = await TenantService.getAllTenants(page, limit, name, status, propertyId);
       res.json({ 
